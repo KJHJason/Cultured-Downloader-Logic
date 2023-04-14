@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -42,11 +41,6 @@ func GetLastPartOfUrl(url string) string {
 	removedParams := strings.SplitN(url, "?", 2)
 	splittedUrl := strings.Split(removedParams[0], "/")
 	return splittedUrl[len(splittedUrl)-1]
-}
-
-// Returns the path without the file extension
-func RemoveExtFromFilename(filename string) string {
-	return strings.TrimSuffix(filename, filepath.Ext(filename))
 }
 
 // Converts a map of string back to a string

@@ -1,4 +1,4 @@
-package notify
+package notifier
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ var (
 	iconPath = filepath.Join(iofuncs.APP_PATH, "icon.png")
 )
 
-const Title = "Cultured Downloader CLI"
+const CLI_TITLE = "Cultured Downloader CLI"
 
 func writeIcon() error {
 	defer func() {

@@ -51,6 +51,11 @@ func ReadLine(reader *bufio.Reader) ([]byte, error) {
 	return totalLine, err
 }
 
+// Returns the path without the file extension
+func RemoveExtFromFilename(filename string) string {
+	return strings.TrimSuffix(filename, filepath.Ext(filename))
+}
+
 // Used in CleanPathName to remove illegal characters in a path name
 func removeIllegalRuneInPath(r rune) rune {
 	if strings.ContainsRune("<>:\"/\\|?*\n\r\t", r) {

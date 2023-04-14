@@ -1,4 +1,4 @@
-package parsers
+package httpfuncs
 
 import (
 	"bytes"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
 func logJsonResponse(body []byte) error {
@@ -45,7 +44,7 @@ func logJsonResponse(body []byte) error {
 
 // Read the response body and unmarshal it into a interface and returns it
 func LoadJsonFromResponse(res *http.Response, format any) error {
-	body, err := httpfuncs.ReadResBody(res)
+	body, err := ReadResBody(res)
 	if err != nil {
 		return err
 	}
