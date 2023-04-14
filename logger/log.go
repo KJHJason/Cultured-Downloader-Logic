@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
@@ -74,16 +73,13 @@ func DeleteEmptyAndOldLogs() error {
 }
 
 // Thread-safe logging function that logs to "cultured_downloader.log" in the logs directory
-func LogError(err error, exit bool, printErr bool, level int) {
+func LogError(err error, exit bool, level int) {
 	if err == nil {
 		return
 	}
 
 	mainLogger.LogBasedOnLvl(level, err.Error() + LogSuffix)
 	if exit {
-		if printErr {
-			color.Red(err.Error())
-		}
 		os.Exit(1)
 	}
 }
@@ -91,7 +87,7 @@ func LogError(err error, exit bool, printErr bool, level int) {
 // Uses the thread-safe LogError() function to log multiple errors
 //
 // Also returns if any errors were due to context.Canceled which is caused by Ctrl + C.
-func LogErrors(exit, printErr bool, level int, errs ...error) bool {
+func LogErrors(exit bool, level int, errs ...error) bool {
 	var hasCanceled bool
 	for _, err := range errs {
 		if err == context.Canceled {
@@ -100,7 +96,7 @@ func LogErrors(exit, printErr bool, level int, errs ...error) bool {
 			}
 			continue
 		}
-		LogError(err, exit, printErr, level)
+		LogError(err, exit, level)
 	}
 	return hasCanceled
 }
@@ -108,7 +104,7 @@ func LogErrors(exit, printErr bool, level int, errs ...error) bool {
 // Uses the thread-safe LogError() function to log a channel of errors
 //
 // Also returns if any errors were due to context.Canceled which is caused by Ctrl + C.
-func LogChanErrors(exit, printErr bool, level int, errChan chan error) bool {
+func LogChanErrors(exit bool, level int, errChan chan error) bool {
 	var hasCanceled bool
 	for err := range errChan {
 		if err == context.Canceled {
@@ -117,7 +113,7 @@ func LogChanErrors(exit, printErr bool, level int, errChan chan error) bool {
 			}
 			continue
 		}
-		LogError(err, exit, printErr, level)
+		LogError(err, exit, level)
 	}
 	return hasCanceled
 }
@@ -125,7 +121,7 @@ func LogChanErrors(exit, printErr bool, level int, errChan chan error) bool {
 var logToPathMux sync.Mutex
 
 // Thread-safe logging function that logs to the provided file path
-func LogMessageToPath(message, filePath string, level int, printErr bool) {
+func LogMessageToPath(message, filePath string, level int) {
 	logToPathMux.Lock()
 	defer logToPathMux.Unlock()
 
@@ -140,7 +136,7 @@ func LogMessageToPath(message, filePath string, level int, printErr bool) {
 				filePath,
 				message,
 			)
-			LogError(err, false, printErr, ERROR)
+			LogError(err, false, ERROR)
 			return
 		}
 
@@ -163,7 +159,7 @@ func LogMessageToPath(message, filePath string, level int, printErr bool) {
 			filePath,
 			message,
 		)
-		LogError(err, false, printErr, ERROR)
+		LogError(err, false, ERROR)
 		return
 	}
 	defer logFile.Close()

@@ -1,4 +1,4 @@
-package utils
+package parsers
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
-func logJsonResponse(body []byte, printErr bool) error {
+func logJsonResponse(body []byte) error {
 	var prettyJson bytes.Buffer
 	err := json.Indent(&prettyJson, body, "", "    ")
 	if err != nil {
@@ -23,7 +23,7 @@ func logJsonResponse(body []byte, printErr bool) error {
 			constants.JSON_ERROR,
 			err,
 		)
-		logger.LogError(err, false, printErr, logger.ERROR)
+		logger.LogError(err, false, logger.ERROR)
 		return err
 	}
 
@@ -37,14 +37,14 @@ func logJsonResponse(body []byte, printErr bool) error {
 			constants.UNEXPECTED_ERROR,
 			err,
 		)
-		logger.LogError(err, false, printErr, logger.ERROR)
+		logger.LogError(err, false, logger.ERROR)
 		return err
 	}
 	return nil
 }
 
 // Read the response body and unmarshal it into a interface and returns it
-func LoadJsonFromResponse(res *http.Response, format any, printErr bool) error {
+func LoadJsonFromResponse(res *http.Response, format any) error {
 	body, err := httpfuncs.ReadResBody(res)
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func LoadJsonFromResponse(res *http.Response, format any, printErr bool) error {
 
 	// write to file if debug mode is on
 	if constants.DEBUG_MODE {
-		logJsonResponse(body, printErr)
+		logJsonResponse(body)
 	}
 
 	if err = json.Unmarshal(body, &format); err != nil {
