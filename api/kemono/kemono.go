@@ -1,19 +1,23 @@
 package kemono
 
 import (
-	"github.com/KJHJason/Cultured-Downloader-CLI/request"
-	"github.com/KJHJason/Cultured-Downloader-CLI/spinner"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
+	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
+	"fyne.io/fyne/v2"
 )
 
-func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions *KemonoDlOptions, dlFav bool) {
+func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions *KemonoDlOptions, notifTitle string, app fyne.App) {
 	if !dlOptions.DlAttachments && !dlOptions.DlGdrive {
 		return
 	}
 
-	var toDownload, gdriveLinks []*request.ToDownload
-	if dlFav {
+	var toDownload, gdriveLinks []*httpfuncs.ToDownload
+	if kemonoDl.DlFav {
 		progress := spinner.New(
 			spinner.REQ_SPINNER,
 			"fgHiYellow",
@@ -24,12 +28,12 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 		)
 		progress.Start()
 		favToDl, favGdriveLinks, err := getFavourites(
-			utils.DOWNLOAD_PATH,
+			iofuncs.DOWNLOAD_PATH,
 			dlOptions,
 		)
 		hasErr := (err != nil)
 		if hasErr {
-			utils.LogError(err, "", false, utils.ERROR)
+			logger.LogError(err, false, logger.ERROR)
 		} else {
 			toDownload = favToDl
 			gdriveLinks = favGdriveLinks
@@ -40,7 +44,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 	if len(kemonoDl.PostsToDl) > 0 {
 		postsToDl, gdriveLinksToDl := getMultiplePosts(
 			kemonoDl.PostsToDl,
-			utils.DOWNLOAD_PATH,
+			iofuncs.DOWNLOAD_PATH,
 			dlOptions,
 		)
 		toDownload = append(toDownload, postsToDl...)
@@ -49,7 +53,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 	if len(kemonoDl.CreatorsToDl) > 0 {
 		creatorsToDl, gdriveLinksToDl := getMultipleCreators(
 			kemonoDl.CreatorsToDl,
-			utils.DOWNLOAD_PATH,
+			iofuncs.DOWNLOAD_PATH,
 			dlOptions,
 		)
 		toDownload = append(toDownload, creatorsToDl...)
@@ -59,12 +63,13 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 	var downloadedPosts bool
 	if len(toDownload) > 0 {
 		downloadedPosts = true
-		request.DownloadUrls(
+		httpfuncs.DownloadUrls(
 			toDownload,
-			&request.DlOptions{
-				MaxConcurrency: utils.PIXIV_MAX_CONCURRENT_DOWNLOADS,
+			&httpfuncs.DlOptions{
+				MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
 				Cookies:        dlOptions.SessionCookies,
-				UseHttp3:       utils.IsHttp3Supported(utils.KEMONO, false),
+				UseHttp3:       httpfuncs.IsHttp3Supported(constants.KEMONO, false),
+				RetryDelay:     &httpfuncs.RetryDelay{Min: 25, Max: 35},
 			},
 			config,
 		)
@@ -75,8 +80,8 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 	}
 
 	if downloadedPosts {
-		utils.AlertWithoutErr(utils.Title, "Downloaded all posts from Kemono Party!")
+		notifier.AlertWithoutErr(notifTitle, "Downloaded all posts from Kemono Party!", app)
 	} else {
-		utils.AlertWithoutErr(utils.Title, "No posts to download from Kemono Party!")
+		notifier.AlertWithoutErr(notifTitle, "No posts to download from Kemono Party!", app)
 	}
 }

@@ -6,10 +6,9 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/api"
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/kemono/models"
-	"github.com/KJHJason/Cultured-Downloader-CLI/gdrive"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/fatih/color"
 )
@@ -48,17 +47,19 @@ var (
 type KemonoDl struct {
 	CreatorUrls     []string
 	CreatorPageNums []string
-	CreatorsToDl    []*models.KemonoCreatorToDl
+	CreatorsToDl    []*KemonoCreatorToDl
 
 	PostUrls  []string
-	PostsToDl []*models.KemonoPostToDl
+	PostsToDl []*KemonoPostToDl
+
+	DlFav bool
 }
 
-func ProcessCreatorUrls(creatorUrls []string, pageNums []string) []*models.KemonoCreatorToDl {
-	creatorsToDl := make([]*models.KemonoCreatorToDl, len(creatorUrls))
+func ProcessCreatorUrls(creatorUrls []string, pageNums []string) []*KemonoCreatorToDl {
+	creatorsToDl := make([]*KemonoCreatorToDl, len(creatorUrls))
 	for i, creatorUrl := range creatorUrls {
 		matched := CREATOR_URL_REGEX.FindStringSubmatch(creatorUrl)
-		creatorsToDl[i] = &models.KemonoCreatorToDl{
+		creatorsToDl[i] = &KemonoCreatorToDl{
 			Service:   matched[CREATOR_URL_REGEX_SERVICE_INDEX],
 			CreatorId: matched[CREATOR_URL_REGEX_CREATOR_ID_INDEX],
 			PageNum:   pageNums[i],
@@ -68,11 +69,11 @@ func ProcessCreatorUrls(creatorUrls []string, pageNums []string) []*models.Kemon
 	return creatorsToDl
 }
 
-func ProcessPostUrls(postUrls []string) []*models.KemonoPostToDl {
-	postsToDl := make([]*models.KemonoPostToDl, len(postUrls))
+func ProcessPostUrls(postUrls []string) []*KemonoPostToDl {
+	postsToDl := make([]*KemonoPostToDl, len(postUrls))
 	for i, postUrl := range postUrls {
 		matched := POST_URL_REGEX.FindStringSubmatch(postUrl)
-		postsToDl[i] = &models.KemonoPostToDl{
+		postsToDl[i] = &KemonoPostToDl{
 			Service:   matched[POST_URL_REGEX_SERVICE_INDEX],
 			CreatorId: matched[POST_URL_REGEX_CREATOR_ID_INDEX],
 			PostId:    matched[POST_URL_REGEX_POST_ID_INDEX],
@@ -85,7 +86,7 @@ func ProcessPostUrls(postUrls []string) []*models.KemonoPostToDl {
 // RemoveDuplicates removes duplicate creators and posts from the slice
 func (k *KemonoDl) RemoveDuplicates() {
 	if len(k.CreatorsToDl) > 0 {
-		newCreatorSlice := make([]*models.KemonoCreatorToDl, 0, len(k.CreatorsToDl))
+		newCreatorSlice := make([]*KemonoCreatorToDl, 0, len(k.CreatorsToDl))
 		seen := make(map[string]struct{})
 		for _, creator := range k.CreatorsToDl {
 			key := fmt.Sprintf("%s/%s", creator.Service, creator.CreatorId)
@@ -101,7 +102,7 @@ func (k *KemonoDl) RemoveDuplicates() {
 	if len(k.PostsToDl) == 0 {
 		return
 	}
-	newPostSlice := make([]*models.KemonoPostToDl, 0, len(k.PostsToDl))
+	newPostSlice := make([]*KemonoPostToDl, 0, len(k.PostsToDl))
 	seen := make(map[string]struct{})
 	for _, post := range k.PostsToDl {
 		key := fmt.Sprintf("%s/%s/%s", post.Service, post.CreatorId, post.PostId)
@@ -115,24 +116,24 @@ func (k *KemonoDl) RemoveDuplicates() {
 }
 
 func (k *KemonoDl) ValidateArgs() {
-	valid, outlier := utils.SliceMatchesRegex(CREATOR_URL_REGEX, k.CreatorUrls)
+	valid, outlier := api.SliceMatchesRegex(CREATOR_URL_REGEX, k.CreatorUrls)
 	if !valid {
 		color.Red(
 			fmt.Sprintf(
 				"kemono error %d: invalid creator URL found for kemono party: %s",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				outlier,
 			),
 		)
 		os.Exit(1)
 	}
 
-	valid, outlier = utils.SliceMatchesRegex(POST_URL_REGEX, k.PostUrls)
+	valid, outlier = api.SliceMatchesRegex(POST_URL_REGEX, k.PostUrls)
 	if !valid {
 		color.Red(
 			fmt.Sprintf(
 				"kemono error %d: invalid post URL found for kemono party: %s",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				outlier,
 			),
 		)
@@ -143,7 +144,7 @@ func (k *KemonoDl) ValidateArgs() {
 		if len(k.CreatorPageNums) == 0 {
 			k.CreatorPageNums = make([]string, len(k.CreatorUrls))
 		} else {
-			utils.ValidatePageNumInput(
+			api.ValidatePageNumInput(
 				len(k.CreatorUrls),
 				k.CreatorPageNums,
 				[]string{
@@ -186,10 +187,10 @@ type KemonoDlOptions struct {
 func (k *KemonoDlOptions) ValidateArgs(userAgent string) {
 	if k.SessionCookieId != "" {
 		k.SessionCookies = []*http.Cookie{
-			api.VerifyAndGetCookie(utils.KEMONO, k.SessionCookieId, userAgent),
+			api.VerifyAndGetCookie(constants.KEMONO, k.SessionCookieId, userAgent),
 		}
 	} else {
-		color.Red("kemono error %d: session cookie ID is required", utils.INPUT_ERROR)
+		color.Red("kemono error %d: session cookie ID is required", constants.INPUT_ERROR)
 		os.Exit(1)
 	}
 

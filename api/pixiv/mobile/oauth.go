@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/models"
-	"github.com/KJHJason/Cultured-Downloader-CLI/request"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/fatih/color"
 	"github.com/pkg/browser"
 )
@@ -37,7 +37,7 @@ func (pixiv *PixivMobile) StartOauthFlow() error {
 		// should never happen but just in case
 		return fmt.Errorf(
 			"pixiv mobile error %d: failed to generate random bytes, more info => %v",
-			utils.DEV_ERROR,
+			constants.DEV_ERROR,
 			err,
 		)
 	}
@@ -50,7 +50,7 @@ func (pixiv *PixivMobile) StartOauthFlow() error {
 		"client":                "pixiv-android",
 	}
 
-	loginUrl := pixiv.loginUrl + "?" + utils.ParamsToString(loginParams)
+	loginUrl := pixiv.loginUrl + "?" + httpfuncs.ParamsToString(loginParams)
 	err = browser.OpenURL(loginUrl)
 	if err != nil {
 		color.Red("Pixiv: Failed to open browser: " + err.Error())
@@ -60,7 +60,7 @@ func (pixiv *PixivMobile) StartOauthFlow() error {
 		color.Green("Opened a new tab in your browser to\n" + loginUrl)
 	}
 
-	useHttp3 := utils.IsHttp3Supported(utils.PIXIV_MOBILE, true)
+	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_MOBILE, true)
 	color.Yellow("If unsure, follow the guide below:")
 	color.Yellow("https://github.com/KJHJason/Cultured-Downloader/blob/main/doc/pixiv_oauth_guide.md\n")
 	for {
@@ -77,8 +77,8 @@ func (pixiv *PixivMobile) StartOauthFlow() error {
 			continue
 		}
 
-		res, err := request.CallRequestWithData(
-			&request.RequestArgs{
+		res, err := httpfuncs.CallRequestWithData(
+			&httpfuncs.RequestArgs{
 				Url:         pixiv.authTokenUrl,
 				Method:      "POST",
 				Timeout:     pixiv.apiTimeout,
@@ -103,7 +103,7 @@ func (pixiv *PixivMobile) StartOauthFlow() error {
 		}
 
 		var oauthFlowJson models.PixivOauthFlowJson
-		if err := utils.LoadJsonFromResponse(res, &oauthFlowJson); err != nil {
+		if err := httpfuncs.LoadJsonFromResponse(res, &oauthFlowJson); err != nil {
 			color.Red(err.Error())
 			continue
 		}
@@ -120,9 +120,9 @@ func (pixiv *PixivMobile) refreshAccessToken() error {
 	pixiv.accessTokenMu.Lock()
 	defer pixiv.accessTokenMu.Unlock()
 
-	useHttp3 := utils.IsHttp3Supported(utils.PIXIV_MOBILE, true)
-	res, err := request.CallRequestWithData(
-		&request.RequestArgs{
+	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_MOBILE, true)
+	res, err := httpfuncs.CallRequestWithData(
+		&httpfuncs.RequestArgs{
 			Url:       pixiv.authTokenUrl,
 			Method:    "POST",
 			Timeout:   pixiv.apiTimeout,
@@ -146,7 +146,7 @@ func (pixiv *PixivMobile) refreshAccessToken() error {
 				"%s %d: failed to refresh token due to %s response from Pixiv\n"+
 					"Please check your refresh token and try again or use the \"-pixiv_start_oauth\" flag to get a new refresh token",
 				errPrefix,
-				utils.RESPONSE_ERROR,
+				constants.RESPONSE_ERROR,
 				res.Status,
 			)
 		} else {
@@ -154,7 +154,7 @@ func (pixiv *PixivMobile) refreshAccessToken() error {
 				"%s %d: failed to refresh token due to %v\n"+
 					"Please check your internet connection and try again",
 				errPrefix,
-				utils.CONNECTION_ERROR,
+				constants.CONNECTION_ERROR,
 				err,
 			)
 		}
@@ -162,7 +162,7 @@ func (pixiv *PixivMobile) refreshAccessToken() error {
 	}
 
 	var oauthJson models.PixivOauthJson
-	if err := utils.LoadJsonFromResponse(res, &oauthJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res, &oauthJson); err != nil {
 		return err
 	}
 

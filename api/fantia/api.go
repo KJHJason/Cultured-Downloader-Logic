@@ -1,21 +1,20 @@
 package fantia
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
-	"time"
-	"os"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/request"
-	"github.com/KJHJason/Cultured-Downloader-CLI/spinner"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"fyne.io/fyne/v2"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/chromedp/chromedp"
-	"github.com/fatih/color"
 )
 
 type fantiaPostArgs struct {
@@ -52,12 +51,12 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 
 	postApiUrl := postArg.url + postArg.postId
 	header := map[string]string{
-		"Referer":      fmt.Sprintf("%s/posts/%s", utils.FANTIA_URL, postArg.postId),
+		"Referer":      fmt.Sprintf("%s/posts/%s", constants.FANTIA_URL, postArg.postId),
 		"x-csrf-token": dlOptions.CsrfToken,
 	}
-	useHttp3 := utils.IsHttp3Supported(utils.FANTIA, true)
-	res, err := request.CallRequest(
-		&request.RequestArgs{
+	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, true)
+	res, err := httpfuncs.CallRequest(
+		&httpfuncs.RequestArgs{
 			Method:    "GET",
 			Url:       postApiUrl,
 			Cookies:   dlOptions.SessionCookies,
@@ -68,7 +67,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 		},
 	)
 	if err != nil || res.StatusCode != 200 {
-		errCode := utils.CONNECTION_ERROR
+		errCode := constants.CONNECTION_ERROR
 		if err == nil {
 			errCode = res.StatusCode
 		}
@@ -96,127 +95,8 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 	return res, nil
 }
 
-const captchaBtnSelector = `//input[@name='commit']`
-
-// Automatically try to solve the reCAPTCHA for Fantia.
-func autoSolveCaptcha(dlOptions *FantiaDlOptions) error {
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
-		"Solving reCAPTCHA for Fantia...",
-		"Successfully solved reCAPTCHA for Fantia!",
-		"",
-		0,
-	)
-	progress.Start()
-
-	actions := []chromedp.Action{
-		utils.SetChromedpAllocCookies(dlOptions.SessionCookies),
-		chromedp.Navigate(utils.FANTIA_RECAPTCHA_URL),
-		chromedp.WaitVisible(captchaBtnSelector, chromedp.BySearch),
-		chromedp.Click(captchaBtnSelector, chromedp.BySearch),
-		chromedp.WaitVisible(`//h3[@class='mb-15'][contains(text(), 'ファンティアでクリエイターを応援しよう！')]`, chromedp.BySearch),
-	}
-
-	allocCtx, cancel := utils.GetDefaultChromedpAlloc(dlOptions.Configs.UserAgent)
-	defer cancel()
-
-	allocCtx, cancel = context.WithTimeout(allocCtx, 45 * time.Second)
-	if err := utils.ExecuteChromedpActions(allocCtx, cancel, actions...); err != nil {
-		var fmtErr error
-		if errors.Is(err, context.DeadlineExceeded) {
-			fmtErr = fmt.Errorf(
-				"fantia error %d: failed to solve reCAPTCHA for Fantia due to timeout, please visit %s to solve it manually and try again", 
-				utils.CAPTCHA_ERROR,
-				utils.FANTIA_RECAPTCHA_URL,
-			)
-		} else {
-			fullErr := fmt.Errorf("fantia error %d: failed to solve reCAPTCHA for Fantia, more info => %v", utils.CAPTCHA_ERROR, err)
-			utils.LogError(fullErr, "", false, utils.ERROR)
-		}
-
-		progress.ErrMsg = fmtErr.Error() + "\n"
-		progress.Stop(true)
-		return fmtErr
-	}
-	progress.Stop(false)
-	return nil
-}
-
-// Manually ask the user to solve the reCAPTCHA on Fantia for the current session.
-func manualSolveCaptcha(dlOptions *FantiaDlOptions) error {
-	// Check if the reCAPTCHA has been solved.
-	// If it has, we can continue with the download.
-	useHttp3 := utils.IsHttp3Supported(utils.FANTIA, true)
-	instructions := fmt.Sprintf(
-		"Please solve the reCAPTCHA on Fantia at %s with the SAME session to continue.",
-		utils.FANTIA_RECAPTCHA_URL,
-	)
-	utils.AlertWithoutErr(utils.Title, instructions)
-
-	for {
-		color.Yellow(instructions)
-		color.Yellow("Please press ENTER when you're done.")
-		fmt.Scanln()
-
-		_, err := request.CallRequest(
-			&request.RequestArgs{
-				Method:      "GET",
-				Url:         utils.FANTIA_URL + "/mypage/users/plans",
-				Cookies:     dlOptions.SessionCookies,
-				Http2:       !useHttp3,
-				Http3:       useHttp3,
-				UserAgent:   dlOptions.Configs.UserAgent,
-				CheckStatus: true,
-			},
-		)
-		if err != nil {
-			color.Red("failed to check if reCAPTCHA has been solved\n%v", err)
-			continue
-		}
-		return nil
-	}
-}
-
-func SolveCaptcha(dlOptions *FantiaDlOptions, alertUser bool) error {
-	if alertUser {
-		color.Yellow("\nWarning: reCAPTCHA detected for the current Fantia session...")
-	}
-
-	if len(dlOptions.SessionCookies) == 0 {
-		// Since reCAPTCHA is per session, the program shall avoid 
-		// trying to solve it and alert the user to login or create a Fantia account.
-		// It is possible that the reCAPTCHA is per IP address for guests, but I'm not sure.
-		color.Red(
-			fmt.Sprintf(
-				"fantia error %d: reCAPTCHA detected but you are not logged in. Please login to Fantia and try again.",
-				utils.CAPTCHA_ERROR,
-			),
-		)
-		os.Exit(1)
-	}
-
-	if dlOptions.AutoSolveCaptcha {
-		return autoSolveCaptcha(dlOptions)
-	}
-	return manualSolveCaptcha(dlOptions)
-}
-
-// try the alternative method if the first one fails.
-//
-// E.g. User preferred to solve the reCAPTCHA automatically, but the program failed to do so,
-//      The program will then ask the user to solve the reCAPTCHA manually on their browser with the SAME session.
-func handleCaptchaErr(err error, dlOptions *FantiaDlOptions, alertUser bool) error {
-	if err == nil {
-		return nil
-	}
-
-	dlOptions.AutoSolveCaptcha = !dlOptions.AutoSolveCaptcha
-	return SolveCaptcha(dlOptions, alertUser)
-}
-
-const fantiaPostUrl = utils.FANTIA_URL + "/api/v1/posts/"
-func dlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions) ([]*request.ToDownload, error) {
+const fantiaPostUrl = constants.FANTIA_URL + "/api/v1/posts/"
+func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *FantiaDlOptions, app fyne.App) ([]*httpfuncs.ToDownload, error) {
 	msgSuffix := fmt.Sprintf(
 		"[%d/%d]",
 		count,
@@ -246,23 +126,23 @@ func dlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		dlOptions,
 	)
 	if err == errRecaptcha {
-		err = SolveCaptcha(dlOptions, true)
+		err = api.SolveCaptcha(dlOptions, constants.FANTIA, notifTitle, app)
 		if err != nil {
-			if err := handleCaptchaErr(err, dlOptions, true); err != nil {
+			if err := api.HandleCaptchaErr(err, dlOptions, constants.FANTIA, notifTitle, app); err != nil {
 				os.Exit(1)
 			}
 		}
 
-		return dlFantiaPost(count, maxCount, postId, dlOptions)
+		return dlFantiaPost(count, maxCount, postId, notifTitle, dlOptions, app)
 	} else if err != nil {
 		return nil, err
 	}
 
 	// Download the urls
-	request.DownloadUrls(
+	httpfuncs.DownloadUrls(
 		urlsToDownload,
-		&request.DlOptions{
-			MaxConcurrency: utils.MAX_CONCURRENT_DOWNLOADS,
+		&httpfuncs.DlOptions{
+			MaxConcurrency: constants.MAX_CONCURRENT_DOWNLOADS,
 			Headers:        nil,
 			Cookies:        dlOptions.SessionCookies,
 			UseHttp3:       false,
@@ -278,12 +158,12 @@ func dlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 // Note that only the downloading of the URL(s) is/are executed concurrently
 // to reduce the chance of the signed AWS S3 URL(s) from expiring before the download is
 // executed or completed due to a download queue to avoid resource exhaustion of the user's system.
-func (f *FantiaDl) dlFantiaPosts(dlOptions *FantiaDlOptions) []*request.ToDownload {
+func (f *FantiaDl) dlFantiaPosts(dlOptions *FantiaDlOptions, notifTitle string, app fyne.App) []*httpfuncs.ToDownload {
 	var errSlice []error
-	var gdriveLinks []*request.ToDownload
+	var gdriveLinks []*httpfuncs.ToDownload
 	postIdsLen := len(f.PostIds)
 	for i, postId := range f.PostIds {
-		postGdriveLinks, err := dlFantiaPost(i+1, postIdsLen, postId, dlOptions)
+		postGdriveLinks, err := dlFantiaPost(i+1, postIdsLen, postId, notifTitle, dlOptions, app)
 
 		if err != nil {
 			errSlice = append(errSlice, err)
@@ -295,7 +175,7 @@ func (f *FantiaDl) dlFantiaPosts(dlOptions *FantiaDlOptions) []*request.ToDownlo
 	}
 
 	if len(errSlice) > 0 {
-		utils.LogErrors(false, nil, utils.ERROR, errSlice...)
+		logger.LogErrors(false, logger.ERROR, errSlice...)
 	}
 	return gdriveLinks
 }
@@ -308,7 +188,7 @@ func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
 	if err != nil {
 		err = fmt.Errorf(
 			"fantia error %d, failed to parse response body when getting posts for Fantia Fanclub %s, more info => %v",
-			utils.HTML_ERROR,
+			constants.HTML_ERROR,
 			creatorId,
 			err,
 		)
@@ -320,7 +200,7 @@ func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
 	var postIds []string
 	doc.Find("a.link-block").Each(func(i int, s *goquery.Selection) {
 		if href, exists := s.Attr("href"); exists {
-			postIds = append(postIds, utils.GetLastPartOfUrl(href))
+			postIds = append(postIds, httpfuncs.GetLastPartOfUrl(href))
 		} else if !hasHtmlErr {
 			hasHtmlErr = true
 		}
@@ -329,7 +209,7 @@ func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
 	if hasHtmlErr {
 		return nil, fmt.Errorf(
 			"fantia error %d, failed to get href attribute for Fantia Fanclub %s, please report this issue",
-			utils.HTML_ERROR,
+			constants.HTML_ERROR,
 			creatorId,
 		)
 	}
@@ -339,15 +219,15 @@ func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
 // Get all the creator's posts by using goquery to parse the HTML response to get the post IDs
 func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]string, error) {
 	var postIds []string
-	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
+	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, err
 	}
 
-	useHttp3 := utils.IsHttp3Supported(utils.FANTIA, false)
+	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	curPage := minPage
 	for {
-		url := fmt.Sprintf("%s/fanclubs/%s/posts", utils.FANTIA_URL, creatorId)
+		url := fmt.Sprintf("%s/fanclubs/%s/posts", constants.FANTIA_URL, creatorId)
 		params := map[string]string{
 			"page":   strconv.Itoa(curPage),
 			"q[s]":   "newer",
@@ -356,8 +236,8 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 
 		// note that even if the max page is more than
 		// the actual number of pages, the response will still be 200 OK.
-		res, err := request.CallRequest(
-			&request.RequestArgs{
+		res, err := httpfuncs.CallRequest(
+			&httpfuncs.RequestArgs{
 				Method:      "GET",
 				Url:         url,
 				Cookies:     dlOptions.SessionCookies,
@@ -371,7 +251,7 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 		if err != nil {
 			err = fmt.Errorf(
 				"fantia error %d: failed to get creator's pages for %s, more info => %v",
-				utils.CONNECTION_ERROR,
+				constants.CONNECTION_ERROR,
 				url,
 				err,
 			)
@@ -400,13 +280,13 @@ func (f *FantiaDl) getCreatorsPosts(dlOptions *FantiaDlOptions) {
 		panic(
 			fmt.Errorf(
 				"fantia error %d: creator IDs and page numbers slices are not the same length",
-				utils.DEV_ERROR,
+				constants.DEV_ERROR,
 			),
 		)
 	}
 
 	var wg sync.WaitGroup
-	maxConcurrency := utils.MAX_API_CALLS
+	maxConcurrency := constants.MAX_API_CALLS
 	if creatorIdsLen < maxConcurrency {
 		maxConcurrency = creatorIdsLen
 	}
@@ -464,12 +344,12 @@ func (f *FantiaDl) getCreatorsPosts(dlOptions *FantiaDlOptions) {
 	hasErr := false
 	if len(errChan) > 0 {
 		hasErr = true
-		utils.LogErrors(false, errChan, utils.ERROR)
+		logger.LogChanErrors(false, logger.ERROR, errChan)
 	}
 	progress.Stop(hasErr)
 
 	for postIdsRes := range resChan {
 		f.PostIds = append(f.PostIds, postIdsRes...)
 	}
-	f.PostIds = utils.RemoveSliceDuplicates(f.PostIds)
+	f.PostIds = api.RemoveSliceDuplicates(f.PostIds)
 }

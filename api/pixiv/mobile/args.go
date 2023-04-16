@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/fatih/color"
 )
@@ -52,52 +53,52 @@ var (
 // Should be called after initialising the struct.
 func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 	p.SortOrder = strings.ToLower(p.SortOrder)
-	utils.ValidateStrArgs(
+	api.ValidateStrArgs(
 		p.SortOrder,
 		ACCEPTED_SORT_ORDER,
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Sort order %s is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				p.SortOrder,
 			),
 		},
 	)
 
 	p.SearchMode = strings.ToLower(p.SearchMode)
-	utils.ValidateStrArgs(
+	api.ValidateStrArgs(
 		p.SearchMode,
 		ACCEPTED_SEARCH_MODE,
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Search order %s is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				p.SearchMode,
 			),
 		},
 	)
 
 	p.RatingMode = strings.ToLower(p.RatingMode)
-	utils.ValidateStrArgs(
+	api.ValidateStrArgs(
 		p.RatingMode,
 		ACCEPTED_RATING_MODE,
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Rating order %s is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				p.RatingMode,
 			),
 		},
 	)
 
 	p.ArtworkType = strings.ToLower(p.ArtworkType)
-	utils.ValidateStrArgs(
+	api.ValidateStrArgs(
 		p.ArtworkType,
 		ACCEPTED_ARTWORK_TYPE,
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Artwork type %s is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				p.ArtworkType,
 			),
 		},
@@ -107,10 +108,10 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 		p.MobileClient = NewPixivMobile(p.RefreshToken, 10)
 		if p.RatingMode != "all" {
 			color.Red(
-				utils.CombineStringsWithNewline(
+				api.CombineStringsWithNewline(
 					fmt.Sprintf(
 						"pixiv error %d: when using the refresh token, only \"all\" is supported for the --rating_mode flag.",
-						utils.INPUT_ERROR,
+						constants.INPUT_ERROR,
 					),
 					fmt.Sprintf(
 						"hence, the rating mode will be updated from %q to \"all\"...\n",
@@ -141,7 +142,7 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 			panic(
 				fmt.Sprintf(
 					"pixiv mobile error %d: invalid search mode %q",
-					utils.DEV_ERROR,
+					constants.DEV_ERROR,
 					p.SearchMode,
 				),
 			)
@@ -171,17 +172,17 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 				panic(
 					fmt.Sprintf(
 						"pixiv error %d: unknown sort order %q in PixivDlOptions.ValidateArgs()",
-						utils.DEV_ERROR,
+						constants.DEV_ERROR,
 						newSortOrder,
 					),
 				)
 			}
 
 			color.Red(
-				utils.CombineStringsWithNewline(
+				api.CombineStringsWithNewline(
 					fmt.Sprintf(
 						"pixiv error %d: when using the refresh token, only \"date\", \"date_d\", \"popular_d\" are supported for the --sort_order flag.",
-						utils.INPUT_ERROR,
+						constants.INPUT_ERROR,
 					),
 					fmt.Sprintf(
 						"hence, the sort order will be updated from %q to %q...\n",

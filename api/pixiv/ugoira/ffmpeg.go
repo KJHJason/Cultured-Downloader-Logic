@@ -8,8 +8,9 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/models"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
 type ffmpegOptions struct {
@@ -54,7 +55,7 @@ func writeDelays(ugoiraInfo *models.Ugoira, imagesFolderPath string) (string, []
 	if err != nil {
 		return "", nil, fmt.Errorf(
 			"pixiv error %d: failed to create delays.txt, more info => %v",
-			utils.OS_ERROR,
+			constants.OS_ERROR,
 			err,
 		)
 	}
@@ -64,7 +65,7 @@ func writeDelays(ugoiraInfo *models.Ugoira, imagesFolderPath string) (string, []
 	if err != nil {
 		return "", nil, fmt.Errorf(
 			"pixiv error %d: failed to write delay string to delays.txt, more info => %v",
-			utils.OS_ERROR,
+			constants.OS_ERROR,
 			err,
 		)
 	}
@@ -122,7 +123,7 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 	palettePath := filepath.Join(imagesFolderPath, "palette.png")
 	ffmpegImages := "%" + fmt.Sprintf(
 		"%dd%s", // Usually it's %6d.extension but just in case, measure the length of the filename
-		len(utils.RemoveExtFromFilename(options.sortedFilenames[0])),
+		len(iofuncs.RemoveExtFromFilename(options.sortedFilenames[0])),
 		filepath.Ext(options.sortedFilenames[0]),
 	)
 	imagePaletteCmd := exec.Command(
@@ -132,7 +133,7 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 		palettePath,
 	)
 
-	if utils.DEBUG_MODE {
+	if constants.DEBUG_MODE {
 		imagePaletteCmd.Stdout = os.Stdout
 		imagePaletteCmd.Stderr = os.Stderr
 	}
@@ -140,7 +141,7 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 	if err != nil {
 		return nil, fmt.Errorf(
 			"pixiv error %d: failed to generate palette for ugoira gif, more info => %v",
-			utils.CMD_ERROR,
+			constants.CMD_ERROR,
 			err,
 		)
 	}
@@ -188,7 +189,7 @@ func getFfmpegFlagsForUgoira(options *ffmpegOptions, imagesFolderPath string) ([
 		panic(
 			fmt.Sprintf(
 				"pixiv error %d: Output extension %v is not allowed for ugoira conversion",
-				utils.DEV_ERROR,
+				constants.DEV_ERROR,
 				options.outputExt,
 			),
 		)

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/api"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 )
 
@@ -53,52 +53,52 @@ var (
 // Should be called after initialising the struct.
 func (p *PixivWebDlOptions) ValidateArgs(userAgent string) {
 	p.SortOrder = strings.ToLower(p.SortOrder)
-	utils.ValidateStrArgs(
+	api.ValidateStrArgs(
 		p.SortOrder,
 		ACCEPTED_SORT_ORDER,
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Sort order %s is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				p.SortOrder,
 			),
 		},
 	)
 
 	p.SearchMode = strings.ToLower(p.SearchMode)
-	utils.ValidateStrArgs(
+	api.ValidateStrArgs(
 		p.SearchMode,
 		ACCEPTED_SEARCH_MODE,
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Search order %s is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				p.SearchMode,
 			),
 		},
 	)
 
 	p.RatingMode = strings.ToLower(p.RatingMode)
-	utils.ValidateStrArgs(
+	api.ValidateStrArgs(
 		p.RatingMode,
 		ACCEPTED_RATING_MODE,
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Rating order %s is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				p.RatingMode,
 			),
 		},
 	)
 
 	p.ArtworkType = strings.ToLower(p.ArtworkType)
-	utils.ValidateStrArgs(
+	api.ValidateStrArgs(
 		p.ArtworkType,
 		ACCEPTED_ARTWORK_TYPE,
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Artwork type %s is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				p.ArtworkType,
 			),
 		},
@@ -106,7 +106,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) {
 
 	if p.SessionCookieId != "" {
 		p.SessionCookies = []*http.Cookie{
-			api.VerifyAndGetCookie(utils.PIXIV, p.SessionCookieId, userAgent),
+			api.VerifyAndGetCookie(constants.PIXIV, p.SessionCookieId, userAgent),
 		}
 	}
 }

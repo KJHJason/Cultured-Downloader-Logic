@@ -4,10 +4,11 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
+	"fyne.io/fyne/v2"
 )
 
 // Start the download process for Pixiv Fanbox
-func PixivFanboxDownloadProcess(pixivFanboxDl *PixivFanboxDl, pixivFanboxDlOptions *PixivFanboxDlOptions, notifTitle string) {
+func PixivFanboxDownloadProcess(pixivFanboxDl *PixivFanboxDl, pixivFanboxDlOptions *PixivFanboxDlOptions, notifTitle string, app fyne.App) {
 	if !pixivFanboxDlOptions.DlThumbnails && !pixivFanboxDlOptions.DlImages && !pixivFanboxDlOptions.DlAttachments && !pixivFanboxDlOptions.DlGdrive {
 		return
 	}
@@ -45,8 +46,8 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *PixivFanboxDl, pixivFanboxDlOptio
 	}
 
 	if downloadedPosts {
-		notifier.AlertWithoutErr(notifTitle, "Downloaded all posts from Pixiv Fanbox!")
+		notifier.AlertWithoutErr(notifTitle, "Downloaded all posts from Pixiv Fanbox!", app)
 	} else {
-		notifier.AlertWithoutErr(notifTitle, "No posts to download from Pixiv Fanbox!")
+		notifier.AlertWithoutErr(notifTitle, "No posts to download from Pixiv Fanbox!", app)
 	}
 }

@@ -3,14 +3,14 @@ package pixivcommon
 import (
 	"fmt"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 )
 
 // Returns a defined request header needed to communicate with Pixiv's API
 func GetPixivRequestHeaders() map[string]string {
 	return map[string]string{
-		"Origin":  utils.PIXIV_URL,
-		"Referer": utils.PIXIV_URL,
+		"Origin":  constants.PIXIV_URL,
+		"Referer": constants.PIXIV_URL,
 	}
 }
 
@@ -18,7 +18,7 @@ func GetPixivRequestHeaders() map[string]string {
 func GetIllustUrl(illustId string) string {
 	return fmt.Sprintf(
 		"%s/artworks/%s",
-		utils.PIXIV_URL,
+		constants.PIXIV_URL,
 		illustId,
 	)
 }
@@ -27,7 +27,7 @@ func GetIllustUrl(illustId string) string {
 func GetUserUrl(userId string) string {
 	return fmt.Sprintf(
 		"%s/users/%s",
-		utils.PIXIV_URL,
+		constants.PIXIV_URL,
 		userId,
 	)
 }

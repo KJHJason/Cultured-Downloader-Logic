@@ -3,7 +3,7 @@ package pixivweb
 import (
 	"time"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
 const (
@@ -22,5 +22,5 @@ const (
 //
 // More info: https://github.com/Nandaka/PixivUtil2/issues/477
 func pixivSleep() {
-	time.Sleep(utils.GetRandomTime(0.5, 1.0))
+	time.Sleep(httpfuncs.GetRandomTime(0.5, 1.0))
 }

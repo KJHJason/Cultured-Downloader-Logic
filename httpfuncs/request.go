@@ -102,7 +102,7 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error
 		}
 
 		if i < constants.RETRY_COUNTER {
-			time.Sleep(GetRandomDelay())
+			time.Sleep(GetRandomDelay(reqArgs.RetryDelay))
 		}
 	}
 

@@ -1,4 +1,4 @@
-package models
+package kemono
 
 type MainKemonoJson struct {
 	Added       string `json:"added"`
@@ -23,7 +23,7 @@ type MainKemonoJson struct {
 	Service    string `json:"service"`
 	SharedFile bool   `json:"shared_file"`
 	Title      string `json:"title"`
-	User       string `json:"user"`
+	User       string `json:"user"` // creator id
 }
 
 type KemonoJson []*MainKemonoJson

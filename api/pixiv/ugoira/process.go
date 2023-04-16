@@ -10,11 +10,16 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/models"
-	"github.com/KJHJason/Cultured-Downloader-CLI/request"
-	"github.com/KJHJason/Cultured-Downloader-CLI/spinner"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/extractor"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 )
 
 // Map the Ugoira frame delays to their respective filenames
@@ -35,10 +40,10 @@ type UgoiraFfmpegArgs struct {
 // Converts the Ugoira to the desired output path using FFmpeg
 func ConvertUgoira(ugoiraInfo *models.Ugoira, imagesFolderPath string, ugoiraFfmpeg *UgoiraFfmpegArgs) error {
 	outputExt := filepath.Ext(ugoiraFfmpeg.outputPath)
-	if !utils.SliceContains(UGOIRA_ACCEPTED_EXT, outputExt) {
+	if !api.SliceContains(UGOIRA_ACCEPTED_EXT, outputExt) {
 		return fmt.Errorf(
 			"pixiv error %d: Output extension %v is not allowed for ugoira conversion",
-			utils.INPUT_ERROR,
+			constants.INPUT_ERROR,
 			outputExt,
 		)
 	}
@@ -72,7 +77,7 @@ func ConvertUgoira(ugoiraInfo *models.Ugoira, imagesFolderPath string, ugoiraFfm
 		os.Remove(ugoiraFfmpeg.outputPath)
 		return fmt.Errorf(
 			"pixiv error %d: failed to convert ugoira to %s, more info => %v",
-			utils.CMD_ERROR,
+			constants.CMD_ERROR,
 			ugoiraFfmpeg.outputPath,
 			err,
 		)
@@ -86,8 +91,8 @@ func ConvertUgoira(ugoiraInfo *models.Ugoira, imagesFolderPath string, ugoiraFfm
 
 // Returns the ugoira's zip file path and the ugoira's converted file path
 func GetUgoiraFilePaths(ugoireFilePath, ugoiraUrl, outputFormat string) (string, string) {
-	filePath := filepath.Join(ugoireFilePath, utils.GetLastPartOfUrl(ugoiraUrl))
-	outputFilePath := utils.RemoveExtFromFilename(filePath) + outputFormat
+	filePath := filepath.Join(ugoireFilePath, httpfuncs.GetLastPartOfUrl(ugoiraUrl))
+	outputFilePath := iofuncs.RemoveExtFromFilename(filePath) + outputFormat
 	return filePath, outputFilePath
 }
 
@@ -130,11 +135,11 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	progress.Start()
 	for i, ugoira := range ugoiraArgs.ToDownload {
 		zipFilePath, outputPath := GetUgoiraFilePaths(ugoira.FilePath, ugoira.Url, ugoiraOptions.OutputFormat)
-		if utils.PathExists(outputPath) {
+		if iofuncs.PathExists(outputPath) {
 			progress.MsgIncrement(baseMsg)
 			continue
 		}
-		if !utils.PathExists(zipFilePath) {
+		if !iofuncs.PathExists(zipFilePath) {
 			progress.MsgIncrement(baseMsg)
 			continue
 		}
@@ -143,7 +148,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 			filepath.Dir(zipFilePath),
 			"unzipped",
 		)
-		err := utils.ExtractFiles(ctx, zipFilePath, unzipFolderPath, true)
+		err := extractor.ExtractFiles(ctx, zipFilePath, unzipFolderPath, true)
 		if err != nil {
 			if err == context.Canceled {
 				progress.KillProgram(
@@ -157,7 +162,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 			}
 			err := fmt.Errorf(
 				"pixiv error %d: failed to unzip file %s, more info => %v",
-				utils.OS_ERROR,
+				constants.OS_ERROR,
 				zipFilePath,
 				err,
 			)
@@ -186,7 +191,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		utils.LogErrors(false, nil, utils.ERROR, errSlice...)
+		logger.LogErrors(false, logger.ERROR, errSlice...)
 	}
 	progress.Stop(hasErr)
 }
@@ -198,16 +203,16 @@ type UgoiraArgs struct {
 }
 
 // Downloads multiple Ugoira artworks and converts them based on the output format
-func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config, reqHandler request.RequestHandler) {
-	var urlsToDownload []*request.ToDownload
+func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config, reqHandler httpfuncs.RequestHandler) {
+	var urlsToDownload []*httpfuncs.ToDownload
 	for _, ugoira := range ugoiraArgs.ToDownload {
 		filePath, outputFilePath := GetUgoiraFilePaths(
 			ugoira.FilePath,
 			ugoira.Url,
 			ugoiraOptions.OutputFormat,
 		)
-		if !utils.PathExists(outputFilePath) {
-			urlsToDownload = append(urlsToDownload, &request.ToDownload{
+		if !iofuncs.PathExists(outputFilePath) {
+			urlsToDownload = append(urlsToDownload, &httpfuncs.ToDownload{
 				Url:      ugoira.Url,
 				FilePath: filePath,
 			})
@@ -222,13 +227,13 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 		}
 	} else {
 		headers = pixivcommon.GetPixivRequestHeaders()
-		useHttp3 = utils.IsHttp3Supported(utils.PIXIV, true)
+		useHttp3 = httpfuncs.IsHttp3Supported(constants.PIXIV, true)
 	}
 
-	request.DownloadUrlsWithHandler(
+	httpfuncs.DownloadUrlsWithHandler(
 		urlsToDownload,
-		&request.DlOptions{
-			MaxConcurrency: utils.PIXIV_MAX_CONCURRENT_DOWNLOADS,
+		&httpfuncs.DlOptions{
+			MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
 			Headers:        headers,
 			Cookies:        ugoiraArgs.Cookies,
 			UseHttp3:       useHttp3,

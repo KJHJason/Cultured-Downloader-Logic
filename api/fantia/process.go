@@ -6,58 +6,58 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/fantia/models"
-	"github.com/KJHJason/Cultured-Downloader-CLI/request"
-	"github.com/KJHJason/Cultured-Downloader-CLI/gdrive"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
-	"github.com/KJHJason/Cultured-Downloader-CLI/spinner"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 )
 
-func dlImagesFromPost(content *models.FantiaContent, postFolderPath string) []*request.ToDownload {
-	var urlsSlice []*request.ToDownload
+func dlImagesFromPost(content *FantiaContent, postFolderPath string) []*httpfuncs.ToDownload {
+	var urlsSlice []*httpfuncs.ToDownload
 
 	// download images that are uploaded to their own section
 	postContentPhotos := content.PostContentPhotos
 	for _, image := range postContentPhotos {
 		imageUrl := image.URL.Original
-		urlsSlice = append(urlsSlice, &request.ToDownload{
+		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      imageUrl,
-			FilePath: filepath.Join(postFolderPath, utils.IMAGES_FOLDER),
+			FilePath: filepath.Join(postFolderPath, constants.IMAGES_FOLDER),
 		})
 	}
 
 	// for images that are embedded in the post content
 	comment := content.Comment
-	matchedStr := utils.FANTIA_IMAGE_URL_REGEX.FindAllStringSubmatch(comment, -1)
+	matchedStr := constants.FANTIA_IMAGE_URL_REGEX.FindAllStringSubmatch(comment, -1)
 	for _, matched := range matchedStr {
-		imageUrl := utils.FANTIA_URL + matched[utils.FANTIA_REGEX_URL_INDEX]
-		urlsSlice = append(urlsSlice, &request.ToDownload{
+		imageUrl := constants.FANTIA_URL + matched[constants.FANTIA_REGEX_URL_INDEX]
+		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      imageUrl,
-			FilePath: filepath.Join(postFolderPath, utils.IMAGES_FOLDER),
+			FilePath: filepath.Join(postFolderPath, constants.IMAGES_FOLDER),
 		})
 	}
 	return urlsSlice
 }
 
-func dlAttachmentsFromPost(content *models.FantiaContent, postFolderPath string) []*request.ToDownload {
-	var urlsSlice []*request.ToDownload
+func dlAttachmentsFromPost(content *FantiaContent, postFolderPath string) []*httpfuncs.ToDownload {
+	var urlsSlice []*httpfuncs.ToDownload
 
 	// get the attachment url string if it exists
 	attachmentUrl := content.AttachmentURI
 	if attachmentUrl != "" {
-		attachmentUrlStr := utils.FANTIA_URL + attachmentUrl
-		urlsSlice = append(urlsSlice, &request.ToDownload{
+		attachmentUrlStr := constants.FANTIA_URL + attachmentUrl
+		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      attachmentUrlStr,
-			FilePath: filepath.Join(postFolderPath, utils.ATTACHMENT_FOLDER),
+			FilePath: filepath.Join(postFolderPath, constants.ATTACHMENT_FOLDER),
 		})
 	} else if content.DownloadUri != "" {
 		// if the attachment url string does not exist,
 		// then get the download url for the file
-		downloadUrl := utils.FANTIA_URL + content.DownloadUri
+		downloadUrl := constants.FANTIA_URL + content.DownloadUri
 		filename := content.Filename
-		urlsSlice = append(urlsSlice, &request.ToDownload{
+		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      downloadUrl,
-			FilePath: filepath.Join(postFolderPath, utils.ATTACHMENT_FOLDER, filename),
+			FilePath: filepath.Join(postFolderPath, constants.ATTACHMENT_FOLDER, filename),
 		})
 	}
 	return urlsSlice
@@ -67,11 +67,11 @@ var errRecaptcha = fmt.Errorf("recaptcha detected for the current session")
 
 // Process the JSON response from Fantia's API and
 // returns a slice of urls and a slice of gdrive urls to download from
-func processFantiaPost(res *http.Response, downloadPath string, dlOptions *FantiaDlOptions) ([]*request.ToDownload, []*request.ToDownload, error) {
+func processFantiaPost(res *http.Response, downloadPath string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	// processes a fantia post
 	// returns a map containing the post id and the url to download the file from
-	var postJson models.FantiaPost
-	if err := utils.LoadJsonFromResponse(res, &postJson); err != nil {
+	var postJson FantiaPost
+	if err := httpfuncs.LoadJsonFromResponse(res, &postJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -79,7 +79,7 @@ func processFantiaPost(res *http.Response, downloadPath string, dlOptions *Fanti
 		if postJson.Redirect != "/recaptcha" {
 			return nil, nil, fmt.Errorf(
 				"fantia error %d: unknown redirect url, %q", 
-				utils.UNEXPECTED_ERROR, 
+				constants.UNEXPECTED_ERROR, 
 				postJson.Redirect,
 			)
 		}
@@ -90,20 +90,20 @@ func processFantiaPost(res *http.Response, downloadPath string, dlOptions *Fanti
 	postId := strconv.Itoa(post.ID)
 	postTitle := post.Title
 	creatorName := post.Fanclub.User.Name
-	postFolderPath := utils.GetPostFolder(
+	postFolderPath := iofuncs.GetPostFolder(
 		filepath.Join(
 			downloadPath,
-			utils.FANTIA_TITLE,
+			constants.FANTIA_TITLE,
 		),
 		creatorName,
 		postId,
 		postTitle,
 	)
 
-	var urlsSlice []*request.ToDownload
+	var urlsSlice []*httpfuncs.ToDownload
 	thumbnail := post.Thumb.Original
 	if dlOptions.DlThumbnails && thumbnail != "" {
-		urlsSlice = append(urlsSlice, &request.ToDownload{
+		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      thumbnail,
 			FilePath: postFolderPath,
 		})
@@ -148,7 +148,7 @@ type processIllustArgs struct {
 }
 
 // Process the JSON response to get the urls to download
-func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaDlOptions) ([]*request.ToDownload, []*request.ToDownload, error) {
+func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	progress := spinner.New(
 		spinner.JSON_SPINNER,
 		"fgHiYellow",
@@ -172,7 +172,7 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 	progress.Start()
 	urlsToDownload, gdriveLinks, err := processFantiaPost(
 		illustArgs.res,
-		utils.DOWNLOAD_PATH,
+		iofuncs.DOWNLOAD_PATH,
 		dlOptions,
 	)
 	if err != nil {

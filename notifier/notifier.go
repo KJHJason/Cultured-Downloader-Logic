@@ -12,6 +12,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/gen2brain/beeep"
+	"fyne.io/fyne/v2"
 )
 
 var (
@@ -44,8 +45,23 @@ func writeIcon() error {
 	return nil
 }
 
+func fyneAlert(title, message string, app fyne.App) {
+	if app == nil {
+		return
+	}
+
+	app.SendNotification(
+		fyne.NewNotification(title, message),
+	)
+}
+
 // Alert shows a notification on the user's system with the given title and message.
-func Alert(title, message string) error {	
+func Alert(title, message string, app fyne.App) error {	
+	if title != CLI_TITLE {
+		fyneAlert(title, message, app)
+		return nil
+	}
+
 	if err := writeIcon(); err != nil {
 		return fmt.Errorf(
 			"error %d: unable to write notification icon => %v", 
@@ -67,8 +83,8 @@ func Alert(title, message string) error {
 
 // AlertWithoutErr is the same as Alert but 
 // if an error occurs, it will log it instead of returning it.
-func AlertWithoutErr(title, message string) {
-	if err := Alert(title, message); err != nil {
+func AlertWithoutErr(title, message string, app fyne.App) {
+	if err := Alert(title, message, app); err != nil {
 		logger.LogError(err, false, logger.ERROR)
 	}
 }

@@ -5,7 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/fatih/color"
 )
 
@@ -36,7 +37,7 @@ func (u *UgoiraOptions) ValidateArgs() {
 		color.Red(
 			fmt.Sprintf(
 				"pixiv error %d: Ugoira quality of %d is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				u.Quality,
 			),
 		)
@@ -46,7 +47,7 @@ func (u *UgoiraOptions) ValidateArgs() {
 		color.Red(
 			fmt.Sprintf(
 				"pixiv error %d: Ugoira quality of %d is not allowed",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				u.Quality,
 			),
 		)
@@ -55,13 +56,13 @@ func (u *UgoiraOptions) ValidateArgs() {
 	}
 
 	u.OutputFormat = strings.ToLower(u.OutputFormat)
-	utils.ValidateStrArgs(
+	api.ValidateStrArgs(
 		u.OutputFormat,
 		UGOIRA_ACCEPTED_EXT,
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Output extension %q is not allowed for ugoira conversion",
-				utils.INPUT_ERROR,
+				constants.INPUT_ERROR,
 				u.OutputFormat,
 			),
 		},

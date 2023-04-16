@@ -1,4 +1,4 @@
-package models
+package fantia
 
 type FantiaContent struct {
 	// Any attachments such as pdfs that are on their dedicated section

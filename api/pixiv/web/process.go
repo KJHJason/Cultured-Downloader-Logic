@@ -3,19 +3,20 @@ package pixivweb
 import (
 	"net/http"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/models"
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/ugoira"
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/common"
-	"github.com/KJHJason/Cultured-Downloader-CLI/request"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
 func processIllustratorPostJson(resJson *models.PixivWebIllustratorJson, pageNum string, pixivDlOptions *PixivWebDlOptions) ([]string, error) {
-	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
+	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, err
 	}
-	minOffset, maxOffset := pixivcommon.ConvertPageNumToOffset(minPage, maxPage, utils.PIXIV_PER_PAGE, false)
+	minOffset, maxOffset := pixivcommon.ConvertPageNumToOffset(minPage, maxPage, constants.PIXIV_PER_PAGE, false)
 
 	var artworkIds []string
 	if pixivDlOptions.ArtworkType == "all" || pixivDlOptions.ArtworkType == "illust_and_ugoira" {
@@ -64,10 +65,10 @@ func processIllustratorPostJson(resJson *models.PixivWebIllustratorJson, pageNum
 
 // Process the artwork details JSON and returns a map of urls
 // with its file path or a Ugoira struct (One of them will be null depending on the artworkType)
-func processArtworkJson(res *http.Response, artworkType int64, postDownloadDir string) ([]*request.ToDownload, *models.Ugoira, error) {
+func processArtworkJson(res *http.Response, artworkType int64, postDownloadDir string) ([]*httpfuncs.ToDownload, *models.Ugoira, error) {
 	if artworkType == UGOIRA {
 		var ugoiraJson models.PixivWebArtworkUgoiraJson
-		if err := utils.LoadJsonFromResponse(res, &ugoiraJson); err != nil {
+		if err := httpfuncs.LoadJsonFromResponse(res, &ugoiraJson); err != nil {
 			return nil, nil, err
 		}
 
@@ -82,13 +83,13 @@ func processArtworkJson(res *http.Response, artworkType int64, postDownloadDir s
 	}
 
 	var artworkUrls models.PixivWebArtworkJson
-	if err := utils.LoadJsonFromResponse(res, &artworkUrls); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res, &artworkUrls); err != nil {
 		return nil, nil, err
 	}
 
-	var urlsToDownload []*request.ToDownload
+	var urlsToDownload []*httpfuncs.ToDownload
 	for _, artworkUrl := range artworkUrls.Body {
-		urlsToDownload = append(urlsToDownload, &request.ToDownload{
+		urlsToDownload = append(urlsToDownload, &httpfuncs.ToDownload{
 			Url:      artworkUrl.Urls.Original,
 			FilePath: postDownloadDir,
 		})
@@ -99,7 +100,7 @@ func processArtworkJson(res *http.Response, artworkType int64, postDownloadDir s
 // Process the tag search results JSON and returns a slice of artwork IDs
 func processTagJsonResults(res *http.Response) ([]string, error) {
 	var pixivTagJson models.PixivTag
-	if err := utils.LoadJsonFromResponse(res, &pixivTagJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res, &pixivTagJson); err != nil {
 		return nil, err
 	}
 

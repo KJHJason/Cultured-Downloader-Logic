@@ -49,7 +49,7 @@ func init() {
 // Delete all empty log files and log files
 // older than 30 days except for the current day's log file.
 func DeleteEmptyAndOldLogs() error {
-	err := filepath.Walk(logFolder, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(logFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -64,12 +64,6 @@ func DeleteEmptyAndOldLogs() error {
 
 		return nil
 	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Thread-safe logging function that logs to "cultured_downloader.log" in the logs directory

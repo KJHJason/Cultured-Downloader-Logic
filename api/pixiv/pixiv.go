@@ -3,43 +3,47 @@ package pixiv
 import (
 	"fmt"
 
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/models"
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/ugoira"
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/common"
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/web"
-	"github.com/KJHJason/Cultured-Downloader-CLI/api/pixiv/mobile"
-	"github.com/KJHJason/Cultured-Downloader-CLI/request"
-	"github.com/KJHJason/Cultured-Downloader-CLI/spinner"
-	"github.com/KJHJason/Cultured-Downloader-CLI/utils"
+	"fyne.io/fyne/v2"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/mobile"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/web"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
+	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 )
 
-func alertUser(artworksToDl []*request.ToDownload, ugoiraToDl []*models.Ugoira) {
+func alertUser(artworksToDl []*httpfuncs.ToDownload, ugoiraToDl []*models.Ugoira, notifTitle string, app fyne.App) {
 	if len(artworksToDl) > 0 || len(ugoiraToDl) > 0 {
-		utils.AlertWithoutErr(utils.Title, "Finished downloading artworks from Pixiv!")
+		notifier.AlertWithoutErr(notifTitle, "Finished downloading artworks from Pixiv!", app)
 	} else {
-		utils.AlertWithoutErr(utils.Title, "No artworks to download from Pixiv!")
+		notifier.AlertWithoutErr(notifTitle, "No artworks to download from Pixiv!", app)
 	}
 }
 
 // Start the download process for Pixiv
-func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWebDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions) {
+func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWebDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions, notifTitle string, app fyne.App) {
 	var ugoiraToDl []*models.Ugoira
-	var artworksToDl []*request.ToDownload
+	var artworksToDl []*httpfuncs.ToDownload
 	if len(pixivDl.IllustratorIds) > 0 {
 		artworkIdsSlice := pixivweb.GetMultipleIllustratorPosts(
 			pixivDl.IllustratorIds,
 			pixivDl.IllustratorPageNums,
-			utils.DOWNLOAD_PATH,
+			iofuncs.DOWNLOAD_PATH,
 			pixivDlOptions,
 		)
 		pixivDl.ArtworkIds = append(pixivDl.ArtworkIds, artworkIdsSlice...)
-		pixivDl.ArtworkIds = utils.RemoveSliceDuplicates(pixivDl.ArtworkIds)
+		pixivDl.ArtworkIds = api.RemoveSliceDuplicates(pixivDl.ArtworkIds)
 	}
 
 	if len(pixivDl.ArtworkIds) > 0 {
 		artworkSlice, ugoiraSlice := pixivweb.GetMultipleArtworkDetails(
 			pixivDl.ArtworkIds,
-			utils.DOWNLOAD_PATH,
+			iofuncs.DOWNLOAD_PATH,
 			pixivDlOptions,
 		)
 		artworksToDl = append(artworksToDl, artworkSlice...)
@@ -69,11 +73,11 @@ func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWeb
 		progress.Start()
 		hasErr := false
 		for idx, tagName := range pixivDl.TagNames {
-			var artworksSlice []*request.ToDownload
+			var artworksSlice []*httpfuncs.ToDownload
 			var ugoiraSlice []*models.Ugoira
 			artworksSlice, ugoiraSlice, hasErr = pixivweb.TagSearch(
 				tagName,
-				utils.DOWNLOAD_PATH,
+				iofuncs.DOWNLOAD_PATH,
 				pixivDl.TagNamesPageNums[idx],
 				pixivDlOptions,
 			)
@@ -85,10 +89,10 @@ func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWeb
 	}
 
 	if len(artworksToDl) > 0 {
-		request.DownloadUrls(
+		httpfuncs.DownloadUrls(
 			artworksToDl,
-			&request.DlOptions{
-				MaxConcurrency: utils.PIXIV_MAX_CONCURRENT_DOWNLOADS,
+			&httpfuncs.DlOptions{
+				MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
 				Headers:        pixivcommon.GetPixivRequestHeaders(),
 				Cookies:        pixivDlOptions.SessionCookies,
 				UseHttp3:       false,
@@ -105,22 +109,22 @@ func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWeb
 			},
 			pixivUgoiraOptions,
 			pixivDlOptions.Configs,
-			request.CallRequest,
+			httpfuncs.CallRequest,
 		)
 	}
 
-	alertUser(artworksToDl, ugoiraToDl)
+	alertUser(artworksToDl, ugoiraToDl, notifTitle, app)
 }
 
 // Start the download process for Pixiv
-func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.PixivMobileDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions) {
+func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.PixivMobileDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions, notifTitle string, app fyne.App) {
 	var ugoiraToDl []*models.Ugoira
-	var artworksToDl []*request.ToDownload
+	var artworksToDl []*httpfuncs.ToDownload
 	if len(pixivDl.IllustratorIds) > 0 {
 		artworkSlice, ugoiraSlice := pixivDlOptions.MobileClient.GetMultipleIllustratorPosts(
 			pixivDl.IllustratorIds,
 			pixivDl.IllustratorPageNums,
-			utils.DOWNLOAD_PATH,
+			iofuncs.DOWNLOAD_PATH,
 			pixivDlOptions.ArtworkType,
 		)
 		artworksToDl = artworkSlice
@@ -130,7 +134,7 @@ func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.Pi
 	if len(pixivDl.ArtworkIds) > 0 {
 		artworkSlice, ugoiraSlice := pixivDlOptions.MobileClient.GetMultipleArtworkDetails(
 			pixivDl.ArtworkIds,
-			utils.DOWNLOAD_PATH,
+			iofuncs.DOWNLOAD_PATH,
 		)
 		artworksToDl = append(artworksToDl, artworkSlice...)
 		ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
@@ -159,11 +163,11 @@ func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.Pi
 		progress.Start()
 		hasErr := false
 		for idx, tagName := range pixivDl.TagNames {
-			var artworksSlice []*request.ToDownload
+			var artworksSlice []*httpfuncs.ToDownload
 			var ugoiraSlice []*models.Ugoira
 			artworksSlice, ugoiraSlice, hasErr = pixivDlOptions.MobileClient.TagSearch(
 				tagName,
-				utils.DOWNLOAD_PATH,
+				iofuncs.DOWNLOAD_PATH,
 				pixivDl.TagNamesPageNums[idx],
 				pixivDlOptions,
 			)
@@ -175,10 +179,10 @@ func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.Pi
 	}
 
 	if len(artworksToDl) > 0 {
-		request.DownloadUrls(
+		httpfuncs.DownloadUrls(
 			artworksToDl,
-			&request.DlOptions{
-				MaxConcurrency: utils.PIXIV_MAX_CONCURRENT_DOWNLOADS,
+			&httpfuncs.DlOptions{
+				MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
 				Headers:        pixivcommon.GetPixivRequestHeaders(),
 				UseHttp3:       false,
 			},
@@ -198,5 +202,5 @@ func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.Pi
 		)
 	}
 
-	alertUser(artworksToDl, ugoiraToDl)
+	alertUser(artworksToDl, ugoiraToDl, notifTitle, app)
 }
