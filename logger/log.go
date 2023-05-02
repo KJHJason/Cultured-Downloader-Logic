@@ -119,7 +119,7 @@ func LogMessageToPath(message, filePath string, level int) {
 	logToPathMux.Lock()
 	defer logToPathMux.Unlock()
 
-	os.MkdirAll(filepath.Dir(filePath), 0666)
+	os.MkdirAll(filepath.Dir(filePath), 0755)
 	if iofuncs.PathExists(filePath) {
 		logFileContents, err := os.ReadFile(filePath)
 		if err != nil {

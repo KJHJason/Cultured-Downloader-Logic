@@ -123,7 +123,7 @@ func SetDefaultDownloadPath(newDownloadPath string) error {
 		)
 	}
 
-	os.MkdirAll(APP_PATH, 0666)
+	os.MkdirAll(APP_PATH, 0755)
 	configFilePath := filepath.Join(APP_PATH, "config.json")
 	if !PathExists(configFilePath) {
 		return saveConfig(newDownloadPath, configFilePath)
