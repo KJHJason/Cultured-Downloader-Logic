@@ -52,7 +52,8 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 	postApiUrl := postArg.url + postArg.postId
 	header := map[string]string{
 		"Referer":      fmt.Sprintf("%s/posts/%s", constants.FANTIA_URL, postArg.postId),
-		"x-csrf-token": dlOptions.CsrfToken,
+		"X-Csrf-Token": dlOptions.CsrfToken,
+		"X-Requested-With": "XMLHttpRequest",
 	}
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, true)
 	res, err := httpfuncs.CallRequest(
