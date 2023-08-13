@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/fatih/color"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -176,7 +177,13 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 		dlOptions,
 	)
 	if err != nil {
-		progress.Stop(true)
+		if err == errRecaptcha {
+			progress.StopWithFn(func() {
+				color.Red("✗ reCAPTCHA detected for the current session...")
+			})
+		} else {
+			progress.Stop(true)
+		}
 		return nil, nil, err
 	}
 	progress.Stop(false)
