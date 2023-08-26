@@ -1,17 +1,12 @@
 package gdrive
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"regexp"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/option"
 )
 
 const (
@@ -39,40 +34,28 @@ type GDrive struct {
 	maxDownloadWorkers int            // max concurrent workers for downloading files
 }
 
-// Returns a GDrive structure with the given API key and max download workers
-func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWorkers int) (*GDrive, error) {
-	if jsonPath != "" && apiKey != "" {
-		return nil, errors.New("Both Google Drive API key and service account credentials file cannot be used at the same time.")
-	} else if jsonPath == "" && apiKey == "" {
-		return nil, errors.New("Google Drive API key or service account credentials file is required.")
-	}
+func (gdrive *GDrive) SetApiKey(apiKey string) {
+	gdrive.apiKey = apiKey
+}
 
-	gdrive := &GDrive{
-		apiUrl:             "https://www.googleapis.com/drive/v3/files",
-		timeout:            15,
-		downloadTimeout:    900, // 15 minutes
-		maxDownloadWorkers: maxDownloadWorkers,
-	}
-	if apiKey != "" {
-		gdrive.apiKey = apiKey
-		gdriveIsValid, err := gdrive.GDriveKeyIsValid(config.UserAgent)
-		if err != nil {
-			return nil, err
-		} else if !gdriveIsValid {
-			return nil, errors.New("Google Drive API key is invalid.")
-		}
-		return gdrive, nil
-	} 
+func (gdrive *GDrive) SetClient(client *drive.Service) {
+	gdrive.client = client
+}
 
-	if !iofuncs.PathExists(jsonPath) {
-		return nil, fmt.Errorf("Unable to access Drive API due to missing credentials file: %s", jsonPath)
-	}
-	srv, err := drive.NewService(context.Background(), option.WithCredentialsFile(jsonPath))
-	if err != nil {
-		return nil, fmt.Errorf("Unable to access Drive API due to %v", err)
-	}
-	gdrive.client = srv
-	return gdrive, nil
+func (gdrive *GDrive) SetApiUrl(apiUrl string) {
+	gdrive.apiUrl = apiUrl
+}
+
+func (gdrive *GDrive) SetTimeout(timeout int) {
+	gdrive.timeout = timeout
+}
+
+func (gdrive *GDrive) SetDownloadTimeout(downloadTimeout int) {
+	gdrive.downloadTimeout = downloadTimeout
+}
+
+func (gdrive *GDrive) SetMaxDownloadWorkers(maxDownloadWorkers int) {
+	gdrive.maxDownloadWorkers = maxDownloadWorkers
 }
 
 // Checks if the given Google Drive API key is valid
