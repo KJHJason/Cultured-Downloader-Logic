@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -77,6 +78,9 @@ func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, error) {
 // Downloads the given GDrive file using GDrive API v3
 //
 // If the md5Checksum has a mismatch, the file will be overwritten and downloaded again
+// Downloads the given GDrive file using GDrive API v3
+//
+// If the md5Checksum has a mismatch, the file will be overwritten and downloaded again
 func (gdrive *GDrive) DownloadFile(fileInfo *GdriveFileToDl, filePath string, config *configs.Config, queue chan struct{}) error {
 	skipDl, err := checkIfCanSkipDl(filePath, fileInfo)
 	if skipDl || err != nil {
@@ -97,24 +101,30 @@ func (gdrive *GDrive) DownloadFile(fileInfo *GdriveFileToDl, filePath string, co
 	defer signal.Stop(sigs)
 
 	queue <- struct{}{}
-	params := map[string]string{
-		"key":              gdrive.apiKey,
-		"alt":              "media", // to tell Google that we are downloading the file
-		"acknowledgeAbuse": "true",  // If the files are marked as abusive, download them anyway
-	}
+
+	var res *http.Response
 	url := fmt.Sprintf("%s/%s", gdrive.apiUrl, fileInfo.Id)
-	res, err := httpfuncs.CallRequest(
-		&httpfuncs.RequestArgs{
-			Url:       url,
-			Method:    "GET",
-			Timeout:   gdrive.downloadTimeout,
-			Params:    params,
-			Context:   ctx,
-			UserAgent: config.UserAgent,
-			Http2:     !HTTP3_SUPPORTED,
-			Http3:     HTTP3_SUPPORTED,
-		},
-	)
+	if gdrive.client != nil {
+		res, err = gdrive.client.Files.Get(fileInfo.Id).AcknowledgeAbuse(true).Context(ctx).Download()
+	} else {
+		params := map[string]string{
+			"key":              gdrive.apiKey,
+			"alt":              "media", // to tell Google that we are downloading the file
+			"acknowledgeAbuse": "true",  // If the files are marked as abusive, download them anyway
+		}
+		res, err = httpfuncs.CallRequest(
+			&httpfuncs.RequestArgs{
+				Url:       url,
+				Method:    "GET",
+				Timeout:   gdrive.downloadTimeout,
+				Params:    params,
+				Context:   ctx,
+				UserAgent: config.UserAgent,
+				Http2:     !HTTP3_SUPPORTED,
+				Http3:     HTTP3_SUPPORTED,
+			},
+		)
+	}
 	if err != nil {
 		return err
 	}

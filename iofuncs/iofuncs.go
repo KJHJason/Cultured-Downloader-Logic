@@ -60,6 +60,8 @@ func RemoveExtFromFilename(filename string) string {
 func removeIllegalRuneInPath(r rune) rune {
 	if strings.ContainsRune("<>:\"/\\|?*\n\r\t", r) {
 		return '-'
+	} else if r == '.' {
+		return ','
 	}
 	return r
 }

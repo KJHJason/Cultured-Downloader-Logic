@@ -1,14 +1,17 @@
 package gdrive
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"os"
 	"regexp"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/fatih/color"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -19,6 +22,7 @@ const (
 	// file fields to fetch from GDrive API:
 	// https://developers.google.com/drive/api/v3/reference/files
 	GDRIVE_FILE_FIELDS = "id,name,size,mimeType,md5Checksum"
+	GDRIVE_FOLDER_FIELDS = "nextPageToken,files(id,name,size,mimeType,md5Checksum)"
 )
 
 var (
@@ -27,32 +31,48 @@ var (
 )
 
 type GDrive struct {
-	apiKey             string // Google Drive API key to use
-	apiUrl             string // https://www.googleapis.com/drive/v3/files
-	timeout            int    // timeout in seconds for GDrive API v3
-	downloadTimeout    int    // timeout in seconds for GDrive file downloads
-	maxDownloadWorkers int    // max concurrent workers for downloading files
+	apiKey             string         // Google Drive API key to use
+	client             *drive.Service // Google Drive service client (if using service account credentials)
+	apiUrl             string         // https://www.googleapis.com/drive/v3/files
+	timeout            int            // timeout in seconds for GDrive API v3
+	downloadTimeout    int            // timeout in seconds for GDrive file downloads
+	maxDownloadWorkers int            // max concurrent workers for downloading files
 }
 
 // Returns a GDrive structure with the given API key and max download workers
-func GetNewGDrive(apiKey string, config *configs.Config, maxDownloadWorkers int) *GDrive {
+func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWorkers int) (*GDrive, error) {
+	if jsonPath != "" && apiKey != "" {
+		return nil, errors.New("Both Google Drive API key and service account credentials file cannot be used at the same time.")
+	} else if jsonPath == "" && apiKey == "" {
+		return nil, errors.New("Google Drive API key or service account credentials file is required.")
+	}
+
 	gdrive := &GDrive{
-		apiKey:             apiKey,
 		apiUrl:             "https://www.googleapis.com/drive/v3/files",
 		timeout:            15,
 		downloadTimeout:    900, // 15 minutes
 		maxDownloadWorkers: maxDownloadWorkers,
 	}
+	if apiKey != "" {
+		gdrive.apiKey = apiKey
+		gdriveIsValid, err := gdrive.GDriveKeyIsValid(config.UserAgent)
+		if err != nil {
+			return nil, err
+		} else if !gdriveIsValid {
+			return nil, errors.New("Google Drive API key is invalid.")
+		}
+		return gdrive, nil
+	} 
 
-	gdriveIsValid, err := gdrive.GDriveKeyIsValid(config.UserAgent)
-	if err != nil {
-		color.Red(err.Error())
-		os.Exit(1)
-	} else if !gdriveIsValid {
-		color.Red("Google Drive API key is invalid.")
-		os.Exit(1)
+	if !iofuncs.PathExists(jsonPath) {
+		return nil, fmt.Errorf("Unable to access Drive API due to missing credentials file: %s", jsonPath)
 	}
-	return gdrive
+	srv, err := drive.NewService(context.Background(), option.WithCredentialsFile(jsonPath))
+	if err != nil {
+		return nil, fmt.Errorf("Unable to access Drive API due to %v", err)
+	}
+	gdrive.client = srv
+	return gdrive, nil
 }
 
 // Checks if the given Google Drive API key is valid
