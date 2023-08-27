@@ -33,7 +33,7 @@ func GetReadableSiteStr(site string) string {
 		return constants.PIXIV_FANBOX_TITLE
 	case constants.PIXIV:
 		return constants.PIXIV_TITLE
-	case constants.KEMONO:
+	case constants.KEMONO, constants.KEMONO_BACKUP:
 		return constants.KEMONO_TITLE
 	default:
 		// panic since this is a dev error

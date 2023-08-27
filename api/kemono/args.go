@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	BASE_REGEX_STR             = `https://kemono\.party/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)`
+	BASE_REGEX_STR             = `https://kemono\.(?P<topLevelDomain>party|su)/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)`
 	BASE_POST_SUFFIX_REGEX_STR = `/post/(?P<postId>\d+)`
+	TLD_GROUP_NAME             = "topLevelDomain"
 	SERVICE_GROUP_NAME         = "service"
 	CREATOR_ID_GROUP_NAME      = "creatorId"
 	POST_ID_GROUP_NAME         = "postId"
@@ -30,6 +31,7 @@ var (
 			BASE_POST_SUFFIX_REGEX_STR,
 		),
 	)
+	POST_URL_REGEX_TLD_INDEX = POST_URL_REGEX.SubexpIndex(TLD_GROUP_NAME)
 	POST_URL_REGEX_SERVICE_INDEX    = POST_URL_REGEX.SubexpIndex(SERVICE_GROUP_NAME)
 	POST_URL_REGEX_CREATOR_ID_INDEX = POST_URL_REGEX.SubexpIndex(CREATOR_ID_GROUP_NAME)
 	POST_URL_REGEX_POST_ID_INDEX    = POST_URL_REGEX.SubexpIndex(POST_ID_GROUP_NAME)
@@ -40,6 +42,7 @@ var (
 			BASE_REGEX_STR,
 		),
 	)
+	CREATOR_URL_REGEX_TLD_INDEX = CREATOR_URL_REGEX.SubexpIndex(TLD_GROUP_NAME)
 	CREATOR_URL_REGEX_SERVICE_INDEX    = CREATOR_URL_REGEX.SubexpIndex(SERVICE_GROUP_NAME)
 	CREATOR_URL_REGEX_CREATOR_ID_INDEX = CREATOR_URL_REGEX.SubexpIndex(CREATOR_ID_GROUP_NAME)
 )
@@ -63,6 +66,7 @@ func ProcessCreatorUrls(creatorUrls []string, pageNums []string) []*KemonoCreato
 			Service:   matched[CREATOR_URL_REGEX_SERVICE_INDEX],
 			CreatorId: matched[CREATOR_URL_REGEX_CREATOR_ID_INDEX],
 			PageNum:   pageNums[i],
+			Tld:       matched[CREATOR_URL_REGEX_TLD_INDEX],
 		}
 	}
 
@@ -77,6 +81,7 @@ func ProcessPostUrls(postUrls []string) []*KemonoPostToDl {
 			Service:   matched[POST_URL_REGEX_SERVICE_INDEX],
 			CreatorId: matched[POST_URL_REGEX_CREATOR_ID_INDEX],
 			PostId:    matched[POST_URL_REGEX_POST_ID_INDEX],
+			Tld:       matched[POST_URL_REGEX_TLD_INDEX],
 		}
 	}
 
@@ -184,14 +189,17 @@ type KemonoDlOptions struct {
 // It also validates the Google Drive client if the user wants to download to Google Drive.
 //
 // Should be called after initialising the struct.
-func (k *KemonoDlOptions) ValidateArgs(userAgent string) {
+func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 	if k.SessionCookieId != "" {
-		k.SessionCookies = []*http.Cookie{
-			api.VerifyAndGetCookie(constants.KEMONO, k.SessionCookieId, userAgent),
+		if cookie, err := api.VerifyAndGetCookie(constants.KEMONO, k.SessionCookieId, userAgent); err != nil {
+			return err
+		} else {
+			k.SessionCookies = []*http.Cookie{
+				cookie,
+			}
 		}
 	} else {
-		color.Red("kemono error %d: session cookie ID is required", constants.INPUT_ERROR)
-		os.Exit(1)
+		return fmt.Errorf("kemono error %d: session cookie ID is required", constants.INPUT_ERROR)
 	}
 
 	if k.DlGdrive && k.GdriveClient == nil {
@@ -199,4 +207,5 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) {
 	} else if !k.DlGdrive && k.GdriveClient != nil {
 		k.GdriveClient = nil
 	}
+	return nil
 }

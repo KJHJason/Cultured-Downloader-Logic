@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/parsers"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/fatih/color"
 )
 
 // Returns a cookie with given value and website to be used in requests
@@ -57,6 +55,9 @@ func getHeaders(website, userAgent string) map[string]string {
 	case constants.KEMONO :
 		referer = constants.KEMONO_URL
 		origin = constants.KEMONO_URL
+	case constants.KEMONO_BACKUP :
+		referer = constants.BACKUP_KEMONO_URL
+		origin = constants.BACKUP_KEMONO_URL
 	default :
 		// Shouldn't happen but could happen during development
 		panic(
@@ -87,6 +88,8 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 		websiteUrl = constants.PIXIV_URL + "/dashboard"
 	case constants.KEMONO:
 		websiteUrl = constants.KEMONO_URL + "/favorites"
+	case constants.KEMONO_BACKUP:
+		websiteUrl = constants.BACKUP_KEMONO_URL + "/favorites"
 	default:
 		// Shouldn't happen but could happen during development
 		panic(
@@ -129,37 +132,76 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 	return resUrl == websiteUrl, nil
 }
 
+// Prints out the error message and exits the program if the cookie verification fails
+func processCookieVerification(website string, err error) error {
+	if err != nil {
+		logger.LogError(
+			fmt.Errorf("error occurred when trying to verify %s cookie...\n%v", GetReadableSiteStr(website), err),
+			false,
+			logger.ERROR,
+		)
+		return fmt.Errorf(
+			"error %d: could not verify %s cookie.\nPlease refer to the log file for more details.",
+			constants.INPUT_ERROR,
+			GetReadableSiteStr(website),
+		)
+	}
+	return nil
+}
+
+// Verifies the given cookie by making a request to the backup domain and checks if the cookie is valid
+func backupVerifyCookie(website, cookieValue, userAgent string) (*http.Cookie, error) {
+	var backupWebsite string
+	switch website {
+	case constants.KEMONO:
+		backupWebsite = constants.KEMONO_BACKUP
+	default:
+		// Shouldn't happen but could happen during development
+		panic(
+			fmt.Sprintf(
+				"error %d: %s is not supported for cookie verification on a backup domain.",
+				constants.DEV_ERROR,
+				GetReadableSiteStr(website),
+			),
+		)
+	}
+
+	cookie := GetCookie(cookieValue, backupWebsite)
+	cookieIsValid, err := VerifyCookie(cookie, backupWebsite, userAgent)
+	processCookieVerification(backupWebsite, err)
+	if !cookieIsValid {
+		return nil, fmt.Errorf(
+			"error %d: %s cookie is invalid",
+			constants.INPUT_ERROR,
+			GetReadableSiteStr(backupWebsite),
+		)
+	}
+	return cookie, nil
+}
+
 // Verifies the given cookie by making a request to the website and checks if the cookie is valid
 // If the cookie is valid, the cookie will be returned
 //
 // However, if the cookie is invalid, an error message will be printed out and the program will shutdown
-func VerifyAndGetCookie(website, cookieValue, userAgent string) *http.Cookie {
+func VerifyAndGetCookie(website, cookieValue, userAgent string) (*http.Cookie, error) {
 	cookie := GetCookie(cookieValue, website)
 	cookieIsValid, err := VerifyCookie(cookie, website, userAgent)
-	if err != nil {
-		logger.LogError(
-			err,
-			true,
-			logger.ERROR,
-		)
-		color.Red(
-			fmt.Sprintf(
-				"error %d: could not verify %s cookie.\nPlease refer to the log file for more details.",
-				constants.INPUT_ERROR,
-				GetReadableSiteStr(website),
-			),
-		)
-		os.Exit(1)
-	}
-	if cookieValue != "" && !cookieIsValid {
-		color.Red(
-			fmt.Sprintf(
+	processCookieVerification(website, err)
+
+	if !cookieIsValid {
+		if website != constants.KEMONO {
+			return nil, fmt.Errorf(
 				"error %d: %s cookie is invalid",
 				constants.INPUT_ERROR,
 				GetReadableSiteStr(website),
-			),
-		)
-		os.Exit(1)
+			)
+		} else {
+			// try to verify the cookie on the backup domain
+			cookie, err = backupVerifyCookie(website, cookieValue, userAgent)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
-	return cookie
+	return cookie, nil
 }

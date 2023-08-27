@@ -51,7 +51,7 @@ var (
 // ValidateArgs validates the arguments of the Pixiv download options.
 //
 // Should be called after initialising the struct.
-func (p *PixivWebDlOptions) ValidateArgs(userAgent string) {
+func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	p.SortOrder = strings.ToLower(p.SortOrder)
 	api.ValidateStrArgs(
 		p.SortOrder,
@@ -105,8 +105,11 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) {
 	)
 
 	if p.SessionCookieId != "" {
-		p.SessionCookies = []*http.Cookie{
-			api.VerifyAndGetCookie(constants.PIXIV, p.SessionCookieId, userAgent),
+		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV, p.SessionCookieId, userAgent); err != nil {
+			return err
+		} else {
+			p.SessionCookies = []*http.Cookie{cookie}
 		}
 	}
+	return nil
 }

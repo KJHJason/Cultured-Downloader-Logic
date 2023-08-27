@@ -41,8 +41,14 @@ func GetSessionCookieInfo(site string) *cookieInfo {
 		}
 	case constants.KEMONO:
 		return &cookieInfo{
-			Domain:   "kemono.party",
-			Name:     "session",
+			Domain:   constants.KEMONO_COOKIE_DOMAIN,
+			Name:     constants.KEMONO_SESSION_COOKIE_NAME,
+			SameSite: http.SameSiteNoneMode,
+		}
+	case constants.KEMONO_BACKUP:
+		return &cookieInfo{
+			Domain:   constants.KEMONO_COOKIE_BACKUP_DOMAIN,
+			Name:     constants.KEMONO_SESSION_COOKIE_NAME,
 			SameSite: http.SameSiteNoneMode,
 		}
 	default:

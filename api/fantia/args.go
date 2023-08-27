@@ -151,8 +151,10 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 // Should be called after initialising the struct.
 func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 	if f.SessionCookieId != "" {
-		f.SessionCookies = []*http.Cookie{
-			api.VerifyAndGetCookie(constants.FANTIA, f.SessionCookieId, userAgent),
+		if cookie, err := api.VerifyAndGetCookie(constants.FANTIA, f.SessionCookieId, userAgent); err != nil {
+			return err
+		} else {
+			f.SessionCookies = []*http.Cookie{cookie}
 		}
 	}
 
