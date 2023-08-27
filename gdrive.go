@@ -15,9 +15,9 @@ import (
 // Returns a GDrive structure with the given API key and max download workers
 func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWorkers int) (*gdrive.GDrive, error) {
 	if jsonPath != "" && apiKey != "" {
-		return nil, errors.New("Both Google Drive API key and service account credentials file cannot be used at the same time.")
+		return nil, errors.New("both google drive API key and service account credentials file cannot be used at the same time")
 	} else if jsonPath == "" && apiKey == "" {
-		return nil, errors.New("Google Drive API key or service account credentials file is required.")
+		return nil, errors.New("google drive API key or service account credentials file is required")
 	}
 
 	gdrive := &gdrive.GDrive{}
@@ -31,17 +31,17 @@ func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWo
 		if err != nil {
 			return nil, err
 		} else if !gdriveIsValid {
-			return nil, errors.New("Google Drive API key is invalid.")
+			return nil, errors.New("google drive API key is invalid")
 		}
 		return gdrive, nil
 	} 
 
 	if !iofuncs.PathExists(jsonPath) {
-		return nil, fmt.Errorf("Unable to access Drive API due to missing credentials file: %s", jsonPath)
+		return nil, fmt.Errorf("unable to access drive API due to missing credentials file: %s", jsonPath)
 	}
 	srv, err := drive.NewService(context.Background(), option.WithCredentialsFile(jsonPath))
 	if err != nil {
-		return nil, fmt.Errorf("Unable to access Drive API due to %v", err)
+		return nil, fmt.Errorf("unable to access drive API due to %v", err)
 	}
 	gdrive.SetClient(srv)
 	return gdrive, nil
