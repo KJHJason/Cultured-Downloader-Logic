@@ -6,12 +6,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/fatih/color"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 )
 
 func dlImagesFromPost(content *FantiaContent, postFolderPath string) []*httpfuncs.ToDownload {
@@ -150,40 +148,38 @@ type processIllustArgs struct {
 
 // Process the JSON response to get the urls to download
 func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
-	progress := spinner.New(
-		spinner.JSON_SPINNER,
-		"fgHiYellow",
+	progress := dlOptions.GetProgressIndicator(constants.FANTIA_PROCESS_JSON_PROG_BAR)
+	progress.UpdateBaseMsg(
 		fmt.Sprintf(
 			"Processing retrieved JSON for post %s from Fantia %s...",
 			illustArgs.postId,
 			illustArgs.msgSuffix,
 		),
+	)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished processing retrieved JSON for post %s from Fantia %s!",
 			illustArgs.postId,
 			illustArgs.msgSuffix,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while processing retrieved JSON for post %s from Fantia %s.\nPlease refer to the logs for more details.",
 			illustArgs.postId,
 			illustArgs.msgSuffix,
 		),
-		illustArgs.postIdsLen,
 	)
 	progress.Start()
+
 	urlsToDownload, gdriveLinks, err := processFantiaPost(
 		illustArgs.res,
 		iofuncs.DOWNLOAD_PATH,
 		dlOptions,
 	)
 	if err != nil {
-		if err == errRecaptcha {
-			progress.StopWithFn(func() {
-				color.Red("✗ reCAPTCHA detected for the current session...")
-			})
-		} else {
-			progress.Stop(true)
-		}
+		progress.UpdateErrorMsg("reCAPTCHA detected for the current session...")
+		progress.Stop(true)
 		return nil, nil, err
 	}
 	progress.Stop(false)

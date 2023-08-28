@@ -10,6 +10,8 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -66,6 +68,10 @@ type FantiaDlOptions struct {
 
 	csrfMu    sync.Mutex
 	CsrfToken string
+
+	Notifier          notifier.Notifier
+	ProgressIndicator map[string]progress.Progress
+	CaptchaHandler    constants.CAPTCHA_FN
 }
 
 func (f *FantiaDlOptions) GetConfigs() *configs.Config {
@@ -82,6 +88,23 @@ func (f *FantiaDlOptions) GetAutoSolveCaptcha() bool {
 
 func (f *FantiaDlOptions) SetAutoSolveCaptcha(autoSolveCaptcha bool) {
 	f.AutoSolveCaptcha = autoSolveCaptcha
+}
+
+func (f *FantiaDlOptions) GetNotifier() notifier.Notifier {
+	return f.Notifier
+}
+
+func (f *FantiaDlOptions) GetProgressIndicator(key string) progress.Progress {
+	if prog, ok := f.ProgressIndicator[key]; !ok {
+		// shouldn't happen but just in case if I put an invalid key
+		panic(fmt.Sprintf("progress indicator %q not found", key))
+	} else {
+		return prog
+	}
+}
+
+func (f *FantiaDlOptions) GetCaptchaHandler() constants.CAPTCHA_FN {
+	return f.CaptchaHandler
 }
 
 // GetCsrfToken gets the CSRF token from Fantia's index HTML

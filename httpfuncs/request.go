@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 	"github.com/fatih/color"
 	"github.com/quic-go/quic-go/http3"
 )

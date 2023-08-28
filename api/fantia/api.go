@@ -8,12 +8,10 @@ import (
 	"strconv"
 	"sync"
 
-	"fyne.io/fyne/v2"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -21,31 +19,32 @@ type fantiaPostArgs struct {
 	msgSuffix  string
 	postId     string
 	url        string
-	postIdsLen int
 }
 
 func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (*http.Response, error) {
 	// Now that we have the post ID, we can query Fantia's API
 	// to get the post's contents from the JSON response.
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
+	progress := dlOptions.GetProgressIndicator(constants.FANTIA_POST_PROG_BAR)
+	progress.UpdateBaseMsg(
 		fmt.Sprintf(
 			"Getting post %s's contents from Fantia %s...",
 			postArg.postId,
 			postArg.msgSuffix,
 		),
+	)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting post %s's contents from Fantia %s!",
 			postArg.postId,
 			postArg.msgSuffix,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting post %s's cotents from Fantia %s.\nPlease refer to the logs for more details.",
 			postArg.postId,
 			postArg.msgSuffix,
 		),
-		postArg.postIdsLen,
 	)
 	progress.Start()
 
@@ -97,7 +96,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 }
 
 const fantiaPostUrl = constants.FANTIA_URL + "/api/v1/posts/"
-func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *FantiaDlOptions, app fyne.App) ([]*httpfuncs.ToDownload, error) {
+func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, error) {
 	msgSuffix := fmt.Sprintf(
 		"[%d/%d]",
 		count,
@@ -109,7 +108,6 @@ func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *Fan
 			msgSuffix:  msgSuffix,
 			postId:     postId,
 			url:        fantiaPostUrl,
-			postIdsLen: maxCount,
 		},
 		dlOptions,
 	)
@@ -127,14 +125,14 @@ func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *Fan
 		dlOptions,
 	)
 	if err == errRecaptcha {
-		err = api.SolveCaptcha(dlOptions, constants.FANTIA, notifTitle, app)
+		err = api.SolveCaptcha(dlOptions, constants.FANTIA)
 		if err != nil {
-			if err := api.HandleCaptchaErr(err, dlOptions, constants.FANTIA, notifTitle, app); err != nil {
+			if err := api.HandleCaptchaErr(err, dlOptions, constants.FANTIA); err != nil {
 				os.Exit(1)
 			}
 		}
 
-		return dlFantiaPost(count, maxCount, postId, notifTitle, dlOptions, app)
+		return dlFantiaPost(count, maxCount, postId, notifTitle, dlOptions)
 	} else if err != nil {
 		return nil, err
 	}
@@ -159,12 +157,12 @@ func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *Fan
 // Note that only the downloading of the URL(s) is/are executed concurrently
 // to reduce the chance of the signed AWS S3 URL(s) from expiring before the download is
 // executed or completed due to a download queue to avoid resource exhaustion of the user's system.
-func (f *FantiaDl) dlFantiaPosts(dlOptions *FantiaDlOptions, notifTitle string, app fyne.App) []*httpfuncs.ToDownload {
+func (f *FantiaDl) dlFantiaPosts(dlOptions *FantiaDlOptions, notifTitle string) []*httpfuncs.ToDownload {
 	var errSlice []error
 	var gdriveLinks []*httpfuncs.ToDownload
 	postIdsLen := len(f.PostIds)
 	for i, postId := range f.PostIds {
-		postGdriveLinks, err := dlFantiaPost(i+1, postIdsLen, postId, notifTitle, dlOptions, app)
+		postGdriveLinks, err := dlFantiaPost(i+1, postIdsLen, postId, notifTitle, dlOptions)
 
 		if err != nil {
 			errSlice = append(errSlice, err)
@@ -296,23 +294,21 @@ func (f *FantiaDl) getCreatorsPosts(dlOptions *FantiaDlOptions) {
 	errChan := make(chan error, creatorIdsLen)
 
 	baseMsg := "Getting post ID(s) from Fanclubs(s) on Fantia [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := dlOptions.GetProgressIndicator(constants.FANTIA_GET_POST_ID_PROG_BAR)
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting post ID(s) from %d Fanclubs(s) on Fantia!",
 			creatorIdsLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting post IDs from %d Fanclubs(s) on Fantia.\nPlease refer to the logs for more details.",
 			creatorIdsLen,
 		),
-		creatorIdsLen,
 	)
+	progress.UpdateMax(creatorIdsLen)
 	progress.Start()
 	for idx, creatorId := range f.FanclubIds {
 		wg.Add(1)
@@ -334,7 +330,7 @@ func (f *FantiaDl) getCreatorsPosts(dlOptions *FantiaDlOptions) {
 				resChan <- postIds
 			}
 
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 		}(creatorId, idx)
 	}
 	wg.Wait()

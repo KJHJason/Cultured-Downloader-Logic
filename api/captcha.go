@@ -8,13 +8,12 @@ import (
 	"os"
 	"time"
 
-	"fyne.io/fyne/v2"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/chromedp/chromedp"
 	"github.com/fatih/color"
 )
@@ -22,9 +21,12 @@ import (
 const captchaBtnSelector = `//input[@name='commit']`
 
 type DlOptions interface {
-	GetConfigs()          *configs.Config
-	GetSessionCookies()   []*http.Cookie
-	GetAutoSolveCaptcha() bool
+	GetConfigs()                     *configs.Config
+	GetSessionCookies()              []*http.Cookie
+	GetAutoSolveCaptcha()            bool
+	GetNotifier()                    notifier.Notifier
+	GetProgressIndicator(key string) progress.Progress
+	GetCaptchaHandler()              constants.CAPTCHA_FN
 
 	SetAutoSolveCaptcha(bool)
 }
@@ -45,18 +47,19 @@ func getChromedpActions(website string, cookies []*http.Cookie) []chromedp.Actio
 }
 
 // Automatically try to solve the reCAPTCHA for Fantia.
-func autoSolveCaptcha(dlOptions DlOptions, website, notifTitle string, app fyne.App) error {
+func autoSolveCaptcha(dlOptions DlOptions, website string) error {
 	readableSite := GetReadableSiteStr(website)
-	notifier.AlertWithoutErr(notifTitle, "reCAPTCHA detected! Solving...", app)
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
+	notify := dlOptions.GetNotifier()
+	notify.Alert("reCAPTCHA detected! Solving...")
+
+	prog := dlOptions.GetProgressIndicator(constants.CAPTCHA_SOLVER_PROG_BAR)
+	prog.UpdateBaseMsg(
 		fmt.Sprintf("Solving reCAPTCHA for %s...", readableSite),
-		fmt.Sprintf("Successfully solved reCAPTCHA for %s!", readableSite),
-		"",
-		0,
 	)
-	progress.Start()
+	prog.UpdateSuccessMsg(
+		fmt.Sprintf("Successfully solved reCAPTCHA for %s!", readableSite),
+	)
+	prog.Start()
 
 	actions := getChromedpActions(website, dlOptions.GetSessionCookies())
 
@@ -84,13 +87,13 @@ func autoSolveCaptcha(dlOptions DlOptions, website, notifTitle string, app fyne.
 			logger.LogError(fullErr, false, logger.ERROR)
 		}
 
-		progress.ErrMsg = fmtErr.Error() + "\n"
-		progress.Stop(true)
-		notifier.AlertWithoutErr(notifTitle, "Failed to solve reCAPTCHA automatically...", app)
+		prog.UpdateErrorMsg(fmtErr.Error() + "\n")
+		prog.Stop(true)
+		notify.Alert("Failed to solve reCAPTCHA automatically...")
 		return fmtErr
 	}
-	progress.Stop(false)
-	notifier.AlertWithoutErr(notifTitle, "Successfully solved reCAPTCHA automatically!", app)
+	prog.Stop(false)
+	notify.Alert("Successfully solved reCAPTCHA automatically!")
 	return nil
 }
 
@@ -105,7 +108,7 @@ func getCaptchaAndVerificationUrls(website string) (string, string) {
 
 // Manually ask the user to solve the reCAPTCHA for the current session.
 // Only works if the captcha is per session like in the case of Fantia.
-func manualSolveCaptcha(dlOptions DlOptions, website, notifTitle string, app fyne.App) error {
+func manualSolveCaptcha(dlOptions DlOptions, website string) {
 	// Check if the reCAPTCHA has been solved.
 	// If it has, we can continue with the download.
 	captchaUrl, verificationUrl := getCaptchaAndVerificationUrls(website)
@@ -116,32 +119,11 @@ func manualSolveCaptcha(dlOptions DlOptions, website, notifTitle string, app fyn
 	)
 
 	useHttp3 := httpfuncs.IsHttp3Supported(website, true)
-	notifier.AlertWithoutErr(notifTitle, instructions, app)
-	for {
-		color.Yellow(instructions)
-		color.Yellow("Please press ENTER when you're done.")
-		fmt.Scanln()
-
-		_, err := httpfuncs.CallRequest(
-			&httpfuncs.RequestArgs{
-				Method:      "GET",
-				Url:         verificationUrl,
-				Cookies:     dlOptions.GetSessionCookies(),
-				Http2:       !useHttp3,
-				Http3:       useHttp3,
-				UserAgent:   dlOptions.GetConfigs().UserAgent,
-				CheckStatus: true,
-			},
-		)
-		if err != nil {
-			color.Red("failed to check if reCAPTCHA has been solved\n%v", err)
-			continue
-		}
-		return nil
-	}
+	dlOptions.GetNotifier().Alert(instructions)
+	dlOptions.GetCaptchaHandler()(useHttp3, dlOptions.GetSessionCookies(), dlOptions.GetConfigs().UserAgent, verificationUrl)
 }
 
-func SolveCaptcha(dlOptions DlOptions, website, notifTitle string, app fyne.App) error {
+func SolveCaptcha(dlOptions DlOptions, website string) error {
 	color.Yellow("\nWarning: reCAPTCHA detected for the current Fantia session...")
 	if len(dlOptions.GetSessionCookies()) == 0 && website == constants.FANTIA {
 		// Since reCAPTCHA is per session for Fantia, the program shall avoid 
@@ -157,20 +139,21 @@ func SolveCaptcha(dlOptions DlOptions, website, notifTitle string, app fyne.App)
 	}
 
 	if dlOptions.GetAutoSolveCaptcha() {
-		return autoSolveCaptcha(dlOptions, website, notifTitle, app)
+		return autoSolveCaptcha(dlOptions, website)
 	}
-	return manualSolveCaptcha(dlOptions, website, notifTitle, app)
+	manualSolveCaptcha(dlOptions, website)
+	return nil
 }
 
 // try the alternative method if the first one fails.
 //
 // E.g. User preferred to solve the reCAPTCHA automatically, but the program failed to do so,
 //      The program will then ask the user to solve the reCAPTCHA manually on their browser with the SAME session.
-func HandleCaptchaErr(err error, dlOptions DlOptions, website, notifTitle string, app fyne.App) error {
+func HandleCaptchaErr(err error, dlOptions DlOptions, website string) error {
 	if err == nil {
 		return nil
 	}
 
 	dlOptions.SetAutoSolveCaptcha(!dlOptions.GetAutoSolveCaptcha())
-	return SolveCaptcha(dlOptions, website, notifTitle, app)
+	return SolveCaptcha(dlOptions, website)
 }

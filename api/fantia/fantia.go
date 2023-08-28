@@ -2,12 +2,10 @@ package fantia
 
 import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
-	"fyne.io/fyne/v2"
 )
 
 // Start the download process for Fantia
-func FantiaDownloadProcess(fantiaDl *FantiaDl, fantiaDlOptions *FantiaDlOptions, notifTitle string, app fyne.App) {
+func FantiaDownloadProcess(fantiaDl *FantiaDl, fantiaDlOptions *FantiaDlOptions, notifTitle string) {
 	if !fantiaDlOptions.DlThumbnails && !fantiaDlOptions.DlImages && !fantiaDlOptions.DlAttachments {
 		return
 	}
@@ -19,7 +17,7 @@ func FantiaDownloadProcess(fantiaDl *FantiaDl, fantiaDlOptions *FantiaDlOptions,
 	var gdriveLinks []*httpfuncs.ToDownload
 	var downloadedPosts bool
 	if len(fantiaDl.PostIds) > 0 {
-		fantiaDl.dlFantiaPosts(fantiaDlOptions, notifTitle, app)
+		fantiaDl.dlFantiaPosts(fantiaDlOptions, notifTitle)
 		downloadedPosts = true
 	}
 
@@ -28,9 +26,10 @@ func FantiaDownloadProcess(fantiaDl *FantiaDl, fantiaDlOptions *FantiaDlOptions,
 		downloadedPosts = true
 	}
 
+	notifier := fantiaDlOptions.GetNotifier()
 	if downloadedPosts {
-		notifier.AlertWithoutErr(notifTitle, "Downloaded all posts from Fantia!", app)
+		notifier.Alert("Downloaded all posts from Fantia!")
 	} else {
-		notifier.AlertWithoutErr(notifTitle, "No posts to download from Fantia!", app)
+		notifier.Alert("No posts to download from Fantia!")
 	}
 }

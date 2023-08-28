@@ -3,6 +3,7 @@ package constants
 import (
 	"fmt"
 	"regexp"
+	"net/http"
 )
 
 const (
@@ -64,7 +65,16 @@ const (
 	GDRIVE_FOLDER        = "gdrive"
 	GDRIVE_FILENAME      = "detected_gdrive_links.txt"
 	OTHER_LINKS_FILENAME = "detected_external_links.txt"
+
+	// Progress Bar Map Key
+	CAPTCHA_SOLVER_PROG_BAR = "captcha_solver_progress_bar"
+	FANTIA_POST_PROG_BAR = "fantia_post_progress_bar"
+	FANTIA_GET_POST_ID_PROG_BAR = "fantia_get_post_id_progress_bar"
+	FANTIA_PROCESS_JSON_PROG_BAR = "fantia_process_json_progress_bar"
 )
+
+// For Fantia so far but can be used for other websites if required
+type CAPTCHA_FN func(useHttp3 bool, sessionCookies []*http.Cookie, userAgent, url string) error
 
 // Although the variables below are not
 // constants, they are not supposed to be changed
