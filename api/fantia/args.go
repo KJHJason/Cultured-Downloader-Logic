@@ -6,11 +6,11 @@ import (
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/PuerkitoBio/goquery"
 )
@@ -69,9 +69,14 @@ type FantiaDlOptions struct {
 	csrfMu    sync.Mutex
 	CsrfToken string
 
-	Notifier          notifier.Notifier
-	ProgressIndicator map[string]progress.Progress
-	CaptchaHandler    constants.CAPTCHA_FN
+	Notifier       notify.Notifier
+	captchaHandler constants.CAPTCHA_FN
+
+	// Progress indicators
+	CaptchaSolverProgBar   progress.Progress
+	PostProgBar            progress.Progress
+	GetFanclubPostsProgBar progress.Progress
+	ProcessJsonProgBar     progress.Progress
 }
 
 func (f *FantiaDlOptions) GetConfigs() *configs.Config {
@@ -90,21 +95,16 @@ func (f *FantiaDlOptions) SetAutoSolveCaptcha(autoSolveCaptcha bool) {
 	f.AutoSolveCaptcha = autoSolveCaptcha
 }
 
-func (f *FantiaDlOptions) GetNotifier() notifier.Notifier {
+func (f *FantiaDlOptions) GetNotifier() notify.Notifier {
 	return f.Notifier
 }
 
-func (f *FantiaDlOptions) GetProgressIndicator(key string) progress.Progress {
-	if prog, ok := f.ProgressIndicator[key]; !ok {
-		// shouldn't happen but just in case if I put an invalid key
-		panic(fmt.Sprintf("progress indicator %q not found", key))
-	} else {
-		return prog
-	}
+func (f *FantiaDlOptions) GetCaptchaSolverProgBar() progress.Progress {
+	return f.CaptchaSolverProgBar
 }
 
 func (f *FantiaDlOptions) GetCaptchaHandler() constants.CAPTCHA_FN {
-	return f.CaptchaHandler
+	return f.captchaHandler
 }
 
 // GetCsrfToken gets the CSRF token from Fantia's index HTML

@@ -5,16 +5,14 @@ import (
 
 	"fyne.io/fyne/v2"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/mobile"
+	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
+	pixivmobile "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/mobile"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/web"
+	pixivweb "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/web"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 )
 
 func alertUser(artworksToDl []*httpfuncs.ToDownload, ugoiraToDl []*models.Ugoira, notifTitle string, app fyne.App) {

@@ -1,14 +1,12 @@
 package kemono
 
 import (
+	"fyne.io/fyne/v2"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
-	"fyne.io/fyne/v2"
 )
 
 func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions *KemonoDlOptions, notifTitle string, app fyne.App) {
@@ -18,14 +16,10 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 
 	var toDownload, gdriveLinks []*httpfuncs.ToDownload
 	if kemonoDl.DlFav {
-		progress := spinner.New(
-			spinner.REQ_SPINNER,
-			"fgHiYellow",
-			"Getting favourites from Kemono Party...",
-			"Finished getting favourites from Kemono Party!",
-			"Something went wrong while getting favourites from Kemono Party.\nPlease refer to the logs for more details.",
-			0,
-		)
+		progress := dlOptions.GetFavouritesPostProgBar
+		progress.UpdateBaseMsg("Getting favourites from Kemono Party...")
+		progress.UpdateSuccessMsg("Finished getting favourites from Kemono Party!")
+		progress.UpdateErrorMsg("Something went wrong while getting favourites from Kemono Party.\nPlease refer to the logs for more details.")
 		progress.Start()
 		favToDl, favGdriveLinks, err := getFavourites(
 			iofuncs.DOWNLOAD_PATH,
@@ -79,9 +73,10 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 		dlOptions.GdriveClient.DownloadGdriveUrls(gdriveLinks, config)
 	}
 
+	notifier := dlOptions.Notifier
 	if downloadedPosts {
-		notifier.AlertWithoutErr(notifTitle, "Downloaded all posts from Kemono Party!", app)
+		notifier.Alert("Downloaded all posts from Kemono Party!")
 	} else {
-		notifier.AlertWithoutErr(notifTitle, "No posts to download from Kemono Party!", app)
+		notifier.Alert("No posts to download from Kemono Party!")
 	}
 }

@@ -16,15 +16,15 @@ import (
 )
 
 type fantiaPostArgs struct {
-	msgSuffix  string
-	postId     string
-	url        string
+	msgSuffix string
+	postId    string
+	url       string
 }
 
 func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (*http.Response, error) {
 	// Now that we have the post ID, we can query Fantia's API
 	// to get the post's contents from the JSON response.
-	progress := dlOptions.GetProgressIndicator(constants.FANTIA_POST_PROG_BAR)
+	progress := dlOptions.PostProgBar
 	progress.UpdateBaseMsg(
 		fmt.Sprintf(
 			"Getting post %s's contents from Fantia %s...",
@@ -50,8 +50,8 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 
 	postApiUrl := postArg.url + postArg.postId
 	header := map[string]string{
-		"Referer":      fmt.Sprintf("%s/posts/%s", constants.FANTIA_URL, postArg.postId),
-		"X-Csrf-Token": dlOptions.CsrfToken,
+		"Referer":          fmt.Sprintf("%s/posts/%s", constants.FANTIA_URL, postArg.postId),
+		"X-Csrf-Token":     dlOptions.CsrfToken,
 		"X-Requested-With": "XMLHttpRequest",
 	}
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, true)
@@ -96,6 +96,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 }
 
 const fantiaPostUrl = constants.FANTIA_URL + "/api/v1/posts/"
+
 func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, error) {
 	msgSuffix := fmt.Sprintf(
 		"[%d/%d]",
@@ -105,9 +106,9 @@ func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *Fan
 
 	res, err := getFantiaPostDetails(
 		&fantiaPostArgs{
-			msgSuffix:  msgSuffix,
-			postId:     postId,
-			url:        fantiaPostUrl,
+			msgSuffix: msgSuffix,
+			postId:    postId,
+			url:       fantiaPostUrl,
 		},
 		dlOptions,
 	)
@@ -117,10 +118,10 @@ func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *Fan
 
 	urlsToDownload, postGdriveUrls, err := processIllustDetailApiRes(
 		&processIllustArgs{
-			res:          res,
-			postId:       postId,
-			postIdsLen:   maxCount,
-			msgSuffix:    msgSuffix,
+			res:        res,
+			postId:     postId,
+			postIdsLen: maxCount,
+			msgSuffix:  msgSuffix,
 		},
 		dlOptions,
 	)
@@ -294,7 +295,7 @@ func (f *FantiaDl) getCreatorsPosts(dlOptions *FantiaDlOptions) {
 	errChan := make(chan error, creatorIdsLen)
 
 	baseMsg := "Getting post ID(s) from Fanclubs(s) on Fantia [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
-	progress := dlOptions.GetProgressIndicator(constants.FANTIA_GET_POST_ID_PROG_BAR)
+	progress := dlOptions.GetFanclubPostsProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(

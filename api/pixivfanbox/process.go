@@ -7,11 +7,10 @@ import (
 	"path/filepath"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
@@ -20,7 +19,7 @@ import (
 var pixivFanboxAllowedImageExt = []string{"jpg", "jpeg", "png", "gif"}
 
 func detectUrlsAndPasswordsInPost(text, postFolderPath string, articleBlocks FanboxArticleBlocks, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, bool) {
-	loggedPassword := false 
+	loggedPassword := false
 	if api.DetectPasswordInText(text) {
 		// Log the entire post text if it contains a password
 		filePath := filepath.Join(postFolderPath, constants.PASSWORD_FILENAME)
@@ -96,9 +95,9 @@ func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, d
 		if text != "" && !loggedPassword {
 			var detectedGdriveUrls []*httpfuncs.ToDownload
 			detectedGdriveUrls, loggedPassword = detectUrlsAndPasswordsInPost(
-				text, 
-				postFolderPath, 
-				articleBlocks, 
+				text,
+				postFolderPath,
+				articleBlocks,
 				dlOptions,
 			)
 			gdriveLinks = append(gdriveLinks, detectedGdriveUrls...)
@@ -125,7 +124,7 @@ func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, d
 
 func processFanboxFilePost(postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	var filePostJson FanboxFilePostJson
-	if err :=  httpfuncs.LoadJsonFromBytes(postBody, &filePostJson); err != nil {
+	if err := httpfuncs.LoadJsonFromBytes(postBody, &filePostJson); err != nil {
 		return nil, nil, err
 	}
 

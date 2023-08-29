@@ -20,7 +20,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 )
 
 func md5HashFile(file *os.File) (string, error) {

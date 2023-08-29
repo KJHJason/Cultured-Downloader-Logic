@@ -7,13 +7,12 @@ import (
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
+	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 )
 
 func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*models.ArtworkDetails, error) {
@@ -66,8 +65,8 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 	}
 
 	reqArgs.Url = url
-	artworkUrlsRes, err :=httpfuncs.CallRequest(reqArgs)
-	if err != nil { 
+	artworkUrlsRes, err := httpfuncs.CallRequest(reqArgs)
+	if err != nil {
 		return nil, fmt.Errorf(
 			"pixiv error %d: failed to get artwork URLs for ID %s from %s due to %v",
 			constants.CONNECTION_ERROR,
@@ -79,7 +78,7 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 
 	if artworkUrlsRes.StatusCode != 200 {
 		artworkUrlsRes.Body.Close()
-		return nil,fmt.Errorf(
+		return nil, fmt.Errorf(
 			"pixiv error %d: failed to get artwork URLs for ID %s due to %s response from %s",
 			constants.RESPONSE_ERROR,
 			artworkId,

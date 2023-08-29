@@ -10,6 +10,8 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/fatih/color"
 )
 
@@ -183,6 +185,14 @@ type KemonoDlOptions struct {
 
 	SessionCookieId string
 	SessionCookies  []*http.Cookie
+
+	Notifier       notify.Notifier
+
+	// Prog bars
+	PostProgBar  progress.Progress
+	GetCreatorPostProgBar progress.Progress
+	ProcessJsonProgBar progress.Progress
+	GetFavouritesPostProgBar progress.Progress
 }
 
 // ValidateArgs validates the session cookie ID of the Kemono account to download from.

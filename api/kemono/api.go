@@ -191,29 +191,27 @@ func getMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *K
 	resChan := make(chan *kemonoChanRes, postLen)
 
 	baseMsg := "Getting post details from Kemono Party [%d/" + fmt.Sprintf("%d]...", postLen)
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := dlOptions.PostProgBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting %d post details from Kemono Party!",
 			postLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting %d post details from Kemono Party.\nPlease refer to the logs for more details.",
 			postLen,
 		),
-		postLen,
 	)
+	progress.UpdateMax(postLen)
 	progress.Start()
 	for _, post := range posts {
 		wg.Add(1)
 		go func(post *KemonoPostToDl) {
 			defer func() {
-				progress.MsgIncrement(baseMsg)
+				progress.Increment()
 				wg.Done()
 				<-queue
 			}()
@@ -314,34 +312,32 @@ func getMultipleCreators(creators []*KemonoCreatorToDl, downloadPath string, dlO
 	var urlsToDownload, gdriveLinks []*httpfuncs.ToDownload
 	creatorLen := len(creators)
 	baseMsg := "Getting creator's posts from Kemono Party [%d/" + fmt.Sprintf("%d]...", creatorLen)
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := dlOptions.GetCreatorPostProgBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting %d creator's posts from Kemono Party!",
 			creatorLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting %d creator's posts from Kemono Party.\nPlease refer to the logs for more details.",
 			creatorLen,
 		),
-		creatorLen,
 	)
+	progress.UpdateMax(creatorLen)
 	progress.Start()
 	for _, creator := range creators {
 		postsToDl, gdriveLinksToDl, err := getCreatorPosts(creator, downloadPath, dlOptions)
 		if err != nil {
 			errSlice = append(errSlice, err)
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 			continue
 		}
 		urlsToDownload = append(urlsToDownload, postsToDl...)
 		gdriveLinks = append(gdriveLinks, gdriveLinksToDl...)
-		progress.MsgIncrement(baseMsg)
+		progress.Increment()
 	}
 
 	hasError := false

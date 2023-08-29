@@ -1,10 +1,9 @@
 package pixivfanbox
 
 import (
-	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
 	"fyne.io/fyne/v2"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
 // Start the download process for Pixiv Fanbox

@@ -11,15 +11,14 @@ import (
 	"syscall"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/extractor"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/spinner"
 )
 
 // Map the Ugoira frame delays to their respective filenames

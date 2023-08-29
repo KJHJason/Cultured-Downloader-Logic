@@ -12,7 +12,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/notifier"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/chromedp/chromedp"
 	"github.com/fatih/color"
@@ -24,9 +24,11 @@ type DlOptions interface {
 	GetConfigs()                     *configs.Config
 	GetSessionCookies()              []*http.Cookie
 	GetAutoSolveCaptcha()            bool
-	GetNotifier()                    notifier.Notifier
-	GetProgressIndicator(key string) progress.Progress
+	GetNotifier()                    notify.Notifier
 	GetCaptchaHandler()              constants.CAPTCHA_FN
+
+	// Prog bars
+	GetCaptchaSolverProgBar()        progress.Progress
 
 	SetAutoSolveCaptcha(bool)
 }
@@ -49,10 +51,10 @@ func getChromedpActions(website string, cookies []*http.Cookie) []chromedp.Actio
 // Automatically try to solve the reCAPTCHA for Fantia.
 func autoSolveCaptcha(dlOptions DlOptions, website string) error {
 	readableSite := GetReadableSiteStr(website)
-	notify := dlOptions.GetNotifier()
-	notify.Alert("reCAPTCHA detected! Solving...")
+	notifier := dlOptions.GetNotifier()
+	notifier.Alert("reCAPTCHA detected! Solving...")
 
-	prog := dlOptions.GetProgressIndicator(constants.CAPTCHA_SOLVER_PROG_BAR)
+	prog := dlOptions.GetCaptchaSolverProgBar()
 	prog.UpdateBaseMsg(
 		fmt.Sprintf("Solving reCAPTCHA for %s...", readableSite),
 	)
@@ -89,11 +91,11 @@ func autoSolveCaptcha(dlOptions DlOptions, website string) error {
 
 		prog.UpdateErrorMsg(fmtErr.Error() + "\n")
 		prog.Stop(true)
-		notify.Alert("Failed to solve reCAPTCHA automatically...")
+		notifier.Alert("Failed to solve reCAPTCHA automatically...")
 		return fmtErr
 	}
 	prog.Stop(false)
-	notify.Alert("Successfully solved reCAPTCHA automatically!")
+	notifier.Alert("Successfully solved reCAPTCHA automatically!")
 	return nil
 }
 

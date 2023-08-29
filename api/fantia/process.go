@@ -148,7 +148,7 @@ type processIllustArgs struct {
 
 // Process the JSON response to get the urls to download
 func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
-	progress := dlOptions.GetProgressIndicator(constants.FANTIA_PROCESS_JSON_PROG_BAR)
+	progress := dlOptions.ProcessJsonProgBar
 	progress.UpdateBaseMsg(
 		fmt.Sprintf(
 			"Processing retrieved JSON for post %s from Fantia %s...",
