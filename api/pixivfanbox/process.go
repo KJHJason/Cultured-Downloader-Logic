@@ -294,24 +294,23 @@ func processMultiplePostJson(resChan chan *http.Response, dlOptions *PixivFanbox
 	// parse the responses
 	var errSlice []error
 	var urlsSlice, gdriveUrls []*httpfuncs.ToDownload
-	baseMsg := "Processing received JSON(s) from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", len(resChan))
-	progress := spinner.New(
-		spinner.JSON_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	resChanLen := len(resChan)
+	baseMsg := "Processing received JSON(s) from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", resChanLen)
+	progress := dlOptions.ProcessJsonProgressBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished processing %d JSON(s) from Pixiv Fanbox!",
-			len(resChan),
+			resChanLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while processing %d JSON(s) from Pixiv Fanbox.\nPlease refer to the logs for more details.",
-			len(resChan),
+			resChanLen,
 		),
-		len(resChan),
 	)
+	progress.UpdateMax(resChanLen)
 	progress.Start()
 	for res := range resChan {
 		postUrls, postGdriveLinks, err := processFanboxPostJson(
@@ -325,7 +324,7 @@ func processMultiplePostJson(resChan chan *http.Response, dlOptions *PixivFanbox
 			urlsSlice = append(urlsSlice, postUrls...)
 			gdriveUrls = append(gdriveUrls, postGdriveLinks...)
 		}
-		progress.MsgIncrement(baseMsg)
+		progress.Increment()
 	}
 
 	hasErr := false

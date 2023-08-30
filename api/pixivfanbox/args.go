@@ -6,9 +6,11 @@ import (
 	"regexp"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/fatih/color"
 )
 
@@ -74,6 +76,13 @@ type PixivFanboxDlOptions struct {
 
 	SessionCookieId string
 	SessionCookies  []*http.Cookie
+
+	notifier notify.Notifier
+
+	// Prog bar
+	PostProgressBar         progress.Progress
+	CreatorPostsProgressBar progress.Progress
+	ProcessJsonProgressBar  progress.Progress
 }
 
 // ValidateArgs validates the session cookie ID of the Pixiv Fanbox account to download from.

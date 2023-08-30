@@ -33,23 +33,21 @@ func (pf *PixivFanboxDl) getPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	errChan := make(chan error, postIdsLen)
 
 	baseMsg := "Getting post details from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", postIdsLen)
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := dlOptions.PostProgressBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting %d post details from Pixiv Fanbox!",
 			postIdsLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting %d post details from Pixiv Fanbox.\nPlease refer to the logs for more details.",
 			postIdsLen,
 		),
-		postIdsLen,
 	)
+	progress.UpdateMax(postIdsLen)
 	progress.Start()
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_FANBOX, true)
@@ -94,7 +92,7 @@ func (pf *PixivFanboxDl) getPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 			} else {
 				resChan <- res
 			}
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 		}(postId)
 	}
 	wg.Wait()
@@ -276,23 +274,21 @@ func (pf *PixivFanboxDl) getCreatorsPosts(dlOptions *PixivFanboxDlOptions) {
 
 	var errSlice []error
 	baseMsg := "Getting post ID(s) from creator(s) on Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := dlOptions.CreatorPostsProgressBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting post ID(s) from %d creator(s) on Pixiv Fanbox!",
 			creatorIdsLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting post IDs from %d creator(s) on Pixiv Fanbox!\nPlease refer to logs for more details.",
 			creatorIdsLen,
 		),
-		creatorIdsLen,
 	)
+	progress.UpdateMax(creatorIdsLen)
 	progress.Start()
 	for idx, creatorId := range pf.CreatorIds {
 		retrievedPostIds, err := getFanboxPosts(
@@ -305,7 +301,7 @@ func (pf *PixivFanboxDl) getCreatorsPosts(dlOptions *PixivFanboxDlOptions) {
 		} else {
 			pf.PostIds = append(pf.PostIds, retrievedPostIds...)
 		}
-		progress.MsgIncrement(baseMsg)
+		progress.Increment()
 	}
 
 	hasErr := false

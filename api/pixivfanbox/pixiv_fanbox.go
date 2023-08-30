@@ -44,9 +44,10 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *PixivFanboxDl, pixivFanboxDlOptio
 		pixivFanboxDlOptions.GdriveClient.DownloadGdriveUrls(gdriveUrlsToDownload, pixivFanboxDlOptions.Configs)
 	}
 
+	notifier := pixivFanboxDlOptions.notifier
 	if downloadedPosts {
-		notifier.AlertWithoutErr(notifTitle, "Downloaded all posts from Pixiv Fanbox!", app)
+		notifier.Alert("Downloaded all posts from Pixiv Fanbox!")
 	} else {
-		notifier.AlertWithoutErr(notifTitle, "No posts to download from Pixiv Fanbox!", app)
+		notifier.Alert("No posts to download from Pixiv Fanbox!")
 	}
 }

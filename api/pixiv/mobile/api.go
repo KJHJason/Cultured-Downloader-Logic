@@ -105,29 +105,27 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloa
 
 	var errSlice []error
 	baseMsg := "Getting and processing artwork details from Pixiv's Mobile API [%d/" + fmt.Sprintf("%d]...", artworkIdsLen)
-	progress := spinner.New(
-		spinner.JSON_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := pixiv.ArtworkProgress
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting and processing %d artwork details from Pixiv's Mobile API!",
 			artworkIdsLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting and processing %d artwork details from Pixiv's Mobile API!\nPlease refer to the logs for more details.",
 			artworkIdsLen,
 		),
-		artworkIdsLen,
 	)
+	progress.UpdateMax(artworkIdsLen)
 	progress.Start()
 	for idx, artworkId := range artworkIds {
 		artworkDetails, ugoiraInfo, err := pixiv.getArtworkDetails(artworkId, downloadPath)
 		if err != nil {
 			errSlice = append(errSlice, err)
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 			continue
 		}
 
@@ -140,7 +138,7 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloa
 		if idx != lastIdx {
 			pixiv.Sleep()
 		}
-		progress.MsgIncrement(baseMsg)
+		progress.Increment()
 	}
 
 	hasErr := false
@@ -258,23 +256,21 @@ func (pixiv *PixivMobile) GetMultipleIllustratorPosts(userIds, pageNums []string
 	var ugoiraSlice []*models.Ugoira
 	var artworksToDownload []*httpfuncs.ToDownload
 	baseMsg := "Getting artwork details from illustrator(s) on Pixiv [%d/" + fmt.Sprintf("%d]...", userIdsLen)
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := pixiv.IllustratorProgress
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting artwork details from %d illustrator(s) on Pixiv!",
 			userIdsLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting artwork details from %d illustrator(s) on Pixiv!\nPlease refer to the logs for more details.",
 			userIdsLen,
 		),
-		userIdsLen,
 	)
+	progress.UpdateMax(userIdsLen)
 	progress.Start()
 	for idx, userId := range userIds {
 		artworkDetails, ugoiraInfo, err := pixiv.getIllustratorPosts(
@@ -285,7 +281,7 @@ func (pixiv *PixivMobile) GetMultipleIllustratorPosts(userIds, pageNums []string
 		)
 		if err != nil {
 			errSlice = append(errSlice, err...)
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 			continue
 		}
 
@@ -294,7 +290,7 @@ func (pixiv *PixivMobile) GetMultipleIllustratorPosts(userIds, pageNums []string
 		if idx != lastIdx {
 			pixiv.Sleep()
 		}
-		progress.MsgIncrement(baseMsg)
+		progress.Increment()
 	}
 
 	hasErr := false
