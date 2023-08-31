@@ -152,23 +152,21 @@ func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptio
 	lastArtworkId := artworkIds[artworkIdsLen-1]
 
 	baseMsg := "Getting and processing artwork details from Pixiv [%d/" + fmt.Sprintf("%d]...", artworkIdsLen)
-	progress := spinner.New(
-		spinner.JSON_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := dlOptions.GetPostsDetailProgBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting and processing %d artwork details from Pixiv!",
 			artworkIdsLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting and processing %d artwork details from Pixiv!\nPlease refer to the logs for more details.",
 			artworkIdsLen,
 		),
-		artworkIdsLen,
 	)
+	progress.UpdateMax(artworkIdsLen)
 	progress.Start()
 	for _, artworkId := range artworkIds {
 		artworksToDl, ugoiraInfo, err := getArtworkDetails(
@@ -178,7 +176,7 @@ func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptio
 		)
 		if err != nil {
 			errSlice = append(errSlice, err)
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 			continue
 		}
 
@@ -188,7 +186,7 @@ func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptio
 			artworkDetails = append(artworkDetails, artworksToDl...)
 		}
 
-		progress.MsgIncrement(baseMsg)
+		progress.Increment()
 		if artworkId != lastArtworkId {
 			pixivSleep()
 		}
@@ -256,23 +254,21 @@ func GetMultipleIllustratorPosts(illustratorIds, pageNums []string, downloadPath
 	lastIllustratorIdx := illustratorIdsLen - 1
 
 	baseMsg := "Getting artwork details from illustrator(s) on Pixiv [%d/" + fmt.Sprintf("%d]...", illustratorIdsLen)
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := dlOptions.GetIllustratorPostsProgBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting artwork details from %d illustrator(s) on Pixiv!",
 			illustratorIdsLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting artwork details from %d illustrator(s) on Pixiv!\nPlease refer to the logs for more details.",
 			illustratorIdsLen,
 		),
-		illustratorIdsLen,
 	)
+	progress.UpdateMax(illustratorIdsLen)
 	progress.Start()
 	for idx, illustratorId := range illustratorIds {
 		artworkIds, err := getIllustratorPosts(
@@ -289,7 +285,7 @@ func GetMultipleIllustratorPosts(illustratorIds, pageNums []string, downloadPath
 		if idx != lastIllustratorIdx {
 			pixivSleep()
 		}
-		progress.MsgIncrement(baseMsg)
+		progress.Increment()
 	}
 
 	hasErr := false

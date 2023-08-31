@@ -83,6 +83,8 @@ type PixivFanboxDlOptions struct {
 	PostProgressBar         progress.Progress
 	CreatorPostsProgressBar progress.Progress
 	ProcessJsonProgressBar  progress.Progress
+	GdriveApiProgBar        progress.Progress
+	GdriveDlProgBar         progress.Progress
 }
 
 // ValidateArgs validates the session cookie ID of the Pixiv Fanbox account to download from.

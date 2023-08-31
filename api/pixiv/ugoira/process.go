@@ -19,6 +19,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 // Map the Ugoira frame delays to their respective filenames
@@ -112,34 +113,32 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	var errSlice []error
 	downloadInfoLen := len(ugoiraArgs.ToDownload)
 	baseMsg := "Converting Ugoira to %s [%d/" + fmt.Sprintf("%d]...", downloadInfoLen)
-	progress := spinner.New(
-		spinner.DL_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := ugoiraArgs.UgoiraProgBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished converting %d Ugoira to %s!",
 			downloadInfoLen,
 			ugoiraOptions.OutputFormat,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while converting %d Ugoira to %s!\nPlease refer to the logs for more details.",
 			downloadInfoLen,
 			ugoiraOptions.OutputFormat,
 		),
-		downloadInfoLen,
 	)
+	progress.UpdateMax(downloadInfoLen)
 	progress.Start()
 	for i, ugoira := range ugoiraArgs.ToDownload {
 		zipFilePath, outputPath := GetUgoiraFilePaths(ugoira.FilePath, ugoira.Url, ugoiraOptions.OutputFormat)
 		if iofuncs.PathExists(outputPath) {
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 			continue
 		}
 		if !iofuncs.PathExists(zipFilePath) {
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 			continue
 		}
 
@@ -150,7 +149,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 		err := extractor.ExtractFiles(ctx, zipFilePath, unzipFolderPath, true)
 		if err != nil {
 			if err == context.Canceled {
-				progress.KillProgram(
+				progress.StopInterrupt(
 					fmt.Sprintf(
 						"Stopped converting ugoira to %s [%d/%d]!",
 						ugoiraOptions.OutputFormat,
@@ -166,7 +165,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 				err,
 			)
 			errSlice = append(errSlice, err)
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 			continue
 		}
 
@@ -184,7 +183,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 		} else if ugoiraOptions.DeleteZip {
 			os.Remove(zipFilePath)
 		}
-		progress.MsgIncrement(baseMsg)
+		progress.Increment()
 	}
 
 	hasErr := false
@@ -196,9 +195,10 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 }
 
 type UgoiraArgs struct {
-	UseMobileApi bool
-	ToDownload   []*models.Ugoira
-	Cookies      []*http.Cookie
+	UseMobileApi  bool
+	ToDownload    []*models.Ugoira
+	Cookies       []*http.Cookie
+	UgoiraProgBar progress.Progress
 }
 
 // Downloads multiple Ugoira artworks and converts them based on the output format

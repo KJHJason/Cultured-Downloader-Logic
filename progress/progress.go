@@ -11,6 +11,9 @@ type Progress interface {
 	// Requires a bool to indicate if there is an error or not after the progress is stopped.
 	Stop(bool)
 
+	// Stops the progress due to an interrupt signal.
+	StopInterrupt(string)
+
 	// UpdateBaseMsg updates the base message of the progress.
 	UpdateBaseMsg(string)
 

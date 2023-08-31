@@ -77,6 +77,8 @@ type FantiaDlOptions struct {
 	PostProgBar            progress.Progress
 	GetFanclubPostsProgBar progress.Progress
 	ProcessJsonProgBar     progress.Progress
+	GdriveApiProgBar       progress.Progress
+	GdriveDlProgBar        progress.Progress
 }
 
 func (f *FantiaDlOptions) GetConfigs() *configs.Config {

@@ -41,7 +41,12 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *PixivFanboxDl, pixivFanboxDlOptio
 	}
 	if pixivFanboxDlOptions.GdriveClient != nil && len(gdriveUrlsToDownload) > 0 {
 		downloadedPosts = true
-		pixivFanboxDlOptions.GdriveClient.DownloadGdriveUrls(gdriveUrlsToDownload, pixivFanboxDlOptions.Configs)
+		pixivFanboxDlOptions.GdriveClient.DownloadGdriveUrls(
+			gdriveUrlsToDownload, 
+			pixivFanboxDlOptions.Configs, 
+			pixivFanboxDlOptions.GdriveApiProgBar, 
+			pixivFanboxDlOptions.GdriveDlProgBar,
+		)
 	}
 
 	notifier := pixivFanboxDlOptions.notifier

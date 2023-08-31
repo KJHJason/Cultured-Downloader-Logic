@@ -2,6 +2,8 @@ package httpfuncs
 
 import (
 	"net/http"
+
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 type RequestHandler func (reqArgs *RequestArgs) (*http.Response, error)
@@ -32,6 +34,9 @@ type DlOptions struct {
 
 	// RetryDelay is the delay between retries
 	RetryDelay *RetryDelay
+
+	// Prog bar
+	DownloadProgressBar progress.Progress
 }
 
 type GithubApiRes struct {

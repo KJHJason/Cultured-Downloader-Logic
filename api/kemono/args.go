@@ -189,10 +189,12 @@ type KemonoDlOptions struct {
 	Notifier       notify.Notifier
 
 	// Prog bars
-	PostProgBar  progress.Progress
-	GetCreatorPostProgBar progress.Progress
-	ProcessJsonProgBar progress.Progress
+	PostProgBar              progress.Progress
+	GetCreatorPostProgBar    progress.Progress
+	ProcessJsonProgBar       progress.Progress
 	GetFavouritesPostProgBar progress.Progress
+	GdriveApiProgBar         progress.Progress
+	GdriveDlProgBar          progress.Progress
 }
 
 // ValidateArgs validates the session cookie ID of the Kemono account to download from.

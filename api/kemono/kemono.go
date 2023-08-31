@@ -70,7 +70,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 	}
 	if dlOptions.GdriveClient != nil && len(gdriveLinks) > 0 {
 		downloadedPosts = true
-		dlOptions.GdriveClient.DownloadGdriveUrls(gdriveLinks, config)
+		dlOptions.GdriveClient.DownloadGdriveUrls(gdriveLinks, config, dlOptions.GdriveApiProgBar, dlOptions.GdriveDlProgBar)
 	}
 
 	notifier := dlOptions.Notifier

@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 // PixivToDl is the struct that contains the arguments of Pixiv download options.
@@ -22,6 +24,13 @@ type PixivWebDlOptions struct {
 
 	SessionCookies  []*http.Cookie
 	SessionCookieId string
+
+	Notifier notify.Notifier
+
+	// Prog Bar
+	TagSearchProgBar           progress.Progress
+	GetPostsDetailProgBar      progress.Progress
+	GetIllustratorPostsProgBar progress.Progress
 }
 
 var (

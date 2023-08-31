@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/fatih/color"
 )
 
@@ -22,6 +24,11 @@ type PixivMobileDlOptions struct {
 
 	MobileClient *PixivMobile
 	RefreshToken string
+
+	Notifier notify.Notifier
+
+	// Prog bar
+	TagSearchProgBar progress.Progress
 }
 
 var (

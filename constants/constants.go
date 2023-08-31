@@ -3,6 +3,7 @@ package constants
 import (
 	"fmt"
 	"regexp"
+	"runtime"
 	"net/http"
 )
 
@@ -65,12 +66,6 @@ const (
 	GDRIVE_FOLDER        = "gdrive"
 	GDRIVE_FILENAME      = "detected_gdrive_links.txt"
 	OTHER_LINKS_FILENAME = "detected_external_links.txt"
-
-	// Progress Bar Map Key
-	CAPTCHA_SOLVER_PROG_BAR = "captcha_solver_progress_bar"
-	FANTIA_POST_PROG_BAR = "fantia_post_progress_bar"
-	FANTIA_GET_POST_ID_PROG_BAR = "fantia_get_post_id_progress_bar"
-	FANTIA_PROCESS_JSON_PROG_BAR = "fantia_process_json_progress_bar"
 )
 
 // For Fantia so far but can be used for other websites if required
@@ -99,3 +94,22 @@ var (
 	PASSWORD_TEXTS              = []string{"パス", "Pass", "pass", "密码"}
 	EXTERNAL_DOWNLOAD_PLATFORMS = []string{"mega", "gigafile", "dropbox", "mediafire"}
 )
+
+func init() {
+	var userAgent = map[string]string{
+		"linux":   "Mozilla/5.0 (X11; Linux x86_64)",
+		"darwin":  "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6)",
+		"windows": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+	}
+	userAgentOS, ok := userAgent[runtime.GOOS]
+	if !ok {
+		panic(
+			fmt.Errorf(
+				"error %d: Failed to get user agent OS as your OS, %q, is not supported",
+				OS_ERROR,
+				runtime.GOOS,
+			),
+		)
+	}
+	USER_AGENT = fmt.Sprintf("%s AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36", userAgentOS)
+}

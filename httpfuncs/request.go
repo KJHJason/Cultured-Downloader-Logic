@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/fatih/color"
 	"github.com/quic-go/quic-go/http3"
 )
@@ -231,7 +232,7 @@ func checkIfVerIsOutdated(curVer *versionInfo, latestVer *versionInfo) bool {
 }
 
 // check for the latest version of the program
-func CheckVer(url string, ver string, showSpinner bool) (bool, error) {
+func CheckVer(url string, ver string, showProg bool, progBar progress.Progress) (bool, error) {
 	if !verRegex.MatchString(ver) {
 		return false, fmt.Errorf(
 			"github error %d: unable to process the current version, %q",
@@ -240,17 +241,10 @@ func CheckVer(url string, ver string, showSpinner bool) (bool, error) {
 		)
 	}
 
-	var progress *spinner.Spinner
-	if showSpinner {
-		progress = spinner.New(
-			spinner.REQ_SPINNER,
-			"fgHiYellow",
-			"Checking for the latest version...",
-			"",
-			"Failed to check for the latest version, please refer to the logs for more details...",
-			0,
-		)
-		progress.Start()
+	if showProg && progBar != nil {
+		progBar.UpdateBaseMsg("Checking for the latest version...")
+		progBar.UpdateErrorMsg("Failed to check for the latest version, please refer to the logs for more details...")
+		progBar.Start()
 	}
 
 	res, err := CallRequest(
@@ -272,8 +266,8 @@ func CheckVer(url string, ver string, showSpinner bool) (bool, error) {
 			errMsg += fmt.Sprintf(", more info => %v", err)
 		}
 
-		if showSpinner {
-			progress.Stop(true)
+		if showProg && progBar != nil {
+			progBar.Stop(true)
 		}
 		return false, errors.New(errMsg)
 	}
@@ -284,8 +278,8 @@ func CheckVer(url string, ver string, showSpinner bool) (bool, error) {
 			"github error %d: unable to marshal the response from the API into an interface",
 			constants.UNEXPECTED_ERROR,
 		)
-		if showSpinner {
-			progress.Stop(true)
+		if showProg && progBar != nil {
+			progBar.Stop(true)
 		}
 		return false, errors.New(errMsg)
 	}
@@ -296,8 +290,8 @@ func CheckVer(url string, ver string, showSpinner bool) (bool, error) {
 			"github error %d: unable to process the latest version",
 			constants.UNEXPECTED_ERROR,
 		)
-		if showSpinner {
-			progress.Stop(true)
+		if showProg && progBar != nil {
+			progBar.Stop(true)
 		}
 		return false, errors.New(errMsg)
 	}
@@ -312,17 +306,19 @@ func CheckVer(url string, ver string, showSpinner bool) (bool, error) {
 	}
 
 	outdated := checkIfVerIsOutdated(programVer, latestVer) 
-	if showSpinner {
+	if showProg && progBar != nil {
 		if outdated {
-			progress.ErrMsg = fmt.Sprintf(
-				"Warning: this program is outdated, the latest version %q is available at %s",
-				apiRes.TagName,
-				apiRes.HtmlUrl,
+			progBar.UpdateErrorMsg(
+				fmt.Sprintf(
+					"Warning: this program is outdated, the latest version %q is available at %s",
+					apiRes.TagName,
+					apiRes.HtmlUrl,
+				),
 			)
 		} else {
-			progress.SuccessMsg = "This program is up to date!"
+			progBar.UpdateSuccessMsg("This program is up to date!")
 		}
-		progress.Stop(outdated)
+		progBar.Stop(outdated)
 	}
 	return outdated, nil
 }

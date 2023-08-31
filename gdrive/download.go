@@ -20,6 +20,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 func md5HashFile(file *os.File) (string, error) {
@@ -158,7 +159,7 @@ func filterDownloads(files []*GdriveFileToDl) []*GdriveFileToDl {
 	return allowedForDownload
 }
 
-func processGdriveDlError(errChan chan *GdriveError, progress *spinner.Spinner) {
+func processGdriveDlError(errChan chan *GdriveError, prog progress.Progress) {
 	killProgram := false
 	for errInfo := range errChan {
 		errMsg := censorApiKeyFromStr(errInfo.Err.Error())
@@ -177,46 +178,44 @@ func processGdriveDlError(errChan chan *GdriveError, progress *spinner.Spinner) 
 	}
 
 	if killProgram {
-		progress.KillProgram(
+		prog.StopInterrupt(
 			"Stopped downloading GDrive files (incomplete downloads will be deleted)...",
 		)
 	}
 }
 
 // Downloads the multiple GDrive file in parallel using GDrive API v3
-func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *configs.Config) {
+func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *configs.Config, prog progress.Progress) {
 	allowedForDownload := filterDownloads(files)
-	if len(allowedForDownload) == 0 {
+	dlLen := len(allowedForDownload)
+	if dlLen == 0 {
 		return
 	}
 
 	maxConcurrency := gdrive.maxDownloadWorkers
-	if len(allowedForDownload) < maxConcurrency {
-		maxConcurrency = len(allowedForDownload)
+	if dlLen < maxConcurrency {
+		maxConcurrency = dlLen
 	}
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, maxConcurrency)
-	errChan := make(chan *GdriveError, len(allowedForDownload))
+	errChan := make(chan *GdriveError, dlLen)
 
-	baseMsg := "Downloading GDrive files [%d/" + fmt.Sprintf("%d]...", len(allowedForDownload))
-	progress := spinner.New(
-		spinner.DL_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	baseMsg := "Downloading GDrive files [%d/" + fmt.Sprintf("%d]...", dlLen)
+	prog.UpdateBaseMsg(baseMsg)
+	prog.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished downloading %d GDrive files!",
-			len(allowedForDownload),
+			dlLen,
 		),
+	)
+	prog.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while downloading %d GDrive files!\nPlease refer to the generated log files for more details.",
-			len(allowedForDownload),
+			dlLen,
 		),
-		len(allowedForDownload),
 	)
-	progress.Start()
+	prog.UpdateMax(dlLen)
+	prog.Start()
 	for _, file := range allowedForDownload {
 		wg.Add(1)
 		go func(file *GdriveFileToDl) {
@@ -242,7 +241,7 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *con
 					),
 				}
 			}
-			progress.MsgIncrement(baseMsg)
+			prog.Increment()
 		}(file)
 	}
 	wg.Wait()
@@ -252,9 +251,9 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *con
 	hasErr := false
 	if len(errChan) > 0 {
 		hasErr = true
-		processGdriveDlError(errChan, progress)
+		processGdriveDlError(errChan, prog)
 	}
-	progress.Stop(hasErr)
+	prog.Stop(hasErr)
 }
 
 // Uses regex to extract the file ID and the file type (type: file, folder) from the given URL
@@ -328,7 +327,7 @@ func (gdrive *GDrive) getGdriveFileInfo(gdriveId *GDriveToDl, config *configs.Co
 }
 
 // Downloads multiple GDrive files based on a slice of GDrive URL strings in parallel
-func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, config *configs.Config) error {
+func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, config *configs.Config, apiProg progress.Progress, dlProg progress.Progress) error {
 	if len(gdriveUrls) == 0 {
 		return nil
 	}
@@ -349,25 +348,23 @@ func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, con
 	// Note: Can't do API calls concurrently as to avoid being blocked by Google's bot detection
 	var errSlice []*GdriveError
 	var gdriveFilesInfo []*GdriveFileToDl
+	gdriveIdsLen := len(gdriveIds)
 	baseMsg := "Getting GDrive file information from GDrive ID(s) [%d/" + fmt.Sprintf("%d]...", len(gdriveIds))
-	progress := spinner.New(
-		spinner.REQ_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	apiProg.UpdateBaseMsg(baseMsg)
+	apiProg.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting GDrive file information from %d GDrive ID(s)!",
-			len(gdriveIds),
+			gdriveIdsLen,
 		),
+	)
+	apiProg.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting GDrive file information from %d GDrive ID(s)!\nPlease refer to the generated log files for more details.",
-			len(gdriveIds),
+			gdriveIdsLen,
 		),
-		len(gdriveIds),
 	)
-	progress.Start()
+	apiProg.UpdateMax(gdriveIdsLen)
+	apiProg.Start()
 	for _, gdriveId := range gdriveIds {
 		fileInfo, err := gdrive.getGdriveFileInfo(gdriveId, config)
 		if err != nil {
@@ -375,7 +372,7 @@ func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, con
 		} else {
 			gdriveFilesInfo = append(gdriveFilesInfo, fileInfo...)
 		}
-		progress.MsgIncrement(baseMsg)
+		apiProg.Increment()
 	}
 
 	hasErr := false
@@ -389,8 +386,8 @@ func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, con
 			)
 		}
 	}
-	progress.Stop(hasErr)
+	apiProg.Stop(hasErr)
 
-	gdrive.DownloadMultipleFiles(gdriveFilesInfo, config)
+	gdrive.DownloadMultipleFiles(gdriveFilesInfo, config, dlProg)
 	return nil
 }

@@ -208,23 +208,21 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	errChan := make(chan error, urlsLen)
 
 	baseMsg := "Downloading files [%d/" + fmt.Sprintf("%d]...", urlsLen)
-	progress := spinner.New(
-		spinner.DL_SPINNER,
-		"fgHiYellow",
-		fmt.Sprintf(
-			baseMsg,
-			0,
-		),
+	progress := dlOptions.DownloadProgressBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished downloading %d files",
 			urlsLen,
 		),
+	)
+	progress.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while downloading %d files.\nPlease refer to the logs for more details.",
 			urlsLen,
 		),
-		urlsLen,
 	)
+	progress.UpdateMax(urlsLen)
 	progress.Start()
 	for _, urlInfo := range urlInfoSlice {
 		wg.Add(1)
@@ -255,7 +253,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 			}
 
 			if err != context.Canceled {
-				progress.MsgIncrement(baseMsg)
+				progress.Increment()
 			}
 		}(urlInfo.Url, urlInfo.FilePath)
 	}
@@ -267,7 +265,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	if len(errChan) > 0 {
 		hasErr = true
 		if kill := logger.LogChanErrors(false, logger.ERROR, errChan); kill {
-			progress.KillProgram(
+			progress.StopInterrupt(
 				"Stopped downloading files (incomplete downloads will be deleted)...",
 			)
 		}

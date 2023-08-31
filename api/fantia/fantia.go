@@ -22,7 +22,12 @@ func FantiaDownloadProcess(fantiaDl *FantiaDl, fantiaDlOptions *FantiaDlOptions,
 	}
 
 	if fantiaDlOptions.GdriveClient != nil && len(gdriveLinks) > 0 {
-		fantiaDlOptions.GdriveClient.DownloadGdriveUrls(gdriveLinks, fantiaDlOptions.Configs)
+		fantiaDlOptions.GdriveClient.DownloadGdriveUrls(
+			gdriveLinks, 
+			fantiaDlOptions.Configs, 
+			fantiaDlOptions.GdriveApiProgBar, 
+			fantiaDlOptions.GdriveDlProgBar,
+		)
 		downloadedPosts = true
 	}
 

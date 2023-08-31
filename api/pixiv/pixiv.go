@@ -13,18 +13,19 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 )
 
-func alertUser(artworksToDl []*httpfuncs.ToDownload, ugoiraToDl []*models.Ugoira, notifTitle string, app fyne.App) {
+func alertUser(artworksToDl []*httpfuncs.ToDownload, ugoiraToDl []*models.Ugoira, notifier notify.Notifier) {
 	if len(artworksToDl) > 0 || len(ugoiraToDl) > 0 {
-		notifier.AlertWithoutErr(notifTitle, "Finished downloading artworks from Pixiv!", app)
+		notifier.Alert("Finished downloading artworks from Pixiv!")
 	} else {
-		notifier.AlertWithoutErr(notifTitle, "No artworks to download from Pixiv!", app)
+		notifier.Alert("No artworks to download from Pixiv!")
 	}
 }
 
 // Start the download process for Pixiv
-func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWebDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions, notifTitle string, app fyne.App) {
+func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWebDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions) {
 	var ugoiraToDl []*models.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 	if len(pixivDl.IllustratorIds) > 0 {
@@ -48,26 +49,25 @@ func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWeb
 		ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
 	}
 
-	if len(pixivDl.TagNames) > 0 {
+	tagNameLen := len(pixivDl.TagNames)
+	if tagNameLen > 0 {
 		// loop through each tag and page number
-		baseMsg := "Searching for artworks based on tag names on Pixiv [%d/" + fmt.Sprintf("%d]...", len(pixivDl.TagNames))
-		progress := spinner.New(
-			"pong",
-			"fgHiYellow",
-			fmt.Sprintf(
-				baseMsg,
-				0,
-			),
+		baseMsg := "Searching for artworks based on tag names on Pixiv [%d/" + fmt.Sprintf("%d]...", tagNameLen)
+		progress := pixivDlOptions.TagSearchProgBar
+		progress.UpdateBaseMsg(baseMsg)
+		progress.UpdateSuccessMsg(
 			fmt.Sprintf(
 				"Finished searching for artworks based on %d tag names on Pixiv!",
-				len(pixivDl.TagNames),
+				tagNameLen,
 			),
+		)
+		progress.UpdateErrorMsg(
 			fmt.Sprintf(
 				"Finished with some errors while searching for artworks based on %d tag names on Pixiv!\nPlease refer to the logs for more details...",
-				len(pixivDl.TagNames),
+				tagNameLen,
 			),
-			len(pixivDl.TagNames),
 		)
+		progress.UpdateMax(tagNameLen)
 		progress.Start()
 		hasErr := false
 		for idx, tagName := range pixivDl.TagNames {
@@ -81,7 +81,7 @@ func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWeb
 			)
 			artworksToDl = append(artworksToDl, artworksSlice...)
 			ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 		}
 		progress.Stop(hasErr)
 	}
@@ -111,7 +111,7 @@ func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWeb
 		)
 	}
 
-	alertUser(artworksToDl, ugoiraToDl, notifTitle, app)
+	alertUser(artworksToDl, ugoiraToDl, pixivDlOptions.Notifier)
 }
 
 // Start the download process for Pixiv
@@ -138,26 +138,25 @@ func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.Pi
 		ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
 	}
 
-	if len(pixivDl.TagNames) > 0 {
+	tagNamesLen := len(pixivDl.TagNames)
+	if tagNamesLen > 0 {
 		// loop through each tag and page number
-		baseMsg := "Searching for artworks based on tag names on Pixiv [%d/" + fmt.Sprintf("%d]...", len(pixivDl.TagNames))
-		progress := spinner.New(
-			"pong",
-			"fgHiYellow",
-			fmt.Sprintf(
-				baseMsg,
-				0,
-			),
+		baseMsg := "Searching for artworks based on tag names on Pixiv [%d/" + fmt.Sprintf("%d]...", tagNamesLen)
+		progress := pixivDlOptions.TagSearchProgBar
+		progress.UpdateBaseMsg(baseMsg)
+		progress.UpdateSuccessMsg(
 			fmt.Sprintf(
 				"Finished searching for artworks based on %d tag names on Pixiv!",
-				len(pixivDl.TagNames),
+				tagNamesLen,
 			),
+		)
+		progress.UpdateErrorMsg(
 			fmt.Sprintf(
 				"Finished with some errors while searching for artworks based on %d tag names on Pixiv!\nPlease refer to the logs for more details...",
-				len(pixivDl.TagNames),
+				tagNamesLen,
 			),
-			len(pixivDl.TagNames),
 		)
+		progress.UpdateMax(tagNamesLen)
 		progress.Start()
 		hasErr := false
 		for idx, tagName := range pixivDl.TagNames {
@@ -171,7 +170,7 @@ func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.Pi
 			)
 			artworksToDl = append(artworksToDl, artworksSlice...)
 			ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
-			progress.MsgIncrement(baseMsg)
+			progress.Increment()
 		}
 		progress.Stop(hasErr)
 	}
@@ -200,5 +199,5 @@ func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.Pi
 		)
 	}
 
-	alertUser(artworksToDl, ugoiraToDl, notifTitle, app)
+	alertUser(artworksToDl, ugoiraToDl, pixivDlOptions.Notifier)
 }
