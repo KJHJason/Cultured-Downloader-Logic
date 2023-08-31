@@ -97,7 +97,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 
 const fantiaPostUrl = constants.FANTIA_URL + "/api/v1/posts/"
 
-func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, error) {
+func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, error) {
 	msgSuffix := fmt.Sprintf(
 		"[%d/%d]",
 		count,
@@ -133,7 +133,7 @@ func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *Fan
 			}
 		}
 
-		return dlFantiaPost(count, maxCount, postId, notifTitle, dlOptions)
+		return DlFantiaPost(count, maxCount, postId, dlOptions)
 	} else if err != nil {
 		return nil, err
 	}
@@ -158,12 +158,12 @@ func dlFantiaPost(count, maxCount int, postId, notifTitle string, dlOptions *Fan
 // Note that only the downloading of the URL(s) is/are executed concurrently
 // to reduce the chance of the signed AWS S3 URL(s) from expiring before the download is
 // executed or completed due to a download queue to avoid resource exhaustion of the user's system.
-func (f *FantiaDl) dlFantiaPosts(dlOptions *FantiaDlOptions, notifTitle string) []*httpfuncs.ToDownload {
+func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) []*httpfuncs.ToDownload {
 	var errSlice []error
 	var gdriveLinks []*httpfuncs.ToDownload
 	postIdsLen := len(f.PostIds)
 	for i, postId := range f.PostIds {
-		postGdriveLinks, err := dlFantiaPost(i+1, postIdsLen, postId, notifTitle, dlOptions)
+		postGdriveLinks, err := DlFantiaPost(i+1, postIdsLen, postId, dlOptions)
 
 		if err != nil {
 			errSlice = append(errSlice, err)
@@ -274,7 +274,7 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 }
 
 // Retrieves all the posts based on the slice of creator IDs and updates its PostIds slice
-func (f *FantiaDl) getCreatorsPosts(dlOptions *FantiaDlOptions) {
+func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) {
 	creatorIdsLen := len(f.FanclubIds)
 	if creatorIdsLen != len(f.FanclubPageNums) {
 		panic(

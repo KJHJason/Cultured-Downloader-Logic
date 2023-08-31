@@ -178,7 +178,7 @@ func getPostDetails(post *KemonoPostToDl, downloadPath string, dlOptions *Kemono
 	return postsToDl, gdriveLinks, nil
 }
 
-func getMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
+func GetMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
 	var maxConcurrency int
 	postLen := len(posts)
 	if postLen > API_MAX_CONCURRENT {
@@ -307,7 +307,7 @@ func getCreatorPosts(creator *KemonoCreatorToDl, downloadPath string, dlOptions 
 	return postsToDl, gdriveLinksToDl, nil
 }
 
-func getMultipleCreators(creators []*KemonoCreatorToDl, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
+func GetMultipleCreators(creators []*KemonoCreatorToDl, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
 	var errSlice []error
 	var urlsToDownload, gdriveLinks []*httpfuncs.ToDownload
 	creatorLen := len(creators)
@@ -362,7 +362,7 @@ func processFavCreator(resJson KemonoFavCreatorJson, tld string) []*KemonoCreato
 	return creators
 }
 
-func getFavourites(downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func GetFavourites(downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	apiUrl, tld, err := getKemonoUrlFromCookie(dlOptions.SessionCookies, true)
 	if err != nil {
 		return nil, nil, err
@@ -408,7 +408,7 @@ func getFavourites(downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfunc
 	}
 	urlsToDownload, gdriveLinks := processMultipleJson(postResJson, tld, downloadPath, dlOptions)
 
-	creatorsPost, creatorsGdrive := getMultipleCreators(artistToDl, downloadPath, dlOptions)
+	creatorsPost, creatorsGdrive := GetMultipleCreators(artistToDl, downloadPath, dlOptions)
 	urlsToDownload = append(urlsToDownload, creatorsPost...)
 	gdriveLinks = append(gdriveLinks, creatorsGdrive...)
 

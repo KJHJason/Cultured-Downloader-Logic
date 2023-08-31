@@ -26,3 +26,10 @@ type cookieInfoArgs struct {
 	name     string
 	sameSite http.SameSite
 }
+
+func NewCookieInfoArgs(name string, sameSite http.SameSite) *cookieInfoArgs {
+	return &cookieInfoArgs{
+		name:     name,
+		sameSite: sameSite,
+	}
+}

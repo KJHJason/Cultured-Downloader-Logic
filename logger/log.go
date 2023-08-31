@@ -15,7 +15,7 @@ import (
 
 const LogSuffix = "\n\n"
 var (
-	mainLogger *logger
+	MainLogger *Logger
 	logFolder = filepath.Join(iofuncs.APP_PATH, "logs")
 	logFilePath = filepath.Join(
 		logFolder,
@@ -43,7 +43,7 @@ func init() {
 		)
 		panic(fileErr)
 	}
-	mainLogger = NewLogger(f)
+	MainLogger = NewLogger(f)
 }
 
 // Delete all empty log files and log files
@@ -72,7 +72,7 @@ func LogError(err error, exit bool, level int) {
 		return
 	}
 
-	mainLogger.LogBasedOnLvl(level, err.Error() + LogSuffix)
+	MainLogger.LogBasedOnLvl(level, err.Error() + LogSuffix)
 	if exit {
 		os.Exit(1)
 	}

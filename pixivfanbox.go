@@ -1,26 +1,26 @@
-package pixivfanbox
+package cdlogic
 
 import (
-	"fyne.io/fyne/v2"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixivfanbox"
 )
 
 // Start the download process for Pixiv Fanbox
-func PixivFanboxDownloadProcess(pixivFanboxDl *PixivFanboxDl, pixivFanboxDlOptions *PixivFanboxDlOptions, notifTitle string, app fyne.App) {
+func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivFanboxDlOptions *pixivfanbox.PixivFanboxDlOptions) {
 	if !pixivFanboxDlOptions.DlThumbnails && !pixivFanboxDlOptions.DlImages && !pixivFanboxDlOptions.DlAttachments && !pixivFanboxDlOptions.DlGdrive {
 		return
 	}
 
 	if len(pixivFanboxDl.CreatorIds) > 0 {
-		pixivFanboxDl.getCreatorsPosts(
+		pixivFanboxDl.GetCreatorsPosts(
 			pixivFanboxDlOptions,
 		)
 	}
 
 	var urlsToDownload, gdriveUrlsToDownload []*httpfuncs.ToDownload
 	if len(pixivFanboxDl.PostIds) > 0 {
-		urlsToDownload, gdriveUrlsToDownload = pixivFanboxDl.getPostDetails(
+		urlsToDownload, gdriveUrlsToDownload = pixivFanboxDl.GetPostDetails(
 			pixivFanboxDlOptions,
 		)
 	}
@@ -32,7 +32,7 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *PixivFanboxDl, pixivFanboxDlOptio
 			urlsToDownload,
 			&httpfuncs.DlOptions{
 				MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
-				Headers:        GetPixivFanboxHeaders(),
+				Headers:        pixivfanbox.GetPixivFanboxHeaders(),
 				Cookies:        pixivFanboxDlOptions.SessionCookies,
 				UseHttp3:       false,
 			},
@@ -49,7 +49,7 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *PixivFanboxDl, pixivFanboxDlOptio
 		)
 	}
 
-	notifier := pixivFanboxDlOptions.notifier
+	notifier := pixivFanboxDlOptions.Notifier
 	if downloadedPosts {
 		notifier.Alert("Downloaded all posts from Pixiv Fanbox!")
 	} else {

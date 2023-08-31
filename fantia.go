@@ -1,23 +1,24 @@
-package fantia
+package cdlogic
 
 import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/fantia"
 )
 
 // Start the download process for Fantia
-func FantiaDownloadProcess(fantiaDl *FantiaDl, fantiaDlOptions *FantiaDlOptions, notifTitle string) {
+func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.FantiaDlOptions) {
 	if !fantiaDlOptions.DlThumbnails && !fantiaDlOptions.DlImages && !fantiaDlOptions.DlAttachments {
 		return
 	}
 
 	if len(fantiaDl.FanclubIds) > 0 {
-		fantiaDl.getCreatorsPosts(fantiaDlOptions)
+		fantiaDl.GetCreatorsPosts(fantiaDlOptions)
 	}
 
 	var gdriveLinks []*httpfuncs.ToDownload
 	var downloadedPosts bool
 	if len(fantiaDl.PostIds) > 0 {
-		fantiaDl.dlFantiaPosts(fantiaDlOptions, notifTitle)
+		fantiaDl.DlFantiaPosts(fantiaDlOptions)
 		downloadedPosts = true
 	}
 

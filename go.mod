@@ -3,7 +3,6 @@ module github.com/KJHJason/Cultured-Downloader-Logic
 go 1.21
 
 require (
-	fyne.io/fyne/v2 v2.3.5
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/chromedp/cdproto v0.0.0-20230828023241-f357fd93b5d6
 	github.com/chromedp/chromedp v0.9.2

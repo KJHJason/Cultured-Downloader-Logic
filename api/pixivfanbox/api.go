@@ -21,7 +21,7 @@ func GetPixivFanboxHeaders() map[string]string {
 
 // Query Pixiv Fanbox's API based on the slice of post IDs and
 // returns a map of urls and a map of GDrive urls to download from.
-func (pf *PixivFanboxDl) getPostDetails(dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
+func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
 	maxConcurrency := constants.MAX_API_CALLS
 	postIdsLen := len(pf.PostIds)
 	if postIdsLen < maxConcurrency {
@@ -261,7 +261,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 }
 
 // Retrieves all the posts based on the slice of creator IDs and updates its slice of post IDs accordingly
-func (pf *PixivFanboxDl) getCreatorsPosts(dlOptions *PixivFanboxDlOptions) {
+func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) {
 	creatorIdsLen := len(pf.CreatorIds)
 	if creatorIdsLen != len(pf.CreatorPageNums) {
 		panic(

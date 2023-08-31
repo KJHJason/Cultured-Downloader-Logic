@@ -77,7 +77,7 @@ type PixivFanboxDlOptions struct {
 	SessionCookieId string
 	SessionCookies  []*http.Cookie
 
-	notifier notify.Notifier
+	Notifier notify.Notifier
 
 	// Prog bar
 	PostProgressBar         progress.Progress

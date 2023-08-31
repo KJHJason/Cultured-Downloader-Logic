@@ -1,15 +1,15 @@
-package kemono
+package cdlogic
 
 import (
-	"fyne.io/fyne/v2"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/kemono"
 )
 
-func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions *KemonoDlOptions, notifTitle string, app fyne.App) {
+func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDlOptions) {
 	if !dlOptions.DlAttachments && !dlOptions.DlGdrive {
 		return
 	}
@@ -21,7 +21,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 		progress.UpdateSuccessMsg("Finished getting favourites from Kemono Party!")
 		progress.UpdateErrorMsg("Something went wrong while getting favourites from Kemono Party.\nPlease refer to the logs for more details.")
 		progress.Start()
-		favToDl, favGdriveLinks, err := getFavourites(
+		favToDl, favGdriveLinks, err := kemono.GetFavourites(
 			iofuncs.DOWNLOAD_PATH,
 			dlOptions,
 		)
@@ -36,7 +36,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 	}
 
 	if len(kemonoDl.PostsToDl) > 0 {
-		postsToDl, gdriveLinksToDl := getMultiplePosts(
+		postsToDl, gdriveLinksToDl := kemono.GetMultiplePosts(
 			kemonoDl.PostsToDl,
 			iofuncs.DOWNLOAD_PATH,
 			dlOptions,
@@ -45,7 +45,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *KemonoDl, dlOptions
 		gdriveLinks = append(gdriveLinks, gdriveLinksToDl...)
 	}
 	if len(kemonoDl.CreatorsToDl) > 0 {
-		creatorsToDl, gdriveLinksToDl := getMultipleCreators(
+		creatorsToDl, gdriveLinksToDl := kemono.GetMultipleCreators(
 			kemonoDl.CreatorsToDl,
 			iofuncs.DOWNLOAD_PATH,
 			dlOptions,

@@ -16,26 +16,26 @@ const (
 	DEBUG
 )
 
-type logger struct {
+type Logger struct {
 	infoLogger  *log.Logger
 	errorLogger *log.Logger
 	debugLogger *log.Logger
 }
 
 var loggerPrefix = fmt.Sprintf("Cultured Downloader CLI V%s ", constants.VERSION)
-func NewLogger(out io.Writer) *logger {
+func NewLogger(out io.Writer) *Logger {
 	if out == nil {
 		out = os.Stdout
 	}
 
-	return &logger{
+	return &Logger{
 		infoLogger:  log.New(out, loggerPrefix + "[INFO]: ", log.Ldate|log.Ltime),
 		errorLogger: log.New(out, loggerPrefix + "[ERROR]: ", log.Ldate|log.Ltime),
 		debugLogger: log.New(out, loggerPrefix + "[DEBUG]: ", log.Ldate|log.Ltime),
 	}
 }
 
-func (l *logger) SetOutput(w io.Writer) {
+func (l *Logger) SetOutput(w io.Writer) {
 	l.infoLogger.SetOutput(w)
 	l.errorLogger.SetOutput(w)
 	l.debugLogger.SetOutput(w)
@@ -47,7 +47,7 @@ func (l *logger) SetOutput(w io.Writer) {
 //
 // However, please ensure that the 
 // lvl passed in is valid (i.e. INFO, ERROR, or DEBUG), otherwise this function will panic
-func (l *logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
+func (l *Logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
 	switch lvl {
 	case INFO:
 		l.Infof(format, args...)
@@ -70,30 +70,30 @@ func (l *logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
 //
 // However, please ensure that the 
 // lvl passed in is valid (i.e. INFO, ERROR, or DEBUG), otherwise this function will panic
-func (l *logger) LogBasedOnLvl(lvl int, msg string) {
+func (l *Logger) LogBasedOnLvl(lvl int, msg string) {
 	l.LogBasedOnLvlf(lvl, msg)
 }
 
-func (l *logger) Debug(args ...any) {
+func (l *Logger) Debug(args ...any) {
 	l.debugLogger.Println(args...)
 }
 
-func (l *logger) Debugf(format string, args ...any) {
+func (l *Logger) Debugf(format string, args ...any) {
 	l.debugLogger.Printf(format, args...)
 }
 
-func (l *logger) Info(args ...any) {
+func (l *Logger) Info(args ...any) {
 	l.infoLogger.Println(args...)
 }
 
-func (l *logger) Infof(format string, args ...any) {
+func (l *Logger) Infof(format string, args ...any) {
 	l.infoLogger.Printf(format, args...)
 }
 
-func (l *logger) Error(args ...any) {
+func (l *Logger) Error(args ...any) {
 	l.errorLogger.Println(args...)
 }
 
-func (l *logger) Errorf(format string, args ...any) {
+func (l *Logger) Errorf(format string, args ...any) {
 	l.errorLogger.Printf(format, args...)
 }

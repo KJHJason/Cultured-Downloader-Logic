@@ -1,10 +1,10 @@
-package pixiv
+package cdlogic
 
 import (
 	"fmt"
 
-	"fyne.io/fyne/v2"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	pixivmobile "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/mobile"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
@@ -25,7 +25,7 @@ func alertUser(artworksToDl []*httpfuncs.ToDownload, ugoiraToDl []*models.Ugoira
 }
 
 // Start the download process for Pixiv
-func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWebDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions) {
+func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.PixivWebDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions) {
 	var ugoiraToDl []*models.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 	if len(pixivDl.IllustratorIds) > 0 {
@@ -115,7 +115,7 @@ func PixivWebDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivweb.PixivWeb
 }
 
 // Start the download process for Pixiv
-func PixivMobileDownloadProcess(pixivDl *PixivDl, pixivDlOptions *pixivmobile.PixivMobileDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions, notifTitle string, app fyne.App) {
+func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmobile.PixivMobileDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions, notifTitle string) {
 	var ugoiraToDl []*models.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 	if len(pixivDl.IllustratorIds) > 0 {
