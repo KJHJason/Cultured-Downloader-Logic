@@ -31,6 +31,7 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 		httpfuncs.DownloadUrls(
 			urlsToDownload,
 			&httpfuncs.DlOptions{
+				Context:        pixivFanboxDlOptions.GetContext(),
 				MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
 				Headers:        pixivfanbox.GetPixivFanboxHeaders(),
 				Cookies:        pixivFanboxDlOptions.SessionCookies,

@@ -139,7 +139,7 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 			UserAgent: dlOptions.Configs.UserAgent,
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
-			Context:   dlOptions.Ctx,
+			Context:   dlOptions.GetContext(),
 		},
 	)
 	if err != nil || res.StatusCode != 200 {
@@ -226,7 +226,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 					UserAgent: dlOptions.Configs.UserAgent,
 					Http2:     !useHttp3,
 					Http3:     useHttp3,
-					Context:   dlOptions.Ctx,
+					Context:   dlOptions.GetContext(),
 				},
 			)
 			if err != nil || res.StatusCode != 200 {

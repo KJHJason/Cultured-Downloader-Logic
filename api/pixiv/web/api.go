@@ -1,6 +1,7 @@
 package pixivweb
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -109,6 +110,7 @@ func getArtworkDetails(artworkId, downloadPath string, dlOptions *PixivWebDlOpti
 		UserAgent: dlOptions.Configs.UserAgent,
 		Http2:     !useHttp3,
 		Http3:     useHttp3,
+		Context:   dlOptions.GetContext(),
 	}
 	artworkDetailsJsonRes, err := getArtworkDetailsLogic(artworkId, reqArgs)
 	if err != nil {
@@ -195,10 +197,12 @@ func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptio
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+			progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv!")
+			return nil, nil
+		}
 	}
 	progress.Stop(hasErr)
-
 	return artworkDetails, ugoiraDetails
 }
 
@@ -218,9 +222,13 @@ func getIllustratorPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOpt
 			UserAgent: dlOptions.Configs.UserAgent,
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
+			Context:   dlOptions.GetContext(),
 		},
 	)
 	if err != nil {
+		if err == context.Canceled {
+			return nil, err
+		}
 		return nil, fmt.Errorf(
 			"pixiv error %d: failed to get illustrator's posts with an ID of %s due to %v",
 			constants.CONNECTION_ERROR,
@@ -291,7 +299,10 @@ func GetMultipleIllustratorPosts(illustratorIds, pageNums []string, downloadPath
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+			progress.StopInterrupt("Stopped getting artwork details from illustrator(s) on Pixiv!")
+			return nil
+		}
 	}
 	progress.Stop(hasErr)
 
@@ -320,6 +331,10 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 		reqArgs.Params["p"] = strconv.Itoa(page) // page number
 		res, err := httpfuncs.CallRequest(reqArgs)
 		if err != nil {
+			if err == context.Canceled {
+				errSlice = append(errSlice, err)
+				return nil, errSlice
+			}
 			err = fmt.Errorf(
 				"pixiv error %d: failed to get tag search results for %s due to %v",
 				constants.CONNECTION_ERROR,
@@ -350,11 +365,12 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 
 // Query Pixiv's API and search for posts based on the supplied tag name
 // which will return a map and a slice of Ugoira structures for downloads
-func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*models.Ugoira, bool) {
+// Returns the map, the slice, a boolean indicating if there was an error, and a boolean indicating if the user cancelled the operation
+func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*models.Ugoira, bool, bool) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		logger.LogError(err, false, logger.ERROR)
-		return nil, nil, true
+		return nil, nil, true, false
 	}
 
 	url := fmt.Sprintf("%s/search/artworks/%s", constants.PIXIV_API_URL, tagName)
@@ -391,6 +407,7 @@ func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptio
 			UserAgent:   dlOptions.Configs.UserAgent,
 			Http2:       !useHttp3,
 			Http3:       useHttp3,
+			Context:     dlOptions.GetContext(),
 		},
 		&pageNumArgs{
 			minPage: minPage,
@@ -402,7 +419,9 @@ func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptio
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		if cancelled := logger.LogErrors(false, logger.ERROR, errSlice...); cancelled {
+			return nil, nil, false, true
+		}
 	}
 
 	artworkSlice, ugoiraSlice := GetMultipleArtworkDetails(
@@ -410,5 +429,5 @@ func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptio
 		downloadPath,
 		dlOptions,
 	)
-	return artworkSlice, ugoiraSlice, hasErr
+	return artworkSlice, ugoiraSlice, hasErr, false
 }

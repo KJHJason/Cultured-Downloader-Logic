@@ -170,7 +170,7 @@ func (k *KemonoDl) ValidateArgs() error {
 
 // KemonoDlOptions is the struct that contains the arguments for Kemono download options.
 type KemonoDlOptions struct {
-	Ctx              context.Context
+	ctx              context.Context
 	cancel           context.CancelFunc
 	DlAttachments bool
 	DlGdrive      bool
@@ -195,12 +195,16 @@ type KemonoDlOptions struct {
 	GdriveDlProgBar          progress.Progress
 }
 
+func (k *KemonoDlOptions) GetContext() context.Context {
+	return k.ctx
+}
+
 func (k *KemonoDlOptions) GetCancel() context.CancelFunc {
 	return k.cancel
 }
 
 func (k *KemonoDlOptions) SetContext(ctx context.Context) {
-	k.Ctx, k.cancel = context.WithCancel(ctx)
+	k.ctx, k.cancel = context.WithCancel(ctx)
 }
 
 // Cancel cancels the context of the KemonoDlOptions struct.
@@ -213,7 +217,7 @@ func (k *KemonoDlOptions) Cancel() {
 //
 // Should be called after initialising the struct.
 func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
-	if k.Ctx == nil {
+	if k.GetContext() == nil {
 		k.SetContext(context.Background())
 	}
 

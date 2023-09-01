@@ -32,6 +32,7 @@ func MapDelaysToFilename(ugoiraFramesJson models.UgoiraFramesJson) map[string]in
 }
 
 type UgoiraFfmpegArgs struct {
+	context       context.Context
 	ffmpegPath    string
 	outputPath    string
 	ugoiraQuality int
@@ -69,12 +70,15 @@ func ConvertUgoira(ugoiraInfo *models.Ugoira, imagesFolderPath string, ugoiraFfm
 	}
 
 	// convert the frames to a gif or a video
-	cmd := exec.Command(ugoiraFfmpeg.ffmpegPath, args...)
+	cmd := exec.CommandContext(ugoiraFfmpeg.context, ugoiraFfmpeg.ffmpegPath, args...)
 	// cmd.Stderr = os.Stderr
 	// cmd.Stdout = os.Stdout
 	err = cmd.Run()
 	if err != nil {
 		os.Remove(ugoiraFfmpeg.outputPath)
+		if err == context.Canceled {
+			return err
+		}
 		return fmt.Errorf(
 			"pixiv error %d: failed to convert ugoira to %s, more info => %v",
 			constants.CMD_ERROR,
@@ -98,7 +102,7 @@ func GetUgoiraFilePaths(ugoireFilePath, ugoiraUrl, outputFormat string) (string,
 
 func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config) {
 	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ugoiraArgs.Context)
 	defer cancel()
 
 	// Catch SIGINT/SIGTERM signal and cancel the context when received
@@ -173,6 +177,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 			ugoira,
 			unzipFolderPath,
 			&UgoiraFfmpegArgs{
+				context:       ctx,
 				ffmpegPath:    config.FfmpegPath,
 				outputPath:    outputPath,
 				ugoiraQuality: ugoiraOptions.Quality,
@@ -189,12 +194,18 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+			progress.StopInterrupt(
+				fmt.Sprintf("Stopped converting ugoira to %s!", ugoiraOptions.OutputFormat),
+			)
+			return
+		}
 	}
 	progress.Stop(hasErr)
 }
 
 type UgoiraArgs struct {
+	Context       context.Context
 	UseMobileApi  bool
 	ToDownload    []*models.Ugoira
 	Cookies       []*http.Cookie
@@ -229,9 +240,10 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 		useHttp3 = httpfuncs.IsHttp3Supported(constants.PIXIV, true)
 	}
 
-	httpfuncs.DownloadUrlsWithHandler(
+	err := httpfuncs.DownloadUrlsWithHandler(
 		urlsToDownload,
 		&httpfuncs.DlOptions{
+			Context:        ugoiraArgs.Context,
 			MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
 			Headers:        headers,
 			Cookies:        ugoiraArgs.Cookies,
@@ -240,6 +252,7 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 		config, // Note: if isMobileApi is true, custom user-agent will be ignored
 		reqHandler,
 	)
-
-	convertMultipleUgoira(ugoiraArgs, ugoiraOptions, config)
+	if err != context.Canceled {
+		convertMultipleUgoira(ugoiraArgs, ugoiraOptions, config)
+	}
 }

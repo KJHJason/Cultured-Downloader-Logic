@@ -135,7 +135,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 			Http2:       !useHttp3,
 			Http3:       useHttp3,
 			CheckStatus: true,
-			Context:     dlOptions.Ctx,
+			Context:     dlOptions.GetContext(),
 		},
 	)
 	if err != nil {
@@ -169,7 +169,7 @@ func getPostDetails(post *KemonoPostToDl, downloadPath string, dlOptions *Kemono
 			Http2:       !useHttp3,
 			Http3:       useHttp3,
 			CheckStatus: true,
-			Context:     dlOptions.Ctx,
+			Context:     dlOptions.GetContext(),
 		},
 	)
 	if err != nil {
@@ -296,7 +296,7 @@ func getCreatorPosts(creator *KemonoCreatorToDl, downloadPath string, dlOptions 
 				Http2:       !useHttp3,
 				Http3:       useHttp3,
 				CheckStatus: true,
-				Context:     dlOptions.Ctx,
+				Context:     dlOptions.GetContext(),
 			},
 		)
 		if err != nil {
@@ -408,7 +408,7 @@ func GetFavourites(downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfunc
 		Http2:       !useHttp3,
 		Http3:       useHttp3,
 		CheckStatus: true,
-		Context:     dlOptions.Ctx,
+		Context:     dlOptions.GetContext(),
 	}
 	res, err := httpfuncs.CallRequest(reqArgs)
 	if err != nil {

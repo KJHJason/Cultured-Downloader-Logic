@@ -1,6 +1,7 @@
 package pixivmobile
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -11,25 +12,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/fatih/color"
 )
-
-// PixivToDl is the struct that contains the arguments of Pixiv download options.
-type PixivMobileDlOptions struct {
-	// Sort order of the results. Can be "date_desc" or "date_asc".
-	SortOrder   string
-	SearchMode  string
-	RatingMode  string
-	ArtworkType string
-
-	Configs *configs.Config
-
-	MobileClient *PixivMobile
-	RefreshToken string
-
-	Notifier notify.Notifier
-
-	// Prog bar
-	TagSearchProgBar progress.Progress
-}
 
 var (
 	ACCEPTED_SORT_ORDER = []string{
@@ -55,10 +37,48 @@ var (
 	}
 )
 
+// PixivToDl is the struct that contains the arguments of Pixiv download options.
+type PixivMobileDlOptions struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	// Sort order of the results. Can be "date_desc" or "date_asc".
+	SortOrder   string
+	SearchMode  string
+	RatingMode  string
+	ArtworkType string
+
+	Configs *configs.Config
+
+	MobileClient *PixivMobile
+	RefreshToken string
+
+	Notifier notify.Notifier
+
+	// Prog bar
+	TagSearchProgBar progress.Progress
+}
+
+func (p *PixivMobileDlOptions) GetContext() context.Context {
+	return p.ctx
+}
+
+func (p *PixivMobileDlOptions) GetCancel() context.CancelFunc {
+	return p.cancel
+}
+
+func (p *PixivMobileDlOptions) SetContext(ctx context.Context) {
+	p.ctx, p.cancel = context.WithCancel(ctx)
+}
+
 // ValidateArgs validates the arguments of the Pixiv download options.
 //
 // Should be called after initialising the struct.
 func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
+	if p.GetContext() == nil {
+		p.SetContext(context.Background())
+	}
+
 	p.SortOrder = strings.ToLower(p.SortOrder)
 	api.ValidateStrArgs(
 		p.SortOrder,

@@ -54,7 +54,7 @@ func (f *FantiaDl) ValidateArgs() {
 
 // FantiaDlOptions is the struct that contains the options for downloading from Fantia.
 type FantiaDlOptions struct {
-	Ctx              context.Context
+	ctx              context.Context
 	cancel           context.CancelFunc
 	DlThumbnails     bool
 	DlImages         bool
@@ -113,7 +113,7 @@ func (f *FantiaDlOptions) GetCaptchaHandler() constants.CAPTCHA_FN {
 }
 
 func (f *FantiaDlOptions) GetContext() context.Context {
-	return f.Ctx
+	return f.ctx
 }
 
 func (f *FantiaDlOptions) GetCancel() context.CancelFunc {
@@ -121,7 +121,7 @@ func (f *FantiaDlOptions) GetCancel() context.CancelFunc {
 }
 
 func (f *FantiaDlOptions) SetContext(ctx context.Context) {
-	f.Ctx, f.cancel = context.WithCancel(ctx)
+	f.ctx, f.cancel = context.WithCancel(ctx)
 }
 
 // Cancel cancels the context of the FantiaDlOptions struct.
@@ -195,7 +195,7 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 //
 // Should be called after initialising the struct.
 func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
-	if f.Ctx == nil {
+	if f.GetContext() == nil {
 		f.SetContext(context.Background())
 	}
 

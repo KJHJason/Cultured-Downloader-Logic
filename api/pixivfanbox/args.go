@@ -63,7 +63,7 @@ func (pf *PixivFanboxDl) ValidateArgs() error {
 
 // PixivFanboxDlOptions is the struct that contains the options for downloading from Pixiv Fanbox.
 type PixivFanboxDlOptions struct {
-	Ctx           context.Context
+	ctx           context.Context
 	cancel        context.CancelFunc
 	DlThumbnails  bool
 	DlImages      bool
@@ -89,12 +89,16 @@ type PixivFanboxDlOptions struct {
 	GdriveDlProgBar         progress.Progress
 }
 
+func (pf *PixivFanboxDlOptions) GetContext() context.Context {
+	return pf.ctx
+}
+
 func (pf *PixivFanboxDlOptions) GetCancel() context.CancelFunc {
 	return pf.cancel
 }
 
 func (pf *PixivFanboxDlOptions) SetContext(ctx context.Context) {
-	pf.Ctx, pf.cancel = context.WithCancel(ctx)
+	pf.ctx, pf.cancel = context.WithCancel(ctx)
 }
 
 // Cancel cancels the context of the PixivFanboxDlOptions struct.
@@ -106,7 +110,7 @@ func (pf *PixivFanboxDlOptions) Cancel() {
 //
 // Should be called after initialising the struct.
 func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
-	if pf.Ctx == nil {
+	if pf.GetContext() == nil {
 		pf.SetContext(context.Background())
 	}
 

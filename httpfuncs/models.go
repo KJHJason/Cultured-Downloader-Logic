@@ -21,7 +21,7 @@ type ToDownload struct {
 
 type DlOptions struct {
 	// Parent context for the download process
-	Ctx    context.Context
+	Context    context.Context
 
 	// MaxConcurrency is the maximum number of concurrent downloads
 	MaxConcurrency int

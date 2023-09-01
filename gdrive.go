@@ -13,7 +13,7 @@ import (
 )
 
 // Returns a GDrive structure with the given API key and max download workers
-func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWorkers int) (*gdrive.GDrive, error) {
+func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWorkers int, ctx context.Context) (*gdrive.GDrive, error) {
 	if jsonPath != "" && apiKey != "" {
 		return nil, errors.New("both google drive API key and service account credentials file cannot be used at the same time")
 	} else if jsonPath == "" && apiKey == "" {
@@ -21,6 +21,7 @@ func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWo
 	}
 
 	gdrive := &gdrive.GDrive{}
+	gdrive.SetContext(ctx)
 	gdrive.SetApiUrl("https://www.googleapis.com/drive/v3/files")
 	gdrive.SetTimeout(15)
 	gdrive.SetDownloadTimeout(900) // 15 minutes
@@ -39,7 +40,7 @@ func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWo
 	if !iofuncs.PathExists(jsonPath) {
 		return nil, fmt.Errorf("unable to access drive API due to missing credentials file: %s", jsonPath)
 	}
-	srv, err := drive.NewService(context.Background(), option.WithCredentialsFile(jsonPath))
+	srv, err := drive.NewService(ctx, option.WithCredentialsFile(jsonPath))
 	if err != nil {
 		return nil, fmt.Errorf("unable to access drive API due to %v", err)
 	}

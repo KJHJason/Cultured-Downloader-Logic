@@ -194,10 +194,10 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 // DownloadUrls is used to download multiple files from URLs concurrently
 //
 // Note: If the file already exists, the download process will be skipped
-func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config, reqHandler RequestHandler) {
+func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config, reqHandler RequestHandler) error {
 	urlsLen := len(urlInfoSlice)
 	if urlsLen == 0 {
-		return
+		return nil
 	}
 	if urlsLen < dlOptions.MaxConcurrency {
 		dlOptions.MaxConcurrency = urlsLen
@@ -245,7 +245,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 					RetryDelay:     dlOptions.RetryDelay,
 					UserAgent:      config.UserAgent,
 					RequestHandler: reqHandler,
-					Context:        dlOptions.Ctx,
+					Context:        dlOptions.Context,
 				},
 				config.OverwriteFiles,
 			)
@@ -262,22 +262,19 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	close(queue)
 	close(errChan)
 
-
-	hasErr, hasCancelled := false, false
+	hasErr := false
 	if len(errChan) > 0 {
 		hasErr = true
-		if errCtxCancelled := logger.LogChanErrors(false, logger.ERROR, errChan); !hasCancelled && errCtxCancelled {
-			hasCancelled = true
+		if hasCancelled := logger.LogChanErrors(false, logger.ERROR, errChan); hasCancelled {
+			progress.StopInterrupt("Stopped downloading files (incomplete downloads will be deleted)...")
+			return context.Canceled
 		} 
 	}
-	if hasCancelled {
-		progress.StopInterrupt("Stopped downloading files (incomplete downloads will be deleted)...")
-		return
-	}
 	progress.Stop(hasErr)
+	return nil
 }
 
 // Same as DownloadUrlsWithHandler but uses the default request handler (CallRequest)
-func DownloadUrls(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config) {
-	DownloadUrlsWithHandler(urlInfoSlice, dlOptions, config, CallRequest)
+func DownloadUrls(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config) error {
+	return DownloadUrlsWithHandler(urlInfoSlice, dlOptions, config, CallRequest)
 }

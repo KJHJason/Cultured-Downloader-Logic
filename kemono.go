@@ -60,6 +60,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dl
 		httpfuncs.DownloadUrls(
 			toDownload,
 			&httpfuncs.DlOptions{
+				Context:        dlOptions.GetContext(),
 				MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
 				Cookies:        dlOptions.SessionCookies,
 				UseHttp3:       httpfuncs.IsHttp3Supported(constants.KEMONO, false),

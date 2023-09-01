@@ -1,6 +1,7 @@
 package pixivweb
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,27 +12,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
-
-// PixivToDl is the struct that contains the arguments of Pixiv download options.
-type PixivWebDlOptions struct {
-	// Sort order of the results. Can be "date_desc" or "date_asc".
-	SortOrder   string
-	SearchMode  string
-	RatingMode  string
-	ArtworkType string
-
-	Configs *configs.Config
-
-	SessionCookies  []*http.Cookie
-	SessionCookieId string
-
-	Notifier notify.Notifier
-
-	// Prog Bar
-	TagSearchProgBar           progress.Progress
-	GetPostsDetailProgBar      progress.Progress
-	GetIllustratorPostsProgBar progress.Progress
-}
 
 var (
 	ACCEPTED_SORT_ORDER = []string{
@@ -57,10 +37,50 @@ var (
 	}
 )
 
+// PixivToDl is the struct that contains the arguments of Pixiv download options.
+type PixivWebDlOptions struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	// Sort order of the results. Can be "date_desc" or "date_asc".
+	SortOrder   string
+	SearchMode  string
+	RatingMode  string
+	ArtworkType string
+
+	Configs *configs.Config
+
+	SessionCookies  []*http.Cookie
+	SessionCookieId string
+
+	Notifier notify.Notifier
+
+	// Prog Bar
+	TagSearchProgBar           progress.Progress
+	GetPostsDetailProgBar      progress.Progress
+	GetIllustratorPostsProgBar progress.Progress
+}
+
+func (p *PixivWebDlOptions) GetContext() context.Context {
+	return p.ctx
+}
+
+func (p *PixivWebDlOptions) GetCancel() context.CancelFunc {
+	return p.cancel
+}
+
+func (p *PixivWebDlOptions) SetContext(ctx context.Context) {
+	p.ctx, p.cancel = context.WithCancel(ctx)
+}
+
 // ValidateArgs validates the arguments of the Pixiv download options.
 //
 // Should be called after initialising the struct.
 func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
+	if p.GetContext() == nil {
+		p.SetContext(context.Background())
+	}
+
 	p.SortOrder = strings.ToLower(p.SortOrder)
 	api.ValidateStrArgs(
 		p.SortOrder,

@@ -1,6 +1,7 @@
 package gdrive
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -26,12 +27,18 @@ var (
 )
 
 type GDrive struct {
+	Ctx                context.Context
+	cancel             context.CancelFunc
 	apiKey             string         // Google Drive API key to use
 	client             *drive.Service // Google Drive service client (if using service account credentials)
 	apiUrl             string         // https://www.googleapis.com/drive/v3/files
 	timeout            int            // timeout in seconds for GDrive API v3
 	downloadTimeout    int            // timeout in seconds for GDrive file downloads
 	maxDownloadWorkers int            // max concurrent workers for downloading files
+}
+
+func (gdrive *GDrive) SetContext(ctx context.Context) {
+	gdrive.Ctx, gdrive.cancel = context.WithCancel(ctx)
 }
 
 func (gdrive *GDrive) SetApiKey(apiKey string) {

@@ -64,7 +64,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			UserAgent: dlOptions.Configs.UserAgent,
-			Context:   dlOptions.Ctx,
+			Context:   dlOptions.GetContext(),
 		},
 	)
 	if err != nil || res.StatusCode != 200 {
@@ -142,10 +142,10 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 	}
 
 	// Download the urls
-	httpfuncs.DownloadUrls(
+	err = httpfuncs.DownloadUrls(
 		urlsToDownload,
 		&httpfuncs.DlOptions{
-			Ctx:			dlOptions.Ctx,
+			Context:		dlOptions.GetContext(),
 			MaxConcurrency: constants.MAX_CONCURRENT_DOWNLOADS,
 			Headers:        nil,
 			Cookies:        dlOptions.SessionCookies,
@@ -154,6 +154,10 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		dlOptions.Configs,
 	)
 	fmt.Println()
+
+	if err == context.Canceled {
+		return nil, err
+	}
 	return postGdriveUrls, nil
 }
 
@@ -253,7 +257,7 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 				Http3:       useHttp3,
 				CheckStatus: true,
 				UserAgent:   dlOptions.Configs.UserAgent,
-				Context:     dlOptions.Ctx,
+				Context:     dlOptions.GetContext(),
 			},
 		)
 		if err != nil {
