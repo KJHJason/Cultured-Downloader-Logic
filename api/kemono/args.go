@@ -222,21 +222,28 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	captchaMap := map[string]progress.Progress{
-		"post":              k.PostProgBar,
-		"get creator posts": k.GetCreatorPostProgBar,
-		"process json":      k.ProcessJsonProgBar,
-		"get favourites":    k.GetFavouritesPostProgBar,
-		"gdrive api":        k.GdriveApiProgBar,
-		"gdrive download":   k.GdriveDlProgBar,
+		"PostProgBar":              k.PostProgBar,
+		"GetCreatorPostProgBar":    k.GetCreatorPostProgBar,
+		"ProcessJsonProgBar":       k.ProcessJsonProgBar,
+		"GetFavouritesPostProgBar": k.GetFavouritesPostProgBar,
+		"GdriveApiProgBar":         k.GdriveApiProgBar,
+		"GdriveDlProgBar":          k.GdriveDlProgBar,
 	}
 	for captchaName, captchaProgBar := range captchaMap {
 		if captchaProgBar == nil {
 			return fmt.Errorf(
-				"kemono error %d, %s progress bar is nil",
+				"kemono error %d, %s is nil",
 				constants.DEV_ERROR,
 				captchaName,
 			)
 		}
+	}
+
+	if k.Notifier == nil {
+		return fmt.Errorf(
+			"kemono error %d, notifier is nil",
+			constants.DEV_ERROR,
+		)
 	}
 
 	if k.SessionCookieId != "" {

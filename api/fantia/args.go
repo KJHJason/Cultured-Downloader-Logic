@@ -200,12 +200,12 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	captchaMap := map[string]progress.Progress{
-		"captcha":           f.CaptchaSolverProgBar,
-		"post":              f.PostProgBar,
-		"get fanclub posts": f.GetFanclubPostsProgBar,
-		"process json":      f.ProcessJsonProgBar,
-		"gdrive api":        f.GdriveApiProgBar,
-		"gdrive download":   f.GdriveDlProgBar,
+		"CaptchaSolverProgBar":   f.CaptchaSolverProgBar,
+		"PostProgBar":            f.PostProgBar,
+		"GetFanclubPostsProgBar": f.GetFanclubPostsProgBar,
+		"ProcessJsonProgBar":     f.ProcessJsonProgBar,
+		"GdriveApiProgBar":       f.GdriveApiProgBar,
+		"GdriveDlProgBar":        f.GdriveDlProgBar,
 	}
 	for captchaName, captchaProgBar := range captchaMap {
 		if captchaProgBar == nil {
@@ -215,6 +215,20 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 				captchaName,
 			)
 		}
+	}
+
+	if f.Notifier == nil {
+		return fmt.Errorf(
+			"fantia error %d, notifier is nil",
+			constants.DEV_ERROR,
+		)
+	}
+
+	if f.captchaHandler == nil {
+		return fmt.Errorf(
+			"fantia error %d, captcha handler is nil",
+			constants.DEV_ERROR,
+		)
 	}
 
 	if f.SessionCookieId != "" {

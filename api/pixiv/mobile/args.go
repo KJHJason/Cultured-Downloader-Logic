@@ -80,7 +80,14 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 
 	if p.TagSearchProgBar == nil {
 		return fmt.Errorf(
-			"pixiv error %d: TagSearchProgBar is not set",
+			"pixiv error %d: TagSearchProgBar is nil",
+			constants.DEV_ERROR,
+		)
+	}
+
+	if p.Notifier == nil {
+		return fmt.Errorf(
+			"pixiv error %d: notifier is nil",
 			constants.DEV_ERROR,
 		)
 	}

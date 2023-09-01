@@ -115,20 +115,27 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	captchaMap := map[string]progress.Progress{
-		"post":              pf.PostProgBar,
-		"get creator posts": pf.CreatorPostsProgBar,
-		"process json":      pf.ProcessJsonProgBar,
-		"gdrive api":        pf.GdriveApiProgBar,
-		"gdrive download":   pf.GdriveDlProgBar,
+		"PostProgBar":         pf.PostProgBar,
+		"CreatorPostsProgBar": pf.CreatorPostsProgBar,
+		"ProcessJsonProgBar":  pf.ProcessJsonProgBar,
+		"GdriveApiProgBar":    pf.GdriveApiProgBar,
+		"GdriveDlProgBar":     pf.GdriveDlProgBar,
 	}
 	for captchaName, captchaProgBar := range captchaMap {
 		if captchaProgBar == nil {
 			return fmt.Errorf(
-				"kemono error %d, %s progress bar is nil",
+				"kemono error %d, %s is nil",
 				constants.DEV_ERROR,
 				captchaName,
 			)
 		}
+	}
+
+	if pf.Notifier == nil {
+		return fmt.Errorf(
+			"pixiv fanbox error %d: Notifier cannot be nil",
+			constants.DEV_ERROR,
+		)
 	}
 
 	if pf.SessionCookieId != "" {

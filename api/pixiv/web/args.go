@@ -81,6 +81,28 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		p.SetContext(context.Background())
 	}
 
+	captchaMap := map[string]progress.Progress{
+		"TagSearchProgBar":           p.TagSearchProgBar,
+		"GetPostsDetailProgBar":      p.GetPostsDetailProgBar,
+		"GetIllustratorPostsProgBar": p.GetIllustratorPostsProgBar,
+	}
+	for captchaName, captchaProgBar := range captchaMap {
+		if captchaProgBar == nil {
+			return fmt.Errorf(
+				"kemono error %d, %s is nil",
+				constants.DEV_ERROR,
+				captchaName,
+			)
+		}
+	}
+
+	if p.Notifier == nil {
+		return fmt.Errorf(
+			"pixiv error %d: Notifier cannot be nil",
+			constants.DEV_ERROR,
+		)
+	}
+
 	p.SortOrder = strings.ToLower(p.SortOrder)
 	_, err := api.ValidateStrArgs(
 		p.SortOrder,
