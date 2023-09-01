@@ -10,7 +10,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
-	"github.com/fatih/color"
 )
 
 var (
@@ -74,13 +73,20 @@ func (p *PixivMobileDlOptions) SetContext(ctx context.Context) {
 // ValidateArgs validates the arguments of the Pixiv download options.
 //
 // Should be called after initialising the struct.
-func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
+func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 	if p.GetContext() == nil {
 		p.SetContext(context.Background())
 	}
 
+	if p.TagSearchProgBar == nil {
+		return fmt.Errorf(
+			"pixiv error %d: TagSearchProgBar is not set",
+			constants.DEV_ERROR,
+		)
+	}
+
 	p.SortOrder = strings.ToLower(p.SortOrder)
-	api.ValidateStrArgs(
+	_, err := api.ValidateStrArgs(
 		p.SortOrder,
 		ACCEPTED_SORT_ORDER,
 		[]string{
@@ -91,9 +97,12 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 			),
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	p.SearchMode = strings.ToLower(p.SearchMode)
-	api.ValidateStrArgs(
+	_, err = api.ValidateStrArgs(
 		p.SearchMode,
 		ACCEPTED_SEARCH_MODE,
 		[]string{
@@ -104,9 +113,12 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 			),
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	p.RatingMode = strings.ToLower(p.RatingMode)
-	api.ValidateStrArgs(
+	_, err = api.ValidateStrArgs(
 		p.RatingMode,
 		ACCEPTED_RATING_MODE,
 		[]string{
@@ -117,9 +129,12 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 			),
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	p.ArtworkType = strings.ToLower(p.ArtworkType)
-	api.ValidateStrArgs(
+	_, err = api.ValidateStrArgs(
 		p.ArtworkType,
 		ACCEPTED_ARTWORK_TYPE,
 		[]string{
@@ -130,23 +145,17 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 			),
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	if p.RefreshToken != "" {
 		p.MobileClient = NewPixivMobile(p.RefreshToken, 10, p.ctx)
+
+		// Now that we have the client, 
+		// we will have to update the ajax equivalent parameters to suit the mobile API.
 		if p.RatingMode != "all" {
-			color.Red(
-				api.CombineStringsWithNewline(
-					fmt.Sprintf(
-						"pixiv error %d: when using the refresh token, only \"all\" is supported for the --rating_mode flag.",
-						constants.INPUT_ERROR,
-					),
-					fmt.Sprintf(
-						"hence, the rating mode will be updated from %q to \"all\"...\n",
-						p.RatingMode,
-					),
-				),
-			)
-			p.RatingMode = "all"
+			p.RatingMode = "all" // only supports "all"
 		}
 
 		if p.ArtworkType == "illust_and_ugoira" {
@@ -185,40 +194,7 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 		} else {
 			newSortOrder = "date_asc"
 		}
-
-		if p.SortOrder != "date" && p.SortOrder != "date_d" && p.SortOrder != "popular_d" {
-			var ajaxEquivalent string
-			switch newSortOrder {
-			case "popular_desc":
-				ajaxEquivalent = "popular_d"
-			case "date_desc":
-				ajaxEquivalent = "date_d"
-			case "date_asc":
-				ajaxEquivalent = "date"
-			default:
-				panic(
-					fmt.Sprintf(
-						"pixiv error %d: unknown sort order %q in PixivDlOptions.ValidateArgs()",
-						constants.DEV_ERROR,
-						newSortOrder,
-					),
-				)
-			}
-
-			color.Red(
-				api.CombineStringsWithNewline(
-					fmt.Sprintf(
-						"pixiv error %d: when using the refresh token, only \"date\", \"date_d\", \"popular_d\" are supported for the --sort_order flag.",
-						constants.INPUT_ERROR,
-					),
-					fmt.Sprintf(
-						"hence, the sort order will be updated from %q to %q...\n",
-						p.SortOrder,
-						ajaxEquivalent,
-					),
-				),
-			)
-		}
 		p.SortOrder = newSortOrder
 	}
+	return nil
 }

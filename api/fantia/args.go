@@ -199,6 +199,24 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		f.SetContext(context.Background())
 	}
 
+	captchaMap := map[string]progress.Progress{
+		"captcha":           f.CaptchaSolverProgBar,
+		"post":              f.PostProgBar,
+		"get fanclub posts": f.GetFanclubPostsProgBar,
+		"process json":      f.ProcessJsonProgBar,
+		"gdrive api":        f.GdriveApiProgBar,
+		"gdrive download":   f.GdriveDlProgBar,
+	}
+	for captchaName, captchaProgBar := range captchaMap {
+		if captchaProgBar == nil {
+			return fmt.Errorf(
+				"fantia error %d, %s progress bar is nil",
+				constants.DEV_ERROR,
+				captchaName,
+			)
+		}
+	}
+
 	if f.SessionCookieId != "" {
 		if cookie, err := api.VerifyAndGetCookie(constants.FANTIA, f.SessionCookieId, userAgent); err != nil {
 			return err

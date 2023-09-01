@@ -34,7 +34,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	errChan := make(chan error, postIdsLen)
 
 	baseMsg := "Getting post details from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", postIdsLen)
-	progress := dlOptions.PostProgressBar
+	progress := dlOptions.PostProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -293,7 +293,7 @@ func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) {
 
 	var errSlice []error
 	baseMsg := "Getting post ID(s) from creator(s) on Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
-	progress := dlOptions.CreatorPostsProgressBar
+	progress := dlOptions.CreatorPostsProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(

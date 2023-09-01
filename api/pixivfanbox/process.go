@@ -296,7 +296,7 @@ func processMultiplePostJson(resChan chan *http.Response, dlOptions *PixivFanbox
 	var urlsSlice, gdriveUrls []*httpfuncs.ToDownload
 	resChanLen := len(resChan)
 	baseMsg := "Processing received JSON(s) from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", resChanLen)
-	progress := dlOptions.ProcessJsonProgressBar
+	progress := dlOptions.ProcessJsonProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(

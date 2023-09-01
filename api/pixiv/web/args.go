@@ -82,7 +82,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	p.SortOrder = strings.ToLower(p.SortOrder)
-	api.ValidateStrArgs(
+	_, err := api.ValidateStrArgs(
 		p.SortOrder,
 		ACCEPTED_SORT_ORDER,
 		[]string{
@@ -93,9 +93,12 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 			),
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	p.SearchMode = strings.ToLower(p.SearchMode)
-	api.ValidateStrArgs(
+	_, err = api.ValidateStrArgs(
 		p.SearchMode,
 		ACCEPTED_SEARCH_MODE,
 		[]string{
@@ -106,9 +109,12 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 			),
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	p.RatingMode = strings.ToLower(p.RatingMode)
-	api.ValidateStrArgs(
+	_, err = api.ValidateStrArgs(
 		p.RatingMode,
 		ACCEPTED_RATING_MODE,
 		[]string{
@@ -119,9 +125,12 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 			),
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	p.ArtworkType = strings.ToLower(p.ArtworkType)
-	api.ValidateStrArgs(
+	_, err = api.ValidateStrArgs(
 		p.ArtworkType,
 		ACCEPTED_ARTWORK_TYPE,
 		[]string{
@@ -132,6 +141,9 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 			),
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	if p.SessionCookieId != "" {
 		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV, p.SessionCookieId, userAgent); err != nil {

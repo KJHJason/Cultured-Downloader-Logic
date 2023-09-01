@@ -80,18 +80,14 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 				pixivDlOptions,
 			)
 			if hasCancelled {
-				break
+				progress.StopInterrupt("Stopped searching for artworks based on tag names on Pixiv!")
+				return
 			}
 			artworksToDl = append(artworksToDl, artworksSlice...)
 			ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
 			progress.Increment()
 		}
-
-		if hasCancelled {
-			progress.StopInterrupt("Stopped searching for artworks based on tag names on Pixiv!")
-		} else {
-			progress.Stop(hasErr)
-		}
+		progress.Stop(hasErr)
 	}
 
 	if len(artworksToDl) > 0 {
@@ -168,16 +164,20 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 		)
 		progress.UpdateMax(tagNamesLen)
 		progress.Start()
-		hasErr := false
+		hasErr, hasCancelled := false, false
 		for idx, tagName := range pixivDl.TagNames {
 			var artworksSlice []*httpfuncs.ToDownload
 			var ugoiraSlice []*models.Ugoira
-			artworksSlice, ugoiraSlice, hasErr = pixivDlOptions.MobileClient.TagSearch(
+			artworksSlice, ugoiraSlice, hasErr, hasCancelled = pixivDlOptions.MobileClient.TagSearch(
 				tagName,
 				iofuncs.DOWNLOAD_PATH,
 				pixivDl.TagNamesPageNums[idx],
 				pixivDlOptions,
 			)
+			if hasCancelled {
+				progress.StopInterrupt("Stopped searching for artworks based on tag names on Pixiv!")
+				return
+			}
 			artworksToDl = append(artworksToDl, artworksSlice...)
 			ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
 			progress.Increment()
@@ -189,7 +189,7 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 		httpfuncs.DownloadUrls(
 			artworksToDl,
 			&httpfuncs.DlOptions{
-				Context:        ,
+				Context:        pixivDlOptions.GetContext(),
 				MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
 				Headers:        pixivcommon.GetPixivRequestHeaders(),
 				UseHttp3:       false,

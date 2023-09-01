@@ -37,14 +37,18 @@ func (pixiv *PixivMobile) getUgoiraMetadata(illustId, dlFilePath string) (*model
 			CheckStatus: true,
 			Headers:     additionalHeaders,
 			Params:      params,
+			Context:     pixiv.ctx,
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"pixiv movile error %d: Failed to get ugoira metadata for %s",
-			constants.CONNECTION_ERROR,
-			illustId,
-		)
+		if err != context.Canceled {
+			err = fmt.Errorf(
+				"pixiv movile error %d: Failed to get ugoira metadata for %s",
+				constants.CONNECTION_ERROR,
+				illustId,
+			)
+		}
+		return nil, err 
 	}
 
 	var ugoiraJson models.UgoiraJson
@@ -79,12 +83,15 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId, downloadPath string) ([]*
 		},
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf(
-			"pixiv mobile error %d: failed to get artwork details for %s, more info => %v",
-			constants.CONNECTION_ERROR,
-			artworkId,
-			err,
-		)
+		if err != context.Canceled {
+			err = fmt.Errorf(
+				"pixiv mobile error %d: failed to get artwork details for %s, more info => %v",
+				constants.CONNECTION_ERROR,
+				artworkId,
+				err,
+			)
+		}
+		return nil, nil, err
 	}
 
 	var artworkJson models.PixivMobileArtworkJson
@@ -127,6 +134,9 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloa
 		artworkDetails, ugoiraInfo, err := pixiv.getArtworkDetails(artworkId, downloadPath)
 		if err != nil {
 			errSlice = append(errSlice, err)
+			if err == context.Canceled {
+				break
+			}
 			progress.Increment()
 			continue
 		}
@@ -146,10 +156,12 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloa
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+			progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv's Mobile API!")
+			return nil, nil
+		}
 	}
 	progress.Stop(hasErr)
-
 	return artworksToDownload, ugoiraSlice
 }
 

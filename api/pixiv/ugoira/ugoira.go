@@ -2,12 +2,10 @@ package ugoira
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/fatih/color"
 )
 
 // UgoiraDlOptions is the struct that contains the
@@ -29,34 +27,26 @@ var UGOIRA_ACCEPTED_EXT = []string{
 // ValidateArgs validates the arguments of the ugoira process options.
 //
 // Should be called after initialising the struct.
-func (u *UgoiraOptions) ValidateArgs() {
+func (u *UgoiraOptions) ValidateArgs() error {
 	u.OutputFormat = strings.ToLower(u.OutputFormat)
 
 	// u.Quality is only for .mp4 and .webm
 	if u.OutputFormat == ".mp4" && u.Quality < 0 || u.Quality > 51 {
-		color.Red(
-			fmt.Sprintf(
-				"pixiv error %d: Ugoira quality of %d is not allowed",
-				constants.INPUT_ERROR,
-				u.Quality,
-			),
+		return fmt.Errorf(
+			"pixiv error %d: Ugoira quality of %d is not allowed\nUgoira quality for FFmpeg must be between 0 and 51 for .mp4",
+			constants.INPUT_ERROR,
+			u.Quality,
 		)
-		color.Red("Ugoira quality for FFmpeg must be between 0 and 51 for .mp4")
-		os.Exit(1)
 	} else if u.OutputFormat == ".webm" && u.Quality < 0 || u.Quality > 63 {
-		color.Red(
-			fmt.Sprintf(
-				"pixiv error %d: Ugoira quality of %d is not allowed",
-				constants.INPUT_ERROR,
-				u.Quality,
-			),
+		return fmt.Errorf(
+			"pixiv error %d: Ugoira quality of %d is not allowed\nUgoira quality for FFmpeg must be between 0 and 63 for .webm",
+			constants.INPUT_ERROR,
+			u.Quality,
 		)
-		color.Red("Ugoira quality for FFmpeg must be between 0 and 63 for .webm")
-		os.Exit(1)
 	}
 
 	u.OutputFormat = strings.ToLower(u.OutputFormat)
-	api.ValidateStrArgs(
+	_, err := api.ValidateStrArgs(
 		u.OutputFormat,
 		UGOIRA_ACCEPTED_EXT,
 		[]string{
@@ -67,4 +57,8 @@ func (u *UgoiraOptions) ValidateArgs() {
 			),
 		},
 	)
+	if err != nil {
+		return err
+	}
+	return nil
 }

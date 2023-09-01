@@ -82,9 +82,9 @@ type PixivFanboxDlOptions struct {
 	Notifier notify.Notifier
 
 	// Prog bar
-	PostProgressBar         progress.Progress
-	CreatorPostsProgressBar progress.Progress
-	ProcessJsonProgressBar  progress.Progress
+	PostProgBar             progress.Progress
+	CreatorPostsProgBar     progress.Progress
+	ProcessJsonProgBar      progress.Progress
 	GdriveApiProgBar        progress.Progress
 	GdriveDlProgBar         progress.Progress
 }
@@ -112,6 +112,23 @@ func (pf *PixivFanboxDlOptions) Cancel() {
 func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 	if pf.GetContext() == nil {
 		pf.SetContext(context.Background())
+	}
+
+	captchaMap := map[string]progress.Progress{
+		"post":              pf.PostProgBar,
+		"get creator posts": pf.CreatorPostsProgBar,
+		"process json":      pf.ProcessJsonProgBar,
+		"gdrive api":        pf.GdriveApiProgBar,
+		"gdrive download":   pf.GdriveDlProgBar,
+	}
+	for captchaName, captchaProgBar := range captchaMap {
+		if captchaProgBar == nil {
+			return fmt.Errorf(
+				"kemono error %d, %s progress bar is nil",
+				constants.DEV_ERROR,
+				captchaName,
+			)
+		}
 	}
 
 	if pf.SessionCookieId != "" {

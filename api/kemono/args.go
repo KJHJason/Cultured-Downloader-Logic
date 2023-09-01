@@ -221,6 +221,24 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 		k.SetContext(context.Background())
 	}
 
+	captchaMap := map[string]progress.Progress{
+		"post":              k.PostProgBar,
+		"get creator posts": k.GetCreatorPostProgBar,
+		"process json":      k.ProcessJsonProgBar,
+		"get favourites":    k.GetFavouritesPostProgBar,
+		"gdrive api":        k.GdriveApiProgBar,
+		"gdrive download":   k.GdriveDlProgBar,
+	}
+	for captchaName, captchaProgBar := range captchaMap {
+		if captchaProgBar == nil {
+			return fmt.Errorf(
+				"kemono error %d, %s progress bar is nil",
+				constants.DEV_ERROR,
+				captchaName,
+			)
+		}
+	}
+
 	if k.SessionCookieId != "" {
 		if cookie, err := api.VerifyAndGetCookie(constants.KEMONO, k.SessionCookieId, userAgent); err != nil {
 			return err

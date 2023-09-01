@@ -14,14 +14,6 @@ import (
 	"github.com/fatih/color"
 )
 
-// Prints out a warning message to the user to not stop the program while it is downloading
-func PrintWarningMsg() {
-	color.Yellow("CAUTION:")
-	color.Yellow("Please do NOT terminate the program while it is downloading unless you really have to!")
-	color.Yellow("Doing so MAY result in incomplete downloads and corrupted files.")
-	fmt.Println()
-}
-
 // Returns a readable format of the website name for the user
 //
 // Will panic if the site string doesn't match one of its cases.
@@ -205,9 +197,7 @@ func RemoveDuplicateIdAndPageNum[T SliceTypes](idSlice, pageSlice []T) ([]T, []T
 	return idResult, pageResult
 }
 
-// Checks if the slice of string contains the target str
-//
-// Otherwise, os.Exit(1) is called after printing error messages for the user to read
+// Checks if the slice of string contains the target str. Otherwise, returns an error.
 func ValidateStrArgs(str string, slice, errMsgs []string) (string, error) {
 	if SliceContains(slice, str) {
 		return str, nil
@@ -226,16 +216,6 @@ func ValidateStrArgs(str string, slice, errMsgs []string) (string, error) {
 	)
 }
 
-// Same as ValidateStrArgs but calls os.Exit(1) if the validation fails
-func ValidateStrArgsPanic(str string, slice, errMsgs []string) string {
-	res, err := ValidateStrArgs(str, slice, errMsgs)
-	if err != nil {
-		color.Red(err.Error())
-		os.Exit(1)
-	}
-	return res
-}
-
 // Validates if the slice of strings contains only numbers
 // Otherwise, os.Exit(1) is called after printing error messages for the user to read
 func ValidateIds(args []string) error {
@@ -249,15 +229,6 @@ func ValidateIds(args []string) error {
 		}
 	}
 	return nil
-}
-
-// Same as ValidateIds but calls os.Exit(1) if the validation fails
-func ValidateIdsPanic(args []string) {
-	err := ValidateIds(args)
-	if err != nil {
-		color.Red(err.Error())
-		os.Exit(1)
-	}
 }
 
 // Same as strings.Join([]string, "\n")

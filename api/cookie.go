@@ -141,7 +141,7 @@ func processCookieVerification(website string, err error) error {
 			logger.ERROR,
 		)
 		return fmt.Errorf(
-			"error %d: could not verify %s cookie.\nPlease refer to the log file for more details.",
+			"error %d: could not verify %s cookie.\nPlease refer to the log file for more details",
 			constants.INPUT_ERROR,
 			GetReadableSiteStr(website),
 		)
