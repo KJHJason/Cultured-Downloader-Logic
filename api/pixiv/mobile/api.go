@@ -72,6 +72,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId, downloadPath string) ([]*
 
 	res, err := pixiv.SendRequest(
 		&httpfuncs.RequestArgs{
+			Context:     pixiv.ctx,
 			Url:         artworkUrl,
 			Params:      params,
 			CheckStatus: true,
@@ -152,7 +153,7 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloa
 	return artworksToDownload, ugoiraSlice
 }
 
-func (pixiv *PixivMobile) getIllustratorPostMainLogic(params map[string]string, userId, downloadPath string, offsetArg *offsetArgs, ctx context.Context) ([]*httpfuncs.ToDownload, []*models.Ugoira, []error) {
+func (pixiv *PixivMobile) getIllustratorPostMainLogic(params map[string]string, userId, downloadPath string, offsetArg *offsetArgs) ([]*httpfuncs.ToDownload, []*models.Ugoira, []error) {
 	var errSlice []error
 	var ugoiraSlice []*models.Ugoira
 	var artworksToDownload []*httpfuncs.ToDownload
@@ -162,25 +163,31 @@ func (pixiv *PixivMobile) getIllustratorPostMainLogic(params map[string]string, 
 	for nextUrl != "" {
 		res, err := pixiv.SendRequest(
 			&httpfuncs.RequestArgs{
-				Context:     ctx,
+				Context:     pixiv.ctx,
 				Url:         nextUrl,
 				Params:      params,
 				CheckStatus: true,
 			},
 		)
 		if err != nil {
+			if err == context.Canceled {
+				errSlice = append(errSlice, err)
+				return nil, nil, errSlice
+			}
 			err = fmt.Errorf(
 				"pixiv mobile error %d: failed to get illustrator posts for %s, more info => %v",
 				constants.CONNECTION_ERROR,
 				userId,
 				err,
 			)
-			return nil, nil, []error{err}
+			errSlice = append(errSlice, err)
+			return nil, nil, errSlice
 		}
 
 		var resJson models.PixivMobileArtworksJson
 		if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
-			return nil, nil, []error{err}
+			errSlice = append(errSlice, err)
+			return nil, nil, errSlice
 		}
 
 		artworks, ugoira, errS := pixiv.processMultipleArtworkJson(&resJson, downloadPath)
@@ -204,7 +211,7 @@ func (pixiv *PixivMobile) getIllustratorPostMainLogic(params map[string]string, 
 }
 
 // Query Pixiv's API (mobile) to get all the posts JSON(s) of a user ID
-func (pixiv *PixivMobile) getIllustratorPosts(userId, pageNum, downloadPath, artworkType string, ctx context.Context) ([]*httpfuncs.ToDownload, []*models.Ugoira, []error) {
+func (pixiv *PixivMobile) getIllustratorPosts(userId, pageNum, downloadPath, artworkType string) ([]*httpfuncs.ToDownload, []*models.Ugoira, []error) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, nil, []error{err}
@@ -231,7 +238,6 @@ func (pixiv *PixivMobile) getIllustratorPosts(userId, pageNum, downloadPath, art
 		userId,
 		downloadPath,
 		offsetArgs,
-		ctx,
 	)
 
 	if params["type"] == "illust" && artworkType == "all" {
@@ -243,7 +249,6 @@ func (pixiv *PixivMobile) getIllustratorPosts(userId, pageNum, downloadPath, art
 			userId,
 			downloadPath,
 			offsetArgs,
-			ctx,
 		)
 		artworksToDl = append(artworksToDl, artworksToDl2...)
 		ugoiraSlice = append(ugoiraSlice, ugoiraSlice2...)
@@ -252,7 +257,7 @@ func (pixiv *PixivMobile) getIllustratorPosts(userId, pageNum, downloadPath, art
 	return artworksToDl, ugoiraSlice, errSlice
 }
 
-func (pixiv *PixivMobile) GetMultipleIllustratorPosts(userIds, pageNums []string, downloadPath, artworkType string, ctx context.Context) ([]*httpfuncs.ToDownload, []*models.Ugoira) {
+func (pixiv *PixivMobile) GetMultipleIllustratorPosts(userIds, pageNums []string, downloadPath, artworkType string) ([]*httpfuncs.ToDownload, []*models.Ugoira) {
 	userIdsLen := len(userIds)
 	lastIdx := userIdsLen - 1
 
@@ -282,7 +287,6 @@ func (pixiv *PixivMobile) GetMultipleIllustratorPosts(userIds, pageNums []string
 			pageNums[idx],
 			downloadPath,
 			artworkType,
-			ctx,
 		)
 		if err != nil {
 			errSlice = append(errSlice, err...)
@@ -301,10 +305,12 @@ func (pixiv *PixivMobile) GetMultipleIllustratorPosts(userIds, pageNums []string
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+			progress.StopInterrupt("Stopped getting artwork details from illustrator(s) on Pixiv!")
+			return nil, nil
+		}
 	}
 	progress.Stop(hasErr)
-
 	return artworksToDownload, ugoiraSlice
 }
 

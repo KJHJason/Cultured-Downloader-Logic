@@ -1,19 +1,23 @@
 package pixivmobile
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/fatih/color"
 )
 
 type PixivMobile struct {
+	// Parent context
+	ctx          context.Context
+
 	// API information and its endpoints
 	baseUrl      string
 	clientId     string
@@ -37,8 +41,9 @@ type PixivMobile struct {
 }
 
 // Get a new PixivMobile structure
-func NewPixivMobile(refreshToken string, timeout int) *PixivMobile {
+func NewPixivMobile(refreshToken string, timeout int, ctx context.Context) *PixivMobile {
 	pixivMobile := &PixivMobile{
+		ctx:           ctx,
 		baseUrl:       constants.PIXIV_MOBILE_URL,
 		clientId:      "MOBrBDS8blbauoSck0ZfDbtuzpyT",
 		clientSecret:  "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",

@@ -132,7 +132,7 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) {
 	)
 
 	if p.RefreshToken != "" {
-		p.MobileClient = NewPixivMobile(p.RefreshToken, 10)
+		p.MobileClient = NewPixivMobile(p.RefreshToken, 10, p.ctx)
 		if p.RatingMode != "all" {
 			color.Red(
 				api.CombineStringsWithNewline(
