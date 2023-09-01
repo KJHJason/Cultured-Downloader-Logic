@@ -1,10 +1,10 @@
 package fantia
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"sync"
 
@@ -64,6 +64,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			UserAgent: dlOptions.Configs.UserAgent,
+			Context:   dlOptions.Ctx,
 		},
 	)
 	if err != nil || res.StatusCode != 200 {
@@ -129,7 +130,9 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		err = api.SolveCaptcha(dlOptions, constants.FANTIA)
 		if err != nil {
 			if err := api.HandleCaptchaErr(err, dlOptions, constants.FANTIA); err != nil {
-				os.Exit(1)
+				// if the user doesn't want to solve the captcha manually, stop the download
+				dlOptions.Cancel()
+				return nil, err
 			}
 		}
 
@@ -142,6 +145,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 	httpfuncs.DownloadUrls(
 		urlsToDownload,
 		&httpfuncs.DlOptions{
+			Ctx:			dlOptions.Ctx,
 			MaxConcurrency: constants.MAX_CONCURRENT_DOWNLOADS,
 			Headers:        nil,
 			Cookies:        dlOptions.SessionCookies,
@@ -166,6 +170,9 @@ func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) []*httpfuncs.ToDown
 		postGdriveLinks, err := DlFantiaPost(i+1, postIdsLen, postId, dlOptions)
 
 		if err != nil {
+			if err == context.Canceled {
+				return nil
+			}
 			errSlice = append(errSlice, err)
 			continue
 		}
@@ -246,15 +253,18 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 				Http3:       useHttp3,
 				CheckStatus: true,
 				UserAgent:   dlOptions.Configs.UserAgent,
+				Context:     dlOptions.Ctx,
 			},
 		)
 		if err != nil {
-			err = fmt.Errorf(
-				"fantia error %d: failed to get creator's pages for %s, more info => %v",
-				constants.CONNECTION_ERROR,
-				url,
-				err,
-			)
+			if err != context.Canceled {
+				err = fmt.Errorf(
+					"fantia error %d: failed to get creator's pages for %s, more info => %v",
+					constants.CONNECTION_ERROR,
+					url,
+					err,
+				)
+			}
 			return nil, err
 		}
 
@@ -339,10 +349,16 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) {
 	close(resChan)
 	close(errChan)
 
-	hasErr := false
+	hasErr, hasCancelled := false, false
 	if len(errChan) > 0 {
 		hasErr = true
-		logger.LogChanErrors(false, logger.ERROR, errChan)
+		if errCtxCancelled := logger.LogChanErrors(false, logger.ERROR, errChan); !hasCancelled && errCtxCancelled {
+			hasCancelled = true
+		} 
+	}
+	if hasCancelled {
+		progress.StopInterrupt("Stopped getting post ID(s) from Fanclub(s) on Fantia...")
+		return
 	}
 	progress.Stop(hasErr)
 

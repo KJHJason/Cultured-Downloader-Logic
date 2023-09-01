@@ -1,8 +1,9 @@
 package pixivfanbox
 
 import (
+	"context"
+	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
@@ -11,7 +12,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
-	"github.com/fatih/color"
 )
 
 // PixivFanboxDl is the struct that contains the IDs of the Pixiv Fanbox creators and posts to download.
@@ -29,18 +29,17 @@ var creatorIdRegex = regexp.MustCompile(`^[\w.-]+$`)
 // It also validates the page numbers of the creators to download.
 //
 // Should be called after initialising the struct.
-func (pf *PixivFanboxDl) ValidateArgs() {
+func (pf *PixivFanboxDl) ValidateArgs() error {
 	api.ValidateIds(pf.PostIds)
 	pf.PostIds = api.RemoveSliceDuplicates(pf.PostIds)
 
 	for _, creatorId := range pf.CreatorIds {
 		if !creatorIdRegex.MatchString(creatorId) {
-			color.Red(
+			return fmt.Errorf(
 				"error %d: invalid Pixiv Fanbox creator ID %q, must be alphanumeric with underscores, dashes, or periods",
 				constants.INPUT_ERROR,
 				creatorId,
 			)
-			os.Exit(1)
 		}
 	}
 
@@ -59,10 +58,13 @@ func (pf *PixivFanboxDl) ValidateArgs() {
 		pf.CreatorIds,
 		pf.CreatorPageNums,
 	)
+	return nil
 }
 
 // PixivFanboxDlOptions is the struct that contains the options for downloading from Pixiv Fanbox.
 type PixivFanboxDlOptions struct {
+	Ctx           context.Context
+	cancel        context.CancelFunc
 	DlThumbnails  bool
 	DlImages      bool
 	DlAttachments bool
@@ -87,10 +89,27 @@ type PixivFanboxDlOptions struct {
 	GdriveDlProgBar         progress.Progress
 }
 
+func (pf *PixivFanboxDlOptions) GetCancel() context.CancelFunc {
+	return pf.cancel
+}
+
+func (pf *PixivFanboxDlOptions) SetContext(ctx context.Context) {
+	pf.Ctx, pf.cancel = context.WithCancel(ctx)
+}
+
+// Cancel cancels the context of the PixivFanboxDlOptions struct.
+func (pf *PixivFanboxDlOptions) Cancel() {
+	pf.cancel()
+}
+
 // ValidateArgs validates the session cookie ID of the Pixiv Fanbox account to download from.
 //
 // Should be called after initialising the struct.
 func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
+	if pf.Ctx == nil {
+		pf.SetContext(context.Background())
+	}
+
 	if pf.SessionCookieId != "" {
 		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV_FANBOX, pf.SessionCookieId, userAgent); err != nil {
 			return err

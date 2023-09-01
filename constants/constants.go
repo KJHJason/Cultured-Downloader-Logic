@@ -69,7 +69,7 @@ const (
 )
 
 // For Fantia so far but can be used for other websites if required
-type CAPTCHA_FN func(useHttp3 bool, sessionCookies []*http.Cookie, userAgent, url string) error
+type CAPTCHA_FN func(useHttp3 bool, sessionCookies []*http.Cookie, userAgent, instructions, url string) error
 
 // Although the variables below are not
 // constants, they are not supposed to be changed

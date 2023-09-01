@@ -1,18 +1,17 @@
 package kemono
 
 import (
+	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
-	"github.com/fatih/color"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 const (
@@ -122,29 +121,25 @@ func (k *KemonoDl) RemoveDuplicates() {
 	k.PostsToDl = newPostSlice
 }
 
-func (k *KemonoDl) ValidateArgs() {
+func (k *KemonoDl) ValidateArgs() error {
 	valid, outlier := api.SliceMatchesRegex(CREATOR_URL_REGEX, k.CreatorUrls)
 	if !valid {
-		color.Red(
-			fmt.Sprintf(
-				"kemono error %d: invalid creator URL found for kemono party: %s",
-				constants.INPUT_ERROR,
-				outlier,
-			),
+		return fmt.Errorf(
+			"kemono error %d: invalid creator URL found for kemono party: %s",
+			constants.INPUT_ERROR,
+			outlier,
 		)
-		os.Exit(1)
 	}
 
 	valid, outlier = api.SliceMatchesRegex(POST_URL_REGEX, k.PostUrls)
 	if !valid {
-		color.Red(
+		return fmt.Errorf(
 			fmt.Sprintf(
 				"kemono error %d: invalid post URL found for kemono party: %s",
 				constants.INPUT_ERROR,
 				outlier,
 			),
 		)
-		os.Exit(1)
 	}
 
 	if len(k.CreatorUrls) > 0 {
@@ -170,10 +165,13 @@ func (k *KemonoDl) ValidateArgs() {
 		k.PostUrls = nil
 	}
 	k.RemoveDuplicates()
+	return nil
 }
 
 // KemonoDlOptions is the struct that contains the arguments for Kemono download options.
 type KemonoDlOptions struct {
+	Ctx              context.Context
+	cancel           context.CancelFunc
 	DlAttachments bool
 	DlGdrive      bool
 
@@ -197,11 +195,28 @@ type KemonoDlOptions struct {
 	GdriveDlProgBar          progress.Progress
 }
 
+func (k *KemonoDlOptions) GetCancel() context.CancelFunc {
+	return k.cancel
+}
+
+func (k *KemonoDlOptions) SetContext(ctx context.Context) {
+	k.Ctx, k.cancel = context.WithCancel(ctx)
+}
+
+// Cancel cancels the context of the KemonoDlOptions struct.
+func (k *KemonoDlOptions) Cancel() {
+	k.cancel()
+}
+
 // ValidateArgs validates the session cookie ID of the Kemono account to download from.
 // It also validates the Google Drive client if the user wants to download to Google Drive.
 //
 // Should be called after initialising the struct.
 func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
+	if k.Ctx == nil {
+		k.SetContext(context.Background())
+	}
+
 	if k.SessionCookieId != "" {
 		if cookie, err := api.VerifyAndGetCookie(constants.KEMONO, k.SessionCookieId, userAgent); err != nil {
 			return err

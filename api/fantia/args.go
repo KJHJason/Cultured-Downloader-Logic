@@ -1,6 +1,7 @@
 package fantia
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -53,6 +54,8 @@ func (f *FantiaDl) ValidateArgs() {
 
 // FantiaDlOptions is the struct that contains the options for downloading from Fantia.
 type FantiaDlOptions struct {
+	Ctx              context.Context
+	cancel           context.CancelFunc
 	DlThumbnails     bool
 	DlImages         bool
 	DlAttachments    bool
@@ -107,6 +110,23 @@ func (f *FantiaDlOptions) GetCaptchaSolverProgBar() progress.Progress {
 
 func (f *FantiaDlOptions) GetCaptchaHandler() constants.CAPTCHA_FN {
 	return f.captchaHandler
+}
+
+func (f *FantiaDlOptions) GetContext() context.Context {
+	return f.Ctx
+}
+
+func (f *FantiaDlOptions) GetCancel() context.CancelFunc {
+	return f.cancel
+}
+
+func (f *FantiaDlOptions) SetContext(ctx context.Context) {
+	f.Ctx, f.cancel = context.WithCancel(ctx)
+}
+
+// Cancel cancels the context of the FantiaDlOptions struct.
+func (f *FantiaDlOptions) Cancel() {
+	f.cancel()
 }
 
 // GetCsrfToken gets the CSRF token from Fantia's index HTML
@@ -175,6 +195,10 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 //
 // Should be called after initialising the struct.
 func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
+	if f.Ctx == nil {
+		f.SetContext(context.Background())
+	}
+
 	if f.SessionCookieId != "" {
 		if cookie, err := api.VerifyAndGetCookie(constants.FANTIA, f.SessionCookieId, userAgent); err != nil {
 			return err

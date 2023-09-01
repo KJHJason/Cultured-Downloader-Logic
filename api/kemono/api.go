@@ -1,16 +1,17 @@
 package kemono
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -76,6 +77,10 @@ func parseCreatorHtml(res *http.Response, url string) (string, error) {
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	res.Body.Close()
 	if err != nil {
+		if err == context.Canceled {
+			return "", err
+		}
+
 		err = fmt.Errorf(
 			"kemono error %d, failed to parse response body when getting creator name from Kemono Party at %s\nmore info => %v",
 			constants.HTML_ERROR,
@@ -130,6 +135,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 			Http2:       !useHttp3,
 			Http3:       useHttp3,
 			CheckStatus: true,
+			Context:     dlOptions.Ctx,
 		},
 	)
 	if err != nil {
@@ -163,6 +169,7 @@ func getPostDetails(post *KemonoPostToDl, downloadPath string, dlOptions *Kemono
 			Http2:       !useHttp3,
 			Http3:       useHttp3,
 			CheckStatus: true,
+			Context:     dlOptions.Ctx,
 		},
 	)
 	if err != nil {
@@ -190,18 +197,18 @@ func GetMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *K
 	queue := make(chan struct{}, maxConcurrency)
 	resChan := make(chan *kemonoChanRes, postLen)
 
-	baseMsg := "Getting post details from Kemono Party [%d/" + fmt.Sprintf("%d]...", postLen)
+	baseMsg := "Getting post details from Kemono [%d/" + fmt.Sprintf("%d]...", postLen)
 	progress := dlOptions.PostProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
-			"Finished getting %d post details from Kemono Party!",
+			"Finished getting %d post details from Kemono!",
 			postLen,
 		),
 	)
 	progress.UpdateErrorMsg(
 		fmt.Sprintf(
-			"Something went wrong while getting %d post details from Kemono Party.\nPlease refer to the logs for more details.",
+			"Something went wrong while getting %d post details from Kemono.\nPlease refer to the logs for more details.",
 			postLen,
 		),
 	)
@@ -234,10 +241,14 @@ func GetMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *K
 	close(queue)
 	close(resChan)
 
-	hasError := false
+	hasError, hasCancelled := false, false
 	var urlsToDownload, gdriveLinks []*httpfuncs.ToDownload
 	for res := range resChan {
 		if res.err != nil {
+			if res.err == context.Canceled {
+				hasCancelled = true
+				continue
+			}
 			if !hasError {
 				hasError = true
 			}
@@ -246,6 +257,11 @@ func GetMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *K
 		}
 		urlsToDownload = append(urlsToDownload, res.urlsToDownload...)
 		gdriveLinks = append(gdriveLinks, res.gdriveLinks...)
+	}
+
+	if hasCancelled {
+		progress.StopInterrupt("Stopped getting post details from Kemono...")
+		return nil, nil
 	}
 	progress.Stop(hasError)
 	return urlsToDownload, gdriveLinks
@@ -280,6 +296,7 @@ func getCreatorPosts(creator *KemonoCreatorToDl, downloadPath string, dlOptions 
 				Http2:       !useHttp3,
 				Http3:       useHttp3,
 				CheckStatus: true,
+				Context:     dlOptions.Ctx,
 			},
 		)
 		if err != nil {
@@ -311,27 +328,33 @@ func GetMultipleCreators(creators []*KemonoCreatorToDl, downloadPath string, dlO
 	var errSlice []error
 	var urlsToDownload, gdriveLinks []*httpfuncs.ToDownload
 	creatorLen := len(creators)
-	baseMsg := "Getting creator's posts from Kemono Party [%d/" + fmt.Sprintf("%d]...", creatorLen)
+	baseMsg := "Getting creator's posts from Kemono [%d/" + fmt.Sprintf("%d]...", creatorLen)
 	progress := dlOptions.GetCreatorPostProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
-			"Finished getting %d creator's posts from Kemono Party!",
+			"Finished getting %d creator's posts from Kemono!",
 			creatorLen,
 		),
 	)
 	progress.UpdateErrorMsg(
 		fmt.Sprintf(
-			"Something went wrong while getting %d creator's posts from Kemono Party.\nPlease refer to the logs for more details.",
+			"Something went wrong while getting %d creator's posts from Kemono.\nPlease refer to the logs for more details.",
 			creatorLen,
 		),
 	)
 	progress.UpdateMax(creatorLen)
 	progress.Start()
+	hasCancelled := false
 	for _, creator := range creators {
 		postsToDl, gdriveLinksToDl, err := getCreatorPosts(creator, downloadPath, dlOptions)
 		if err != nil {
 			errSlice = append(errSlice, err)
+			if err == context.Canceled {
+				hasCancelled = true
+				progress.StopInterrupt("Stopped getting creator's posts from Kemono...")
+				break
+			}
 			progress.Increment()
 			continue
 		}
@@ -340,12 +363,15 @@ func GetMultipleCreators(creators []*KemonoCreatorToDl, downloadPath string, dlO
 		progress.Increment()
 	}
 
-	hasError := false
+	hasErr := false
 	if len(errSlice) > 0 {
-		hasError = true
+		hasErr = true
 		logger.LogErrors(false, logger.ERROR, errSlice...)
 	}
-	progress.Stop(hasError)
+	if hasCancelled {
+		return nil, nil
+	}
+	progress.Stop(hasErr)
 	return urlsToDownload, gdriveLinks
 }
 
@@ -382,6 +408,7 @@ func GetFavourites(downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfunc
 		Http2:       !useHttp3,
 		Http3:       useHttp3,
 		CheckStatus: true,
+		Context:     dlOptions.Ctx,
 	}
 	res, err := httpfuncs.CallRequest(reqArgs)
 	if err != nil {

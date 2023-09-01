@@ -1,6 +1,7 @@
 package httpfuncs
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
@@ -19,6 +20,9 @@ type ToDownload struct {
 }
 
 type DlOptions struct {
+	// Parent context for the download process
+	Ctx    context.Context
+
 	// MaxConcurrency is the maximum number of concurrent downloads
 	MaxConcurrency int
 

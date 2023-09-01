@@ -1,8 +1,8 @@
 package cdlogic
 
 import (
-	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/fantia"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
 // Start the download process for Fantia

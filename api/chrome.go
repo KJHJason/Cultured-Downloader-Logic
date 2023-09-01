@@ -35,11 +35,15 @@ func SetChromedpAllocCookies(cookies []*http.Cookie) chromedp.Action {
 	})
 }
 
-func GetDefaultChromedpAlloc(userAgent string) (context.Context, context.CancelFunc) {
+func GetDefaultChromedpAlloc(userAgent string, ctx context.Context) (context.Context, context.CancelFunc) {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.UserAgent(userAgent),
 	)
-	return chromedp.NewExecAllocator(context.Background(), opts...)
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return chromedp.NewExecAllocator(ctx, opts...)
 }
 
 func ExecuteChromedpActions(allocCtx context.Context, allocCancelFn context.CancelFunc, actions ...chromedp.Action) error {

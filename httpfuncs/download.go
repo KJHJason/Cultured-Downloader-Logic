@@ -128,7 +128,7 @@ func DlToFile(res *http.Response, url, filePath string) error {
 // Note: If the file already exists, the download process will be skipped
 func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, overwriteExistingFile bool) error {
 	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(reqArgs.Context)
 	defer cancel()
 
 	// Catch SIGINT/SIGTERM signal and cancel the context when received
@@ -245,6 +245,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 					RetryDelay:     dlOptions.RetryDelay,
 					UserAgent:      config.UserAgent,
 					RequestHandler: reqHandler,
+					Context:        dlOptions.Ctx,
 				},
 				config.OverwriteFiles,
 			)
@@ -261,14 +262,17 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	close(queue)
 	close(errChan)
 
-	hasErr := false
+
+	hasErr, hasCancelled := false, false
 	if len(errChan) > 0 {
 		hasErr = true
-		if kill := logger.LogChanErrors(false, logger.ERROR, errChan); kill {
-			progress.StopInterrupt(
-				"Stopped downloading files (incomplete downloads will be deleted)...",
-			)
-		}
+		if errCtxCancelled := logger.LogChanErrors(false, logger.ERROR, errChan); !hasCancelled && errCtxCancelled {
+			hasCancelled = true
+		} 
+	}
+	if hasCancelled {
+		progress.StopInterrupt("Stopped downloading files (incomplete downloads will be deleted)...")
+		return
 	}
 	progress.Stop(hasErr)
 }

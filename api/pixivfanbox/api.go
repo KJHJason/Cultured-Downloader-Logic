@@ -1,6 +1,7 @@
 package pixivfanbox
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -76,12 +77,16 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 				},
 			)
 			if err != nil {
-				errChan <- fmt.Errorf(
-					"pixiv fanbox error %d: failed to get post details for %s, more info => %v",
-					constants.CONNECTION_ERROR,
-					url,
-					err,
-				)
+				if err == context.Canceled {
+					errChan <- err
+				} else {
+					errChan <- fmt.Errorf(
+						"pixiv fanbox error %d: failed to get post details for %s, more info => %v",
+						constants.CONNECTION_ERROR,
+						url,
+						err,
+					)
+				}
 			} else if res.StatusCode != 200 {
 				errChan <- fmt.Errorf(
 					"pixiv fanbox error %d: failed to get post details for %s due to a %s response",
@@ -101,9 +106,16 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	close(errChan)
 
 	hasErr := false
+	hasCancelled := false
 	if len(errChan) > 0 {
 		hasErr = true
-		logger.LogChanErrors(false, logger.ERROR, errChan)
+		if errCtxCancelled := logger.LogChanErrors(false, logger.ERROR, errChan); !hasCancelled && errCtxCancelled {
+			hasCancelled = true
+		} 
+	}
+	if hasCancelled {
+		progress.StopInterrupt("Stopped getting post details from Pixiv Fanbox...")
+		return nil, nil
 	}
 	progress.Stop(hasErr)
 	return processMultiplePostJson(resChan, dlOptions)
@@ -127,11 +139,15 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 			UserAgent: dlOptions.Configs.UserAgent,
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
+			Context:   dlOptions.Ctx,
 		},
 	)
 	if err != nil || res.StatusCode != 200 {
 		const errPrefix = "pixiv fanbox error"
 		if err != nil {
+			if err == context.Canceled {
+				return nil, err
+			}
 			err = fmt.Errorf(
 				"%s %d: failed to get creator's posts for %s due to %v",
 				errPrefix,
@@ -210,21 +226,24 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 					UserAgent: dlOptions.Configs.UserAgent,
 					Http2:     !useHttp3,
 					Http3:     useHttp3,
+					Context:   dlOptions.Ctx,
 				},
 			)
 			if err != nil || res.StatusCode != 200 {
 				if err == nil {
 					res.Body.Close()
 				}
-				logger.LogError(
-					fmt.Errorf(
-						"failed to get post for %s\n%v",
-						reqUrl,
-						err,
-					),
-					false,
-					logger.ERROR,
-				)
+				if err != context.Canceled {
+					logger.LogError(
+						fmt.Errorf(
+							"failed to get post for %s\n%v",
+							reqUrl,
+							err,
+						),
+						false,
+						logger.ERROR,
+					)
+				}
 				return
 			}
 
@@ -297,6 +316,10 @@ func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) {
 			dlOptions,
 		)
 		if err != nil {
+			if err == context.Canceled {
+				progress.StopInterrupt("Stopped getting post IDs from creator(s) on Pixiv Fanbox...")
+				return
+			}
 			errSlice = append(errSlice, err)
 		} else {
 			pf.PostIds = append(pf.PostIds, retrievedPostIds...)

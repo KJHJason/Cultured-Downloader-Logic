@@ -1,6 +1,7 @@
 package kemono
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -46,6 +47,9 @@ func getKemonoFilePath(postFolderPath, childDir, fileName string) string {
 func processJson(resJson *MainKemonoJson, tld, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
 	var creatorNamePath string
 	if creatorName, err := getCreatorName(resJson.Service, resJson.User, dlOptions); err != nil {
+		if err == context.Canceled {
+			return nil, nil
+		}
 		err = fmt.Errorf(
 			"error getting creator name for %q (%s)... falling back to creator ID! (Details below)\n%v",
 			resJson.User,
