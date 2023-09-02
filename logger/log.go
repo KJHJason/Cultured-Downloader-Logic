@@ -20,7 +20,7 @@ var (
 	logFilePath = filepath.Join(
 		logFolder,
 		fmt.Sprintf(
-			"cultured_downloader-cli_v%s_%s.log", 
+			"cultured_downloader-logic_v%s_%s.log", 
 			constants.VERSION, 
 			time.Now().Format("2006-01-02"),
 		),
@@ -28,6 +28,9 @@ var (
 )
 
 func init() {
+	// create the logs directory if it does not exist
+	os.MkdirAll(logFolder, 0755)
+
 	// will be opened througout the program's runtime
 	// hence, there is no need to call f.Close() at the end of this function
 	f, fileErr := os.OpenFile(
