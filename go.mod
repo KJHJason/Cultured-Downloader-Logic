@@ -2,6 +2,8 @@ module github.com/KJHJason/Cultured-Downloader-Logic
 
 go 1.21
 
+retract v1.0.2 // old unstable ver
+
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/chromedp/cdproto v0.0.0-20230901104747-bfe71bcbd1c0
