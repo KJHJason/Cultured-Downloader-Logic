@@ -12,7 +12,7 @@ import (
 )
 
 // Returns a GDrive structure with the given API key and max download workers
-func GetNewGDrive(apiKey string, credsJson []byte, config *configs.Config, maxDownloadWorkers int, ctx context.Context) (*gdrive.GDrive, error) {
+func GetNewGDrive(apiKey, userAgent string, credsJson []byte, maxDownloadWorkers int, ctx context.Context) (*gdrive.GDrive, error) {
 	if credsJson != nil && apiKey != "" {
 		return nil, errors.New("both google drive API key and service account credentials cannot be used at the same time")
 	} else if credsJson == nil && apiKey == "" {
@@ -27,7 +27,7 @@ func GetNewGDrive(apiKey string, credsJson []byte, config *configs.Config, maxDo
 	)
 	if apiKey != "" {
 		gdrive.SetApiKey(apiKey)
-		gdriveIsValid, err := gdrive.GDriveKeyIsValid(config.UserAgent)
+		gdriveIsValid, err := gdrive.GDriveKeyIsValid(userAgent)
 		if err != nil {
 			return nil, err
 		} else if !gdriveIsValid {
