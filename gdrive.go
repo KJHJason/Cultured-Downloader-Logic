@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
