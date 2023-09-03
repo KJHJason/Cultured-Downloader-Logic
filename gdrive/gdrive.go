@@ -37,6 +37,18 @@ type GDrive struct {
 	maxDownloadWorkers int            // max concurrent workers for downloading files
 }
 
+func NewGDrive(ctx context.Context, timeout, dlTimeout, maxDlWorkers int) *GDrive {
+	ctx, cancel := context.WithCancel(ctx)
+	return &GDrive{
+		Ctx:                ctx,
+		cancel:             cancel,
+		apiUrl:             "https://www.googleapis.com/drive/v3/files",
+		timeout:            timeout,
+		downloadTimeout:    dlTimeout,
+		maxDownloadWorkers: maxDlWorkers,
+	}
+}
+
 func (gdrive *GDrive) SetContext(ctx context.Context) {
 	gdrive.Ctx, gdrive.cancel = context.WithCancel(ctx)
 }
@@ -47,10 +59,6 @@ func (gdrive *GDrive) SetApiKey(apiKey string) {
 
 func (gdrive *GDrive) SetClient(client *drive.Service) {
 	gdrive.client = client
-}
-
-func (gdrive *GDrive) SetApiUrl(apiUrl string) {
-	gdrive.apiUrl = apiUrl
 }
 
 func (gdrive *GDrive) SetTimeout(timeout int) {

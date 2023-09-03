@@ -19,12 +19,12 @@ func GetNewGDrive(apiKey string, credsJson []byte, config *configs.Config, maxDo
 		return nil, errors.New("google drive API key or service account credentials is required")
 	}
 
-	gdrive := &gdrive.GDrive{}
-	gdrive.SetContext(ctx)
-	gdrive.SetApiUrl("https://www.googleapis.com/drive/v3/files")
-	gdrive.SetTimeout(15)
-	gdrive.SetDownloadTimeout(900) // 15 minutes
-	gdrive.SetMaxDownloadWorkers(maxDownloadWorkers)
+	gdrive := gdrive.NewGDrive(
+		ctx, 
+		15,  // 15 secs for api timeout
+		900, // 15 mins for download timeout
+		maxDownloadWorkers,
+	)
 	if apiKey != "" {
 		gdrive.SetApiKey(apiKey)
 		gdriveIsValid, err := gdrive.GDriveKeyIsValid(config.UserAgent)
