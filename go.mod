@@ -6,8 +6,8 @@ retract v1.0.2 // old unstable ver
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
-	github.com/chromedp/cdproto v0.0.0-20230901104747-bfe71bcbd1c0
-	github.com/chromedp/chromedp v0.9.2
+	github.com/chromedp/cdproto v0.0.0-20231011050154-1d073bb38998
+	github.com/chromedp/chromedp v0.9.3
 	github.com/fatih/color v1.15.0
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
