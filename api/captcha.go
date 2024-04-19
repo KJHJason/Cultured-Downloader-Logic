@@ -82,13 +82,13 @@ func autoSolveCaptcha(dlOptions DlOptions, website string) error {
 				constants.FANTIA_RECAPTCHA_URL,
 			)
 		} else {
-			fullErr := fmt.Errorf(
+			fmtErr = fmt.Errorf(
 				"error %d: failed to solve reCAPTCHA for %s, more info => %v",
 				constants.CAPTCHA_ERROR, 
 				readableSite,
 				err,
 			)
-			logger.LogError(fullErr, false, logger.ERROR)
+			logger.LogError(fmtErr, false, logger.ERROR)
 		}
 
 		prog.UpdateErrorMsg(fmtErr.Error() + "\n")

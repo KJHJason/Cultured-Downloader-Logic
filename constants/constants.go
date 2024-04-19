@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"runtime"
 	"net/http"
+
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 const (
@@ -23,37 +25,33 @@ const (
 	// However, the average max file size on these platforms is around 300MB.
 	// Note: Fantia do have a max file size per post of 3GB if one paid extra for it.
 
-	FANTIA               = "fantia"
-	FANTIA_TITLE         = "Fantia"
-	FANTIA_URL           = "https://fantia.jp"
-	FANTIA_RECAPTCHA_URL = "https://fantia.jp/recaptcha"
+	FANTIA                 = "fantia"
+	FANTIA_TITLE           = "Fantia"
+	FANTIA_URL             = "https://fantia.jp"
+	FANTIA_RECAPTCHA_URL   = "https://fantia.jp/recaptcha"
+	FANTIA_RANGE_SUPPORTED = true
 
-	PIXIV            = "pixiv"
-	PIXIV_MOBILE     = "pixiv_mobile"
-	PIXIV_TITLE      = "Pixiv"
-	PIXIV_PER_PAGE   = 60
-	PIXIV_URL        = "https://www.pixiv.net"
-	PIXIV_API_URL    = "https://www.pixiv.net/ajax"
-	PIXIV_MOBILE_URL = "https://app-api.pixiv.net"
+	PIXIV                 = "pixiv"
+	PIXIV_MOBILE          = "pixiv_mobile"
+	PIXIV_TITLE           = "Pixiv"
+	PIXIV_PER_PAGE        = 60
+	PIXIV_URL             = "https://www.pixiv.net"
+	PIXIV_API_URL         = "https://www.pixiv.net/ajax"
+	PIXIV_MOBILE_URL      = "https://app-api.pixiv.net"
+	PIXIV_RANGE_SUPPORTED = true
 
-	PIXIV_FANBOX         = "fanbox"
-	PIXIV_FANBOX_TITLE   = "Pixiv Fanbox"
-	PIXIV_FANBOX_URL     = "https://www.fanbox.cc"
-	PIXIV_FANBOX_API_URL = "https://api.fanbox.cc"
+	PIXIV_FANBOX                 = "fanbox"
+	PIXIV_FANBOX_TITLE           = "Pixiv Fanbox"
+	PIXIV_FANBOX_URL             = "https://www.fanbox.cc"
+	PIXIV_FANBOX_API_URL         = "https://api.fanbox.cc"
+	PIXIV_FANBOX_RANGE_SUPPORTED = false
 
 	KEMONO                      = "kemono"
-	KEMONO_SESSION_COOKIE_NAME  = "session"
-	KEMONO_COOKIE_DOMAIN        = "kemono.party"
-	KEMONO_BACKUP               = "kemono_backup"
-	KEMONO_COOKIE_BACKUP_DOMAIN = "kemono.su"
 	KEMONO_TITLE                = "Kemono Party"
 	KEMONO_PER_PAGE             = 50
-	KEMONO_TLD                  = "party"
-	KEMONO_BACKUP_TLD           = "su"
-	KEMONO_URL                  = "https://kemono.party"
-	KEMONO_API_URL              = "https://kemono.party/api"
-	BACKUP_KEMONO_URL           = "https://kemono.su"
-	BACKUP_KEMONO_API_URL       = "https://kemono.su/api"
+	KEMONO_URL                  = "https://kemono.su"
+	KEMONO_API_URL              = "https://kemono.su/api/v1"
+	KEMONO_RANGE_SUPPORTED      = true
 
 	PASSWORD_FILENAME = "detected_passwords.txt"
 	ATTACHMENT_FOLDER = "attachments"
@@ -106,7 +104,7 @@ func init() {
 		panic(
 			fmt.Errorf(
 				"error %d: Failed to get user agent OS as your OS, %q, is not supported",
-				OS_ERROR,
+				errs.OS_ERROR,
 				runtime.GOOS,
 			),
 		)

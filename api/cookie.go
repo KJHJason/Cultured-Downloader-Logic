@@ -55,9 +55,6 @@ func getHeaders(website, userAgent string) map[string]string {
 	case constants.KEMONO :
 		referer = constants.KEMONO_URL
 		origin = constants.KEMONO_URL
-	case constants.KEMONO_BACKUP :
-		referer = constants.BACKUP_KEMONO_URL
-		origin = constants.BACKUP_KEMONO_URL
 	default :
 		// Shouldn't happen but could happen during development
 		panic(
@@ -88,8 +85,6 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 		websiteUrl = constants.PIXIV_URL + "/dashboard"
 	case constants.KEMONO:
 		websiteUrl = constants.KEMONO_URL + "/favorites"
-	case constants.KEMONO_BACKUP:
-		websiteUrl = constants.BACKUP_KEMONO_URL + "/favorites"
 	default:
 		// Shouldn't happen but could happen during development
 		panic(
@@ -149,36 +144,6 @@ func processCookieVerification(website string, err error) error {
 	return nil
 }
 
-// Verifies the given cookie by making a request to the backup domain and checks if the cookie is valid
-func backupVerifyCookie(website, cookieValue, userAgent string) (*http.Cookie, error) {
-	var backupWebsite string
-	switch website {
-	case constants.KEMONO:
-		backupWebsite = constants.KEMONO_BACKUP
-	default:
-		// Shouldn't happen but could happen during development
-		panic(
-			fmt.Sprintf(
-				"error %d: %s is not supported for cookie verification on a backup domain.",
-				constants.DEV_ERROR,
-				GetReadableSiteStr(website),
-			),
-		)
-	}
-
-	cookie := GetCookie(cookieValue, backupWebsite)
-	cookieIsValid, err := VerifyCookie(cookie, backupWebsite, userAgent)
-	processCookieVerification(backupWebsite, err)
-	if !cookieIsValid {
-		return nil, fmt.Errorf(
-			"error %d: %s cookie is invalid",
-			constants.INPUT_ERROR,
-			GetReadableSiteStr(backupWebsite),
-		)
-	}
-	return cookie, nil
-}
-
 // Verifies the given cookie by making a request to the website and checks if the cookie is valid
 // If the cookie is valid, the cookie will be returned
 //
@@ -189,19 +154,11 @@ func VerifyAndGetCookie(website, cookieValue, userAgent string) (*http.Cookie, e
 	processCookieVerification(website, err)
 
 	if !cookieIsValid {
-		if website != constants.KEMONO {
-			return nil, fmt.Errorf(
-				"error %d: %s cookie is invalid",
-				constants.INPUT_ERROR,
-				GetReadableSiteStr(website),
-			)
-		} else {
-			// try to verify the cookie on the backup domain
-			cookie, err = backupVerifyCookie(website, cookieValue, userAgent)
-			if err != nil {
-				return nil, err
-			}
-		}
+		return nil, fmt.Errorf(
+			"error %d: %s cookie is invalid",
+			constants.INPUT_ERROR,
+			GetReadableSiteStr(website),
+		)
 	}
 	return cookie, nil
 }

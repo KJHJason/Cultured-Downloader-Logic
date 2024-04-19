@@ -16,11 +16,11 @@ import (
 )
 
 var (
-	imgSrcTagRegex = regexp.MustCompile(`(?i)<img[^>]+src=(?:\\)?"(?P<imgSrc>[^">]+)(?:\\)?"[^>]*>`)
+	imgSrcTagRegex    = regexp.MustCompile(`(?i)<img[^>]+src=(?:\\)?"(?P<imgSrc>[^">]+)(?:\\)?"[^>]*>`)
 	imgSrcTagRegexIdx = imgSrcTagRegex.SubexpIndex("imgSrc")
 )
 
-func getInlineImages(content, postFolderPath, tld string) []*httpfuncs.ToDownload {
+func getInlineImages(content, postFolderPath string) []*httpfuncs.ToDownload {
 	var toDownload []*httpfuncs.ToDownload
 	for _, match := range imgSrcTagRegex.FindAllStringSubmatch(content, -1) {
 		imgSrc := match[imgSrcTagRegexIdx]
@@ -28,7 +28,7 @@ func getInlineImages(content, postFolderPath, tld string) []*httpfuncs.ToDownloa
 			continue
 		}
 		toDownload = append(toDownload, &httpfuncs.ToDownload{
-			Url:      getKemonoUrl(tld) + imgSrc,
+			Url:      constants.KEMONO_URL + imgSrc,
 			FilePath: filepath.Join(postFolderPath, constants.IMAGES_FOLDER, httpfuncs.GetLastPartOfUrl(imgSrc)),
 		})
 	}
@@ -44,7 +44,7 @@ func getKemonoFilePath(postFolderPath, childDir, fileName string) string {
 	return filepath.Join(postFolderPath, childDir, fileName)
 }
 
-func processJson(resJson *MainKemonoJson, tld, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
+func processJson(resJson *MainKemonoJson, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
 	var creatorNamePath string
 	if creatorName, err := getCreatorName(resJson.Service, resJson.User, dlOptions); err != nil {
 		if err == context.Canceled {
@@ -72,10 +72,10 @@ func processJson(resJson *MainKemonoJson, tld, downloadPath string, dlOptions *K
 	var gdriveLinks []*httpfuncs.ToDownload
 	var toDownload []*httpfuncs.ToDownload
 	if dlOptions.DlAttachments {
-		toDownload = getInlineImages(resJson.Content, postFolderPath, tld)
+		toDownload = getInlineImages(resJson.Content, postFolderPath)
 		for _, attachment := range resJson.Attachments {
 			toDownload = append(toDownload, &httpfuncs.ToDownload{
-				Url:      getKemonoUrl(tld) + attachment.Path,
+				Url:      constants.KEMONO_URL + attachment.Path,
 				FilePath: getKemonoFilePath(postFolderPath, constants.KEMONO_CONTENT_FOLDER, attachment.Name),
 			})
 		}
@@ -85,7 +85,7 @@ func processJson(resJson *MainKemonoJson, tld, downloadPath string, dlOptions *K
 			if dlOptions.Configs.LogUrls {
 				api.DetectOtherExtDLLink(resJson.Embed.Url, embedsDirPath)
 			}
-			if api.DetectGDriveLinks(resJson.Embed.Url, postFolderPath, true, dlOptions.Configs.LogUrls,) && dlOptions.DlGdrive {
+			if api.DetectGDriveLinks(resJson.Embed.Url, postFolderPath, true, dlOptions.Configs.LogUrls) && dlOptions.DlGdrive {
 				gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
 					Url:      resJson.Embed.Url,
 					FilePath: embedsDirPath,
@@ -93,10 +93,10 @@ func processJson(resJson *MainKemonoJson, tld, downloadPath string, dlOptions *K
 			}
 		}
 
-		if resJson.File.Path != "" { 
+		if resJson.File.Path != "" {
 			// usually is the thumbnail of the post
 			toDownload = append(toDownload, &httpfuncs.ToDownload{
-				Url:      getKemonoUrl(tld) + resJson.File.Path,
+				Url:      constants.KEMONO_URL + resJson.File.Path,
 				FilePath: getKemonoFilePath(postFolderPath, "", resJson.File.Name),
 			})
 		}
@@ -112,10 +112,10 @@ func processJson(resJson *MainKemonoJson, tld, downloadPath string, dlOptions *K
 	return toDownload, gdriveLinks
 }
 
-func processMultipleJson(resJson KemonoJson, tld, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
+func processMultipleJson(resJson KemonoJson, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
 	var urlsToDownload, gdriveLinks []*httpfuncs.ToDownload
 	for _, post := range resJson {
-		toDownload, foundGdriveLinks := processJson(post, tld, downloadPath, dlOptions)
+		toDownload, foundGdriveLinks := processJson(post, downloadPath, dlOptions)
 		urlsToDownload = append(urlsToDownload, toDownload...)
 		gdriveLinks = append(gdriveLinks, foundGdriveLinks...)
 	}
