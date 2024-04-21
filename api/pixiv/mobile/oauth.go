@@ -11,7 +11,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/fatih/color"
 	"github.com/pkg/browser"
 )
 

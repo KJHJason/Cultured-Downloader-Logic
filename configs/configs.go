@@ -3,8 +3,6 @@ package configs
 import (
 	"os"
 	"os/exec"
-
-	"github.com/fatih/color"
 )
 
 type Config struct {

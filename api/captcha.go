@@ -14,7 +14,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/chromedp/chromedp"
-	"github.com/fatih/color"
 )
 
 const captchaBtnSelector = `//input[@name='commit']`
@@ -110,30 +109,7 @@ func getCaptchaAndVerificationUrls(website string) (string, string) {
 	}
 }
 
-// Manually ask the user to solve the reCAPTCHA for the current session.
-// Only works if the captcha is per session like in the case of Fantia.
-func manualSolveCaptcha(dlOptions DlOptions, website string) error {
-	// Check if the reCAPTCHA has been solved.
-	// If it has, we can continue with the download.
-	captchaUrl, verificationUrl := getCaptchaAndVerificationUrls(website)
-	useHttp3 := httpfuncs.IsHttp3Supported(website, true)
-	dlOptions.GetNotifier().Alert("reCAPTCHA detected! Please solve it manually...")
-
-	return dlOptions.GetCaptchaHandler()(
-		useHttp3, 
-		dlOptions.GetSessionCookies(), 
-		dlOptions.GetConfigs().UserAgent, 
-		fmt.Sprintf(
-			"Please solve the reCAPTCHA on %s at %s with the SAME session to continue.",
-			GetReadableSiteStr(website),
-			captchaUrl,
-		), 
-		verificationUrl,
-	)
-}
-
 func SolveCaptcha(dlOptions DlOptions, website string) error {
-	color.Yellow("\nWarning: reCAPTCHA detected for the current Fantia session...")
 	if len(dlOptions.GetSessionCookies()) == 0 && website == constants.FANTIA {
 		// Since reCAPTCHA is per session for Fantia, the program shall avoid 
 		// trying to solve it and alert the user to login or create a Fantia account.
@@ -147,7 +123,7 @@ func SolveCaptcha(dlOptions DlOptions, website string) error {
 	if dlOptions.GetAutoSolveCaptcha() {
 		return autoSolveCaptcha(dlOptions, website)
 	}
-	return manualSolveCaptcha(dlOptions, website)
+	panic("missing captcha auto solver")
 }
 
 // try the alternative method if the first one fails.

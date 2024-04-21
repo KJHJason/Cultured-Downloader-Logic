@@ -11,7 +11,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
-	"github.com/fatih/color"
 )
 
 type PixivMobile struct {

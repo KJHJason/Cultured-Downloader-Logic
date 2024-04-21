@@ -11,7 +11,6 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/fatih/color"
 )
 
 // Returns a readable format of the website name for the user
