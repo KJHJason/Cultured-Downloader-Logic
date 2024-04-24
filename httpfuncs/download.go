@@ -53,7 +53,7 @@ func getFullFilePath(res *http.Response, filePath string) (string, error) {
 
 // check if the file size matches the content length
 // if not, then the file does not exist or is corrupted and should be re-downloaded
-func checkIfCanSkipDl(fileSize, contentLength int64, filePath string, forceOverwrite bool) bool {
+func checkIfCanSkipDl(fileSize, contentLength int64, forceOverwrite bool) bool {
 	if fileSize == contentLength {
 		// If the file already exists and the file size
 		// matches the expected file size in the Content-Length header,
@@ -175,7 +175,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		return err
 	}
 
-	if !checkIfCanSkipDl(downloadedBytes, fileReqContentLength, filePath, overwriteExistingFile) {
+	if !checkIfCanSkipDl(downloadedBytes, fileReqContentLength, overwriteExistingFile) {
 		err = dlToFile(reqArgs.Context, res, reqArgs.Url, filePath, downloadPartial)
 	}
 	return err
