@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
@@ -18,8 +19,8 @@ func logJsonResponse(body []byte) error {
 	err := json.Indent(&prettyJson, body, "", "    ")
 	if err != nil {
 		err = fmt.Errorf(
-			"error %d: failed to indent JSON response body due to %v",
-			constants.JSON_ERROR,
+			"error %d: failed to indent JSON response body due to %w",
+			errs.JSON_ERROR,
 			err,
 		)
 		logger.LogError(err, false, logger.ERROR)
@@ -32,8 +33,8 @@ func logJsonResponse(body []byte) error {
 	err = os.WriteFile(filePath, prettyJson.Bytes(), 0666)
 	if err != nil {
 		err = fmt.Errorf(
-			"error %d: failed to write JSON response body to file due to %v",
-			constants.UNEXPECTED_ERROR,
+			"error %d: failed to write JSON response body to file due to %w",
+			errs.UNEXPECTED_ERROR,
 			err,
 		)
 		logger.LogError(err, false, logger.ERROR)
@@ -56,8 +57,8 @@ func LoadJsonFromResponse(res *http.Response, format any) error {
 
 	if err = json.Unmarshal(body, &format); err != nil {
 		return fmt.Errorf(
-			"error %d: failed to unmarshal json response from %s due to %v\nBody: %s",
-			constants.RESPONSE_ERROR,
+			"error %d: failed to unmarshal json response from %s due to %w\nBody: %s",
+			errs.RESPONSE_ERROR,
 			res.Request.URL.String(),
 			err,
 			string(body),
@@ -69,8 +70,8 @@ func LoadJsonFromResponse(res *http.Response, format any) error {
 func LoadJsonFromBytes(body []byte, format any) error {
 	if err := json.Unmarshal(body, &format); err != nil {
 		return fmt.Errorf(
-			"error %d: failed to unmarshal json due to %v\nBody: %s",
-			constants.JSON_ERROR,
+			"error %d: failed to unmarshal json due to %w\nBody: %s",
+			errs.JSON_ERROR,
 			err,
 			string(body),
 		)

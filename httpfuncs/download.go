@@ -13,8 +13,11 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/jbenet/go-context/io"
+
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
@@ -33,8 +36,8 @@ func getFullFilePath(res *http.Response, filePath string) (string, error) {
 	if err != nil {
 		// should never happen but just in case
 		return "", fmt.Errorf(
-			"error %d: failed to unescape URL, more info => %v\nurl: %s",
-			constants.UNEXPECTED_ERROR,
+			"error %d: failed to unescape URL, more info => %w\nurl: %s",
+			errs.UNEXPECTED_ERROR,
 			err,
 			res.Request.URL.String(),
 		)
@@ -50,17 +53,7 @@ func getFullFilePath(res *http.Response, filePath string) (string, error) {
 
 // check if the file size matches the content length
 // if not, then the file does not exist or is corrupted and should be re-downloaded
-func checkIfCanSkipDl(contentLength int64, filePath string, forceOverwrite bool) bool {
-	fileSize, err := iofuncs.GetFileSize(filePath)
-	if err != nil {
-		if err != os.ErrNotExist {
-			// if the error wasn't because the file does not exist,
-			// then log the error and continue with the download process
-			logger.LogError(err, false, logger.ERROR)
-		}
-		return false
-	}
-
+func checkIfCanSkipDl(fileSize, contentLength int64, filePath string, forceOverwrite bool) bool {
 	if fileSize == contentLength {
 		// If the file already exists and the file size
 		// matches the expected file size in the Content-Length header,
@@ -76,70 +69,51 @@ func checkIfCanSkipDl(contentLength int64, filePath string, forceOverwrite bool)
 	return false
 }
 
-func DlToFile(res *http.Response, url, filePath string) error {
-	file, err := os.Create(filePath) // create the file
+func dlToFile(ctx context.Context, res *http.Response, url, filePath string, supportRange bool) error {
+	fileFlags := os.O_CREATE | os.O_WRONLY
+	if supportRange {
+		fileFlags |= os.O_APPEND
+	} else {
+		fileFlags |= os.O_TRUNC
+	}
+
+	file, err := os.OpenFile(filePath, fileFlags, 0644)
 	if err != nil {
 		return fmt.Errorf(
-			"error %d: failed to create file, more info => %v\nfile path: %s",
-			constants.OS_ERROR,
+			"error %d: failed to open/create file, more info => %w\nfile path: %s",
+			errs.OS_ERROR,
 			err,
 			filePath,
 		)
 	}
+	defer file.Close()
 
 	// write the body to file
-	// https://stackoverflow.com/a/11693049/16377492
-	_, err = io.Copy(file, res.Body)
+	respReader := ctxio.NewReader(ctx, res.Body)
+	_, err = io.Copy(file, respReader)
 	if err != nil {
-		file.Close()
-		if fileErr := os.Remove(filePath); fileErr != nil {
-			logger.LogError(
-				fmt.Errorf(
-					"download error %d: failed to remove file at %s, more info => %v",
-					constants.OS_ERROR,
-					filePath,
-					fileErr,
-				),
-				false,
-				logger.ERROR,
-			)
+		if err == context.Canceled {
+			return nil
 		}
 
-		if err != context.Canceled {
-			logger.LogError(
-				fmt.Errorf(
-					"failed to download %s due to %v",
-					url,
-					err,
-				), 
-				false, 
-				logger.ERROR,
-			)
-			err = nil
-		}
+		logger.LogError(
+			fmt.Errorf(
+				"failed to download %s due to %w",
+				url,
+				err,
+			), 
+			false, 
+			logger.ERROR,
+		)
 		return err
 	}
-	file.Close()
 	return nil
 }
 
 // DownloadUrl is used to download a file from a URL
 //
 // Note: If the file already exists, the download process will be skipped
-func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, overwriteExistingFile bool) error {
-	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
-	ctx, cancel := context.WithCancel(reqArgs.Context)
-	defer cancel()
-
-	// Catch SIGINT/SIGTERM signal and cancel the context when received
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigs
-		cancel()
-	}()
-	defer signal.Stop(sigs)
-
+func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, overwriteExistingFile, supportRange bool) error {
 	queue <- struct{}{}
 	// Send a HEAD request first to get the expected file size from the Content-Length header.
 	// A GET request might work but most of the time
@@ -148,7 +122,7 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		&RequestArgs{
 			Url:         reqArgs.Url,
 			Method:      "HEAD",
-			Timeout:     10,
+			Timeout:     15,
 			Cookies:     reqArgs.Cookies,
 			Headers:     reqArgs.Headers,
 			UserAgent:   reqArgs.UserAgent,
@@ -156,7 +130,7 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 			RetryDelay:  reqArgs.RetryDelay,
 			Http3:       reqArgs.Http3,
 			Http2:       reqArgs.Http2,
-			Context:     ctx,
+			Context:     reqArgs.Context,
 		},
 	)
 	if err != nil {
@@ -165,13 +139,27 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 	fileReqContentLength := headRes.ContentLength
 	headRes.Body.Close()
 
-	reqArgs.Context = ctx
+	downloadedBytes, err := iofuncs.GetFileSize(filePath)
+	if err != nil {
+		if err != os.ErrNotExist {
+			// if the error wasn't because the file does not exist,
+			// then log the error and continue with the download process
+			logger.LogError(err, false, logger.ERROR)
+		}
+	}
+
+	if supportRange {
+		if downloadedBytes > 0 && downloadedBytes < fileReqContentLength {
+			reqArgs.Headers["Range"] = fmt.Sprintf("bytes=%d-", downloadedBytes)
+		}
+	}
+
 	res, err := reqArgs.RequestHandler(reqArgs)
 	if err != nil {
 		if err != context.Canceled {
 			err = fmt.Errorf(
-				"error %d: failed to download file, more info => %v\nurl: %s",
-				constants.DOWNLOAD_ERROR,
+				"error %d: failed to download file, more info => %w\nurl: %s",
+				errs.DOWNLOAD_ERROR,
 				err,
 				reqArgs.Url,
 			)
@@ -185,8 +173,8 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		return err
 	}
 
-	if !checkIfCanSkipDl(fileReqContentLength, filePath, overwriteExistingFile) {
-		err = DlToFile(res, reqArgs.Url, filePath)
+	if !checkIfCanSkipDl(downloadedBytes, fileReqContentLength, filePath, overwriteExistingFile) {
+		err = dlToFile(reqArgs.Context, res, reqArgs.Url, filePath, supportRange)
 	}
 	return err
 }
@@ -206,6 +194,19 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, dlOptions.MaxConcurrency)
 	errChan := make(chan error, urlsLen)
+
+	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
+	ctx, cancel := context.WithCancel(dlOptions.Context)
+	defer cancel()
+
+	// Catch SIGINT/SIGTERM signal and cancel the context when received
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		cancel()
+	}()
+	defer signal.Stop(sigs)
 
 	baseMsg := "Downloading files [%d/" + fmt.Sprintf("%d]...", urlsLen)
 	progress := dlOptions.DownloadProgressBar
@@ -231,7 +232,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 				wg.Done()
 				<-queue
 			}()
-			err := DownloadUrl(
+			err := downloadUrl(
 				filePath,
 				queue,
 				&RequestArgs{
@@ -245,9 +246,10 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 					RetryDelay:     dlOptions.RetryDelay,
 					UserAgent:      config.UserAgent,
 					RequestHandler: reqHandler,
-					Context:        dlOptions.Context,
+					Context:        ctx,
 				},
 				config.OverwriteFiles,
+				dlOptions.SupportRange,
 			)
 			if err != nil {
 				errChan <- err

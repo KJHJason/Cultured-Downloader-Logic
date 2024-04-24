@@ -1,10 +1,7 @@
 package configs
 
 import (
-	"os"
 	"os/exec"
-
-	"github.com/fatih/color"
 )
 
 type Config struct {
@@ -30,11 +27,4 @@ type Config struct {
 func (c *Config) ValidateFfmpegPathLogic() error {
 	_, ffmpegErr := exec.LookPath(c.FfmpegPath)
 	return ffmpegErr
-}
-
-func ValidateFfmpegAndPrintErr(c *Config) {
-	if ffmpegErr := c.ValidateFfmpegPathLogic(); ffmpegErr != nil {
-		color.Red("FFmpeg is not installed.\nPlease install it from https://ffmpeg.org/ and either use the --ffmpeg_path flag or add the FFmpeg path to your PATH environment variable or alias depending on your OS.")
-		os.Exit(1)
-	}
 }

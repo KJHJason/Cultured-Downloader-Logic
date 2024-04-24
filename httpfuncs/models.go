@@ -9,6 +9,12 @@ import (
 
 type RequestHandler func (reqArgs *RequestArgs) (*http.Response, error)
 
+type versionInfo struct {
+	Major int
+	Minor int
+	Patch int
+}
+
 type RetryDelay struct {
 	Max float32
 	Min float32
@@ -38,6 +44,9 @@ type DlOptions struct {
 
 	// RetryDelay is the delay between retries
 	RetryDelay *RetryDelay
+
+	// Whether the server supports Accept-Ranges header value
+	SupportRange bool
 
 	// Prog bar
 	DownloadProgressBar progress.Progress

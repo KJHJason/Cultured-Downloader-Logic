@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 const (
@@ -59,7 +60,7 @@ func (l *Logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
 		panic(
 			fmt.Sprintf(
 				"error %d: invalid log level %d passed to LogBasedOnLvl()",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 				lvl,
 			),
 		)

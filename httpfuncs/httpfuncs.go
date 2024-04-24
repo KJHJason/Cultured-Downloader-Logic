@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 // Returns a boolean value indicating whether the specified site supports HTTP/3
@@ -29,7 +30,7 @@ func IsHttp3Supported(site string, isApi bool) bool {
 		panic(
 			fmt.Errorf(
 				"error %d, invalid site, %q in IsHttp3Supported",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 				site,
 			),
 		)
@@ -58,8 +59,8 @@ func ReadResBody(res *http.Response) ([]byte, error) {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"error %d: failed to read response body from %s due to %v",
-			constants.RESPONSE_ERROR,
+			"error %d: failed to read response body from %s due to %w",
+			errs.RESPONSE_ERROR,
 			res.Request.URL.String(),
 			err,
 		)
