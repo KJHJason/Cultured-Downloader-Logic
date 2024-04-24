@@ -69,9 +69,9 @@ func checkIfCanSkipDl(fileSize, contentLength int64, filePath string, forceOverw
 	return false
 }
 
-func dlToFile(ctx context.Context, res *http.Response, url, filePath string, supportRange bool) error {
+func dlToFile(ctx context.Context, res *http.Response, url, filePath string, downloadPartial bool) error {
 	fileFlags := os.O_CREATE | os.O_WRONLY
-	if supportRange {
+	if downloadPartial {
 		fileFlags |= os.O_APPEND
 	} else {
 		fileFlags |= os.O_TRUNC
@@ -148,8 +148,10 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		}
 	}
 
+	downloadPartial := false
 	if supportRange {
 		if downloadedBytes > 0 && downloadedBytes < fileReqContentLength {
+			downloadPartial = true
 			reqArgs.Headers["Range"] = fmt.Sprintf("bytes=%d-", downloadedBytes)
 		}
 	}
@@ -174,7 +176,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 	}
 
 	if !checkIfCanSkipDl(downloadedBytes, fileReqContentLength, filePath, overwriteExistingFile) {
-		err = dlToFile(reqArgs.Context, res, reqArgs.Url, filePath, supportRange)
+		err = dlToFile(reqArgs.Context, res, reqArgs.Url, filePath, downloadPartial)
 	}
 	return err
 }
