@@ -8,6 +8,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 type RequestArgs struct {
@@ -40,6 +41,11 @@ type RequestArgs struct {
 
 	// RequestHandler is the main function that will be called to make the request.
 	RequestHandler RequestHandler
+
+	// TODO:
+	// Optional Download Progress that is used to show 
+	// the details of the download such as the download speed and ETA. 
+	DownloadProgress *progress.Progress
 }
 
 func (args *RequestArgs) validateHttp3Arg() {

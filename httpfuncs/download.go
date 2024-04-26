@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/jbenet/go-context/io"
 
@@ -59,7 +60,9 @@ func checkIfCanSkipDl(fileSize, contentLength int64, forceOverwrite bool) bool {
 		// matches the expected file size in the Content-Length header,
 		// then skip the download process.
 		return true
-	} else if !forceOverwrite && fileSize > 0 {
+	}
+
+	if !forceOverwrite && fileSize > 0 {
 		// If the file already exists and have more than 0 bytes
 		// but the Content-Length header does not exist in the response,
 		// we will assume that the file is already downloaded
@@ -69,7 +72,19 @@ func checkIfCanSkipDl(fileSize, contentLength int64, forceOverwrite bool) bool {
 	return false
 }
 
-func dlToFile(ctx context.Context, res *http.Response, url, filePath string, downloadPartial bool) error {
+// totalBytesWriter is a custom type that implements io.Writer interface to accumulate totalBytes.
+type totalBytesWriter struct {
+	totalBytes *int64
+}
+
+// Write writes len(p) bytes from p to the underlying data stream, and accumulates the total bytes written.
+func (tbw *totalBytesWriter) Write(p []byte) (int, error) {
+	n := len(p)
+	*tbw.totalBytes += int64(n)
+	return n, nil
+}
+
+func dlToFile(ctx context.Context, res *http.Response, reqArgs *RequestArgs, filePath string, downloadPartial bool, expectedFileSize int64) error {
 	fileFlags := os.O_CREATE | os.O_WRONLY
 	if downloadPartial {
 		fileFlags |= os.O_APPEND
@@ -88,10 +103,60 @@ func dlToFile(ctx context.Context, res *http.Response, url, filePath string, dow
 	}
 	defer file.Close()
 
+	// Measure download speed and ETA
+	startTime := time.Now()
+	progressTicker := time.NewTicker(100 * time.Millisecond)
+
+	var writtenBytes int64
+	dlInfoCtx, cancelDlInfoCtx := context.WithCancel(ctx)
+
+	go func() {
+		for {
+			select {
+			case <-dlInfoCtx.Done():
+				return
+			case <-progressTicker.C:
+				duration := time.Since(startTime)
+				downloadSpeed := float64(writtenBytes) / duration.Seconds()
+				var estimatedTime float64
+				if expectedFileSize == -1 { // not present in the response
+					estimatedTime = -1 // -1 indicates that the ETA is unknown
+				} else {
+					estimatedTime = float64(expectedFileSize-writtenBytes) / downloadSpeed
+				}
+
+				// TODO: integrate this with the progress bar for individual file downloads
+				fmt.Printf("\rDownload speed: %.2f MB/s | ETA: %.2f seconds", downloadSpeed/1024/1024, estimatedTime)
+			}
+		}
+	}()
+
 	// write the body to file
 	respReader := ctxio.NewReader(ctx, res.Body)
-	_, err = io.Copy(file, respReader)
+	_, err = io.Copy(io.MultiWriter(file, &totalBytesWriter{&writtenBytes}), respReader)
+	progressTicker.Stop()
+	cancelDlInfoCtx()
+
 	if err != nil {
+		if !downloadPartial {
+			// Due to the checkIfCanSkipDl check before downloading, 
+			// remove the file if the download process failed or was cancelled
+			// to prevent incomplete files from being kept when the server does not support range requests.
+			err := os.Remove(filePath)
+			if err != nil {
+				logger.LogError(
+					fmt.Errorf(
+						"error %d: failed to remove file %s, more info => %w",
+						errs.OS_ERROR,
+						filePath,
+						err,
+					),
+					false,
+					logger.ERROR,
+				)
+			}
+		}
+
 		if err == context.Canceled {
 			return nil
 		}
@@ -99,7 +164,7 @@ func dlToFile(ctx context.Context, res *http.Response, url, filePath string, dow
 		logger.LogError(
 			fmt.Errorf(
 				"failed to download %s due to %w",
-				url,
+				reqArgs.Url,
 				err,
 			), 
 			false, 
@@ -176,7 +241,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 	}
 
 	if !checkIfCanSkipDl(downloadedBytes, fileReqContentLength, overwriteExistingFile) {
-		err = dlToFile(reqArgs.Context, res, reqArgs.Url, filePath, downloadPartial)
+		err = dlToFile(reqArgs.Context, res, reqArgs, filePath, downloadPartial, fileReqContentLength)
 	}
 	return err
 }
