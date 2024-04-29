@@ -1,5 +1,12 @@
 package gdrive
 
+import (
+	"fmt"
+	"strconv"
+
+	errs "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+)
+
 type GDriveFile struct {
 	Kind        string `json:"kind"`
 	Id          string `json:"id"`
@@ -29,6 +36,22 @@ type GdriveFileToDl struct {
 	MimeType    string
 	Md5Checksum string
 	FilePath    string
+}
+
+// Convert the size of the file to int64 and return it
+func (f GdriveFileToDl) GetIntSize() int64 {
+	size, err := strconv.ParseInt(f.Size, 10, 64)
+	if err != nil {
+		// shouldn't happen
+		panic(
+			fmt.Errorf(
+				"gdrive error %d: failed to convert the size of the file to int64, more info => %w",
+				errs.UNEXPECTED_ERROR,
+				err,
+			),
+		)
+	}
+	return size
 }
 
 type GdriveError struct {

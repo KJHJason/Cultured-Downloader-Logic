@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"google.golang.org/api/drive/v3"
 )
@@ -97,7 +97,7 @@ func (gdrive *GDrive) GDriveKeyIsValid(userAgent string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf(
 			"gdrive error %d: failed to check if Google Drive API key is valid, more info => %v",
-			constants.CONNECTION_ERROR,
+			errs.CONNECTION_ERROR,
 			err,
 		)
 	}

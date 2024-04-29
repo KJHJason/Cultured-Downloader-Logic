@@ -85,9 +85,20 @@ func (tbw *totalBytesWriter) Write(p []byte) (int, error) {
 	return n, nil
 }
 
-func DlToFile(res *http.Response, reqArgs *RequestArgs, filePath string, downloadPartial bool, downloadedBytes, expectedFileSize int64, dlProgBar *progress.DlProgress) error {
+type DlRequestInfo struct {
+	Ctx context.Context
+	Url string
+}
+
+type PartialDlInfo struct {
+	DownloadPartial  bool
+	DownloadedBytes  int64
+	ExpectedFileSize int64
+} 
+
+func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string, partialDlInfo PartialDlInfo, dlProgBar *progress.DlProgress) error {
 	fileFlags := os.O_CREATE | os.O_WRONLY
-	if downloadPartial {
+	if partialDlInfo.DownloadPartial {
 		fileFlags |= os.O_APPEND
 	} else {
 		fileFlags |= os.O_TRUNC
@@ -104,13 +115,14 @@ func DlToFile(res *http.Response, reqArgs *RequestArgs, filePath string, downloa
 	}
 	defer file.Close()
 
-	writtenBytes := downloadedBytes
+	expectedFileSize := partialDlInfo.ExpectedFileSize
+	writtenBytes := partialDlInfo.DownloadedBytes
 	if writtenBytes == -1 { // since the iofuncs.GetFileSize function returns -1 if the file does not exist
 		writtenBytes = 0
 	}
 
 	var progressTicker *time.Ticker
-	dlInfoCtx, cancelDlInfoCtx := context.WithCancel(reqArgs.Context)
+	dlInfoCtx, cancelDlInfoCtx := context.WithCancel(dlRequestInfo.Ctx)
 	if dlProgBar != nil {
 		// Measure download speed and ETA
 		startTime := time.Now()
@@ -141,7 +153,7 @@ func DlToFile(res *http.Response, reqArgs *RequestArgs, filePath string, downloa
 	}
 
 	// write the body to file
-	respReader := ctxio.NewReader(reqArgs.Context, res.Body)
+	respReader := ctxio.NewReader(dlRequestInfo.Ctx, res.Body)
 	_, err = io.Copy(io.MultiWriter(file, &totalBytesWriter{&writtenBytes}), respReader)
 	if dlProgBar != nil {
 		progressTicker.Stop()
@@ -149,7 +161,7 @@ func DlToFile(res *http.Response, reqArgs *RequestArgs, filePath string, downloa
 	cancelDlInfoCtx()
 
 	if err != nil {
-		if !downloadPartial {
+		if !partialDlInfo.DownloadPartial {
 			// Due to the checkIfCanSkipDl check before downloading, 
 			// remove the file if the download process failed or was cancelled
 			// to prevent incomplete files from being kept when the server does not support range requests.
@@ -182,7 +194,7 @@ func DlToFile(res *http.Response, reqArgs *RequestArgs, filePath string, downloa
 		logger.LogError(
 			fmt.Errorf(
 				"failed to download %s due to %w",
-				reqArgs.Url,
+				dlRequestInfo.Url,
 				err,
 			), 
 			false, 
@@ -270,7 +282,16 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 	}
 
 	if !checkIfCanSkipDl(downloadedBytes, fileReqContentLength, overwriteExistingFile) {
-		err = DlToFile(res, reqArgs, filePath, downloadPartial, downloadedBytes, fileReqContentLength, dlProgBar)
+		dlReqInfo := &DlRequestInfo{
+			Ctx: reqArgs.Context,
+			Url: reqArgs.Url,
+		}
+		dlPartialInfo := PartialDlInfo{
+			DownloadPartial:  downloadPartial,
+			DownloadedBytes:  downloadedBytes,
+			ExpectedFileSize: fileReqContentLength,
+		}
+		err = DlToFile(res, dlReqInfo, filePath, dlPartialInfo, dlProgBar)
 	}
 	return err
 }

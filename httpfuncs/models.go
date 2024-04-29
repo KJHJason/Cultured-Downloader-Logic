@@ -63,13 +63,13 @@ func (dlOptions *DlOptions) AppendDlProgBar(progBar *progress.DlProgress) {
 	defer dlOptions.mu.Unlock()
 
 	if dlOptions.DownloadProgressBars != nil {
-		*dlOptions.DownloadProgressBars = append(*dlOptions.DownloadProgressBars, progBar)
+		dlOptions.DownloadProgressBars = append(dlOptions.DownloadProgressBars, progBar)
 		return
 	}
 
 	newProgBars := make([]*progress.DlProgress, 1)
 	newProgBars[0] = progBar
-	dlOptions.DownloadProgressBars = &newProgBars
+	dlOptions.DownloadProgressBars = newProgBars
 }
 
 type GithubApiRes struct {

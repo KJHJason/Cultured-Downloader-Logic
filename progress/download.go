@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type DlProgressBars *[]*DlProgress
+type DlProgressBars []*DlProgress
 
 type NewDlProgressBar func(context.Context, Messages) *DlProgress
 
