@@ -1,6 +1,6 @@
 package progress
 
-type Progress interface {
+type ProgressBar interface {
 	// Add adds the given number to the progress.
 	Add(int)
 

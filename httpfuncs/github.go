@@ -65,7 +65,7 @@ func checkIfVerIsOutdated(curVer *versionInfo, latestVer *versionInfo) bool {
 }
 
 // check for the latest version of the program
-func CheckVer(url string, ver string, showProg bool, progBar progress.Progress) (bool, error) {
+func CheckVer(url string, ver string, showProg bool, progBar progress.ProgressBar) (bool, error) {
 	if !constants.GITHUB_VER_REGEX.MatchString(ver) {
 		return false, fmt.Errorf(
 			"github error %d: unable to process the current version, %q",
