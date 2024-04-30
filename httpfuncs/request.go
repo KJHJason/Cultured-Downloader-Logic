@@ -36,7 +36,7 @@ func AddHeaders(headers map[string]string, defaultUserAgent string, req *http.Re
 		return
 	}
 
-	if userAgent, ok := headers["User-Agent"]; !ok || userAgent == ""{
+	if userAgent, ok := headers["User-Agent"]; !ok || userAgent == "" {
 		headers["User-Agent"] = defaultUserAgent
 	}
 
@@ -137,7 +137,7 @@ func CallRequest(reqArgs *RequestArgs) (*http.Response, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"error %d: unable to create a new request, more info => %v",
+			"error %d: unable to create a new request, more info => %w",
 			errs.DEV_ERROR,
 			err,
 		)

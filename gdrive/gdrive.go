@@ -17,7 +17,7 @@ const (
 
 	// file fields to fetch from GDrive API:
 	// https://developers.google.com/drive/api/v3/reference/files
-	GDRIVE_FILE_FIELDS = "id,name,size,mimeType,md5Checksum"
+	GDRIVE_FILE_FIELDS   = "id,name,size,mimeType,md5Checksum"
 	GDRIVE_FOLDER_FIELDS = "nextPageToken,files(id,name,size,mimeType,md5Checksum)"
 )
 
@@ -96,7 +96,7 @@ func (gdrive *GDrive) GDriveKeyIsValid(userAgent string) (bool, error) {
 	)
 	if err != nil {
 		return false, fmt.Errorf(
-			"gdrive error %d: failed to check if Google Drive API key is valid, more info => %v",
+			"gdrive error %d: failed to check if Google Drive API key is valid, more info => %w",
 			errs.CONNECTION_ERROR,
 			err,
 		)

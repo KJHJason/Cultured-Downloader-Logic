@@ -1,13 +1,12 @@
-
 package gdrive
 
 import (
 	"fmt"
-	"strconv"
 	"net/http"
+	"strconv"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
@@ -21,9 +20,9 @@ func censorApiKeyFromStr(str string) string {
 func getFailedApiCallErr(res *http.Response) error {
 	requestUrl := res.Request.URL.String()
 	return fmt.Errorf(
-		"error while fetching from GDrive...\n" +
-			"GDrive URL (May not be accurate): https://drive.google.com/file/d/%s/view?usp=sharing\n" +
-				"Status Code: %s\nURL: %s",
+		"error while fetching from GDrive...\n"+
+			"GDrive URL (May not be accurate): https://drive.google.com/file/d/%s/view?usp=sharing\n"+
+			"Status Code: %s\nURL: %s",
 		httpfuncs.GetLastPartOfUrl(requestUrl),
 		res.Status,
 		censorApiKeyFromStr(requestUrl),
@@ -42,7 +41,7 @@ func (gdrive *GDrive) getFolderContentsWithClient(folderId string) ([]*GdriveFil
 		files, err := action.Do()
 		if err != nil {
 			return nil, fmt.Errorf(
-				"gdrive error %d: failed to get folder contents with ID of %s, more info => %v",
+				"gdrive error %d: failed to get folder contents with ID of %s, more info => %w",
 				errs.CONNECTION_ERROR,
 				folderId,
 				err,
@@ -97,7 +96,7 @@ func (gdrive *GDrive) getFolderContentsWithApi(folderId string, config *configs.
 		)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"gdrive error %d: failed to get folder contents with ID of %s, more info => %v",
+				"gdrive error %d: failed to get folder contents with ID of %s, more info => %w",
 				errs.CONNECTION_ERROR,
 				folderId,
 				err,
@@ -188,7 +187,7 @@ func (gdrive *GDrive) getFileDetailsWithAPI(gdriveInfo *GDriveToDl, config *conf
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"gdrive error %d: failed to get file details with ID of %s, more info => %v",
+			"gdrive error %d: failed to get file details with ID of %s, more info => %w",
 			errs.CONNECTION_ERROR,
 			gdriveInfo.Id,
 			err,
@@ -219,7 +218,7 @@ func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl) (*GdriveF
 	file, err := gdrive.client.Files.Get(gdriveInfo.Id).Fields(GDRIVE_FILE_FIELDS).Do()
 	if err != nil {
 		return nil, fmt.Errorf(
-			"gdrive error %d: failed to get file details with ID of %s, more info => %v",
+			"gdrive error %d: failed to get file details with ID of %s, more info => %w",
 			errs.CONNECTION_ERROR,
 			gdriveInfo.Id,
 			err,
@@ -239,6 +238,6 @@ func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl) (*GdriveF
 func (gdrive *GDrive) GetFileDetails(gdriveInfo *GDriveToDl, config *configs.Config) (*GdriveFileToDl, error) {
 	if gdrive.client != nil {
 		return gdrive.getFileDetailsWithClient(gdriveInfo)
-	} 
+	}
 	return gdrive.getFileDetailsWithAPI(gdriveInfo, config)
 }

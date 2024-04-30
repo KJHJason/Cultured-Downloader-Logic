@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	errs "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 type GDriveFile struct {
@@ -24,7 +24,7 @@ type GDriveFolder struct {
 }
 
 type GDriveToDl struct {
-	Id 	     string
+	Id       string
 	Type     string
 	FilePath string
 }

@@ -47,6 +47,10 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 
 	allocCtx, cancel = context.WithTimeout(allocCtx, 45 * time.Second)
 	if err := api.ExecuteChromedpActions(allocCtx, cancel, actions...); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return err
+		}
+
 		var fmtErr error
 		if errors.Is(err, context.DeadlineExceeded) {
 			fmtErr = fmt.Errorf(

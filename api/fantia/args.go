@@ -9,6 +9,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
@@ -60,7 +61,6 @@ type FantiaDlOptions struct {
 	DlImages         bool
 	DlAttachments    bool
 	DlGdrive         bool
-	AutoSolveCaptcha bool // whether to use chromedp to solve reCAPTCHA automatically
 
 	GdriveClient *gdrive.GDrive
 
@@ -75,7 +75,7 @@ type FantiaDlOptions struct {
 	Notifier       notify.Notifier
 
 	// Progress indicators
-	mainProgBar *progress.ProgressBar
+	MainProgBar progress.ProgressBar
 }
 
 func (f *FantiaDlOptions) GetConfigs() *configs.Config {
@@ -84,14 +84,6 @@ func (f *FantiaDlOptions) GetConfigs() *configs.Config {
 
 func (f *FantiaDlOptions) GetSessionCookies() []*http.Cookie {
 	return f.SessionCookies
-}
-
-func (f *FantiaDlOptions) GetAutoSolveCaptcha() bool {
-	return f.AutoSolveCaptcha
-}
-
-func (f *FantiaDlOptions) SetAutoSolveCaptcha(autoSolveCaptcha bool) {
-	f.AutoSolveCaptcha = autoSolveCaptcha
 }
 
 func (f *FantiaDlOptions) GetNotifier() notify.Notifier {
@@ -136,7 +128,7 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"fantia error %d, failed to get CSRF token from Fantia: %w",
-			constants.CONNECTION_ERROR,
+			errs.CONNECTION_ERROR,
 			err,
 		)
 	}
@@ -145,7 +137,7 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	if res.StatusCode != 200 {
 		return fmt.Errorf(
 			"fantia error %d, failed to get CSRF token from Fantia: %w",
-			constants.RESPONSE_ERROR,
+			errs.RESPONSE_ERROR,
 			err,
 		)
 	}
@@ -155,7 +147,7 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"fantia error %d, failed to parse response body when getting CSRF token from Fantia: %w",
-			constants.HTML_ERROR,
+			errs.HTML_ERROR,
 			err,
 		)
 	}
@@ -168,7 +160,7 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 		}
 		return fmt.Errorf(
 			"fantia error %d, failed to get CSRF Token from Fantia, please report this issue!\nHTML: %s",
-			constants.HTML_ERROR,
+			errs.HTML_ERROR,
 			docHtml,
 		)
 	} else {
@@ -185,35 +177,17 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		f.SetContext(context.Background())
 	}
 
-	captchaMap := map[string]progress.Progress{
-		"CaptchaSolverProgBar":   f.CaptchaSolverProgBar,
-		"PostProgBar":            f.PostProgBar,
-		"GetFanclubPostsProgBar": f.GetFanclubPostsProgBar,
-		"ProcessJsonProgBar":     f.ProcessJsonProgBar,
-		"GdriveApiProgBar":       f.GdriveApiProgBar,
-		"GdriveDlProgBar":        f.GdriveDlProgBar,
-	}
-	for captchaName, captchaProgBar := range captchaMap {
-		if captchaProgBar == nil {
-			return fmt.Errorf(
-				"fantia error %d, %s progress bar is nil",
-				constants.DEV_ERROR,
-				captchaName,
-			)
-		}
-	}
-
 	if f.Notifier == nil {
 		return fmt.Errorf(
 			"fantia error %d, notifier is nil",
-			constants.DEV_ERROR,
+			errs.DEV_ERROR,
 		)
 	}
 
-	if f.captchaHandler == nil {
+	if f.MainProgBar == nil {
 		return fmt.Errorf(
-			"fantia error %d, captcha handler is nil",
-			constants.DEV_ERROR,
+			"fantia error %d, main progress bar is nil",
+			errs.DEV_ERROR,
 		)
 	}
 

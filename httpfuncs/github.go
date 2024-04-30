@@ -97,7 +97,7 @@ func CheckVer(url string, ver string, showProg bool, progBar progress.ProgressBa
 			errs.CONNECTION_ERROR,
 		)
 		if err != nil {
-			errMsg = fmt.Errorf("%v, more info => %w", errMsg, err)
+			errMsg = fmt.Errorf("%w, more info => %w", errMsg, err)
 		}
 
 		if showProg && progBar != nil {
@@ -144,7 +144,7 @@ func CheckVer(url string, ver string, showProg bool, progBar progress.ProgressBa
 		return false, errors.New(errMsg)
 	}
 
-	outdated := checkIfVerIsOutdated(programVer, latestVer) 
+	outdated := checkIfVerIsOutdated(programVer, latestVer)
 	if hasProgBar {
 		if outdated {
 			progBar.UpdateErrorMsg(

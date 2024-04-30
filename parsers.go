@@ -26,7 +26,7 @@ func ParseNetscapeCookieFile(filePath, sessionId, website string) ([]*http.Cooki
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"error %d: opening cookie file at %s, more info => %v",
+			"error %d: opening cookie file at %s, more info => %w",
 			errs.OS_ERROR,
 			filePath,
 			err,

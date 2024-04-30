@@ -19,7 +19,7 @@ func getAppPath() string {
 	if err != nil {
 		panic(
 			fmt.Errorf(
-				"error %d, failed to get user's config directory: %v",
+				"error %d, failed to get user's config directory: %w",
 				errs.OS_ERROR,
 				err,
 			),

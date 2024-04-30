@@ -11,6 +11,12 @@ type ProgressBar interface {
 	// Requires a bool to indicate if there is an error or not after the progress is stopped.
 	Stop(bool)
 
+	// Change to spinner, meaning there is no clear indicator of the progress.
+	SetToSpinner()
+
+	// Change to progress bar, meaning there is a clear indicator of the progress.
+	SetToProgressBar()
+
 	// Stops the progress due to an interrupt signal.
 	StopInterrupt(string)
 
