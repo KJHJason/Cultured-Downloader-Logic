@@ -1,7 +1,7 @@
 package httpfuncs
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -9,8 +9,7 @@ import (
 
 // Returns a random time.Duration between the given min and max arguments
 func GetRandomTime(min, max float32) time.Duration {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	randomDelay := min + r.Float32()*(max-min)
+	randomDelay := min + rand.Float32() * (max-min)
 	return time.Duration(randomDelay*1000) * time.Millisecond
 }
 
