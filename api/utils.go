@@ -210,13 +210,21 @@ func ValidateStrArgs(str string, slice, errMsgs []string) (string, error) {
 // Otherwise, os.Exit(1) is called after printing error messages for the user to read
 func ValidateIds(args []string) error {
 	for _, id := range args {
-		if !constants.NUMBER_REGEX.MatchString(id) {
-			return fmt.Errorf(
-				"error %d: invalid ID, %q, must be a number",
-				errs.INPUT_ERROR,
-				id,
-			)
+		err := ValidateId(id)
+		if err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+func ValidateId(arg string) error {
+	if !constants.NUMBER_REGEX.MatchString(arg) {
+		return fmt.Errorf(
+			"error %d: invalid ID, %q, must be a number",
+			errs.INPUT_ERROR,
+			arg,
+		)
 	}
 	return nil
 }

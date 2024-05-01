@@ -172,7 +172,7 @@ func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDow
 	for i, postId := range f.PostIds {
 		cancelled, postGdriveLinks, err := DlFantiaPost(i+1, postIdsLen, postId, dlOptions)
 
-		if err != nil && len(err) > 0 {
+		if len(err) > 0 {
 			if cancelled {
 				return nil, nil
 			}
@@ -228,7 +228,7 @@ func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
 }
 
 // Get all the creator's posts by using goquery to parse the HTML response to get the post IDs
-func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]string, error) {
+func GetCreatorPosts(creatorId, pageNum string, supportFrontend bool, dlOptions *FantiaDlOptions) ([]string, error) {
 	var postIds []string
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
@@ -290,6 +290,10 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 // Retrieves all the posts based on the slice of creator IDs and updates its PostIds slice
 func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []*error {
 	creatorIdsLen := len(f.FanclubIds)
+	if creatorIdsLen == 0 {
+		return nil
+	}
+
 	if creatorIdsLen != len(f.FanclubPageNums) {
 		panic(
 			fmt.Errorf(
@@ -308,23 +312,32 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []*error {
 	resChan := make(chan []string, creatorIdsLen)
 	errChan := make(chan error, creatorIdsLen)
 
-	baseMsg := "Getting post ID(s) from Fanclubs(s) on Fantia [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
 	progress := dlOptions.MainProgBar
-	progress.SetToProgressBar()
-	progress.UpdateBaseMsg(baseMsg)
-	progress.UpdateSuccessMsg(
-		fmt.Sprintf(
-			"Finished getting post ID(s) from %d Fanclubs(s) on Fantia!",
-			creatorIdsLen,
-		),
-	)
-	progress.UpdateErrorMsg(
-		fmt.Sprintf(
-			"Something went wrong while getting post IDs from %d Fanclubs(s) on Fantia.\nPlease refer to the logs for more details.",
-			creatorIdsLen,
-		),
-	)
-	progress.UpdateMax(creatorIdsLen)
+	if creatorIdsLen > 1 {
+		baseMsg := "Getting post ID(s) from Fanclubs(s) on Fantia [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
+		progress.SetToProgressBar()
+		progress.UpdateBaseMsg(baseMsg)
+		progress.UpdateSuccessMsg(
+			fmt.Sprintf(
+				"Finished getting post ID(s) from %d Fanclubs(s) on Fantia!",
+				creatorIdsLen,
+			),
+		)
+		progress.UpdateErrorMsg(
+			fmt.Sprintf(
+				"Something went wrong while getting post IDs from %d Fanclubs(s) on Fantia.\nPlease refer to the logs for more details.",
+				creatorIdsLen,
+			),
+		)
+		progress.UpdateMax(creatorIdsLen)
+	} else {
+		progress.SetToSpinner()
+		fanclubId := f.FanclubIds[0]
+		progress.UpdateBaseMsg("Getting post ID(s) from Fanclub, " + fanclubId + ", on Fantia...")
+		progress.UpdateSuccessMsg("Finished getting post ID(s) from Fanclub, " + fanclubId + ", on Fantia!")
+		progress.UpdateErrorMsg("Something went wrong while getting post ID(s) from Fanclub, " + fanclubId + ", on Fantia.\nPlease refer to the logs for more details.")
+	}
+
 	progress.Start()
 	for idx, creatorId := range f.FanclubIds {
 		wg.Add(1)
@@ -335,9 +348,10 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []*error {
 			}()
 
 			queue <- struct{}{}
-			postIds, err := getCreatorPosts(
+			postIds, err := GetCreatorPosts(
 				creatorId,
 				f.FanclubPageNums[pageNumIdx],
+				false,
 				dlOptions,
 			)
 			if err != nil {

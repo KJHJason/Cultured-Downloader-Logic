@@ -30,19 +30,29 @@ type FantiaDl struct {
 // It also validates the page numbers of the fanclubs to download.
 //
 // Should be called after initialising the struct.
-func (f *FantiaDl) ValidateArgs() {
-	api.ValidateIds(f.PostIds)
-	api.ValidateIds(f.FanclubIds)
-	f.PostIds = api.RemoveSliceDuplicates(f.PostIds)
+func (f *FantiaDl) ValidateArgs() error {
+	err := api.ValidateIds(f.PostIds)
+	if err != nil {
+		return err
+	}
 
+	err = api.ValidateIds(f.FanclubIds)
+	if err != nil {
+		return err
+	}
+
+	f.PostIds = api.RemoveSliceDuplicates(f.PostIds)
 	if len(f.FanclubPageNums) > 0 {
-		api.ValidatePageNumInput(
+		err := api.ValidatePageNumInput(
 			len(f.FanclubIds),
 			f.FanclubPageNums,
 			[]string{
 				"Number of Fantia Fanclub ID(s) and page numbers must be equal.",
 			},
 		)
+		if err != nil {
+			return err
+		}
 	} else {
 		f.FanclubPageNums = make([]string, len(f.FanclubIds))
 	}
@@ -51,6 +61,7 @@ func (f *FantiaDl) ValidateArgs() {
 		f.FanclubIds,
 		f.FanclubPageNums,
 	)
+	return err
 }
 
 // FantiaDlOptions is the struct that contains the options for downloading from Fantia.
@@ -75,7 +86,8 @@ type FantiaDlOptions struct {
 	Notifier       notify.Notifier
 
 	// Progress indicators
-	MainProgBar progress.ProgressBar
+	SupportFrontend bool
+	MainProgBar     progress.ProgressBar
 }
 
 func (f *FantiaDlOptions) GetConfigs() *configs.Config {

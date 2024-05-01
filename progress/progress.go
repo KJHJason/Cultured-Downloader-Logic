@@ -34,4 +34,8 @@ type ProgressBar interface {
 
 	// Updates the message of the progress in the event of an error.
 	UpdateErrorMsg(string)
+
+	// Mainly for frontend usage.
+	SnapshotTask() // Saves the current progress state for nested progress bars.
+	UpdateFolderPath(string)   // The folder path that the contents will be downloaded to.
 }
