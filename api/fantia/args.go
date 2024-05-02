@@ -86,7 +86,6 @@ type FantiaDlOptions struct {
 	Notifier       notify.Notifier
 
 	// Progress indicators
-	SupportFrontend        bool
 	MainProgBar            progress.ProgressBar
 	DownloadProgressBars   progress.DlProgressBars
 	NewDownloadProgressBar progress.NewDlProgressBar
