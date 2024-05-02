@@ -1,6 +1,8 @@
 package gdrive
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -92,9 +94,14 @@ func (gdrive *GDrive) getFolderContentsWithApi(folderId string, config *configs.
 				UserAgent: config.UserAgent,
 				Http2:     !HTTP3_SUPPORTED,
 				Http3:     HTTP3_SUPPORTED,
+				Context:   gdrive.ctx,
 			},
 		)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return nil, err
+			}
+
 			return nil, fmt.Errorf(
 				"gdrive error %d: failed to get folder contents with ID of %s, more info => %w",
 				errs.CONNECTION_ERROR,
@@ -183,9 +190,14 @@ func (gdrive *GDrive) getFileDetailsWithAPI(gdriveInfo *GDriveToDl, config *conf
 			UserAgent: config.UserAgent,
 			Http2:     !HTTP3_SUPPORTED,
 			Http3:     HTTP3_SUPPORTED,
+			Context:   gdrive.ctx,
 		},
 	)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
+
 		return nil, fmt.Errorf(
 			"gdrive error %d: failed to get file details with ID of %s, more info => %w",
 			errs.CONNECTION_ERROR,

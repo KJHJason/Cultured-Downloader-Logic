@@ -30,6 +30,7 @@ var (
 )
 
 type GDrive struct {
+	ctx                context.Context
 	apiKey             string         // Google Drive API key to use
 	client             *drive.Service // Google Drive service client (if using service account credentials)
 	apiUrl             string         // https://www.googleapis.com/drive/v3/files
@@ -39,7 +40,7 @@ type GDrive struct {
 }
 
 // Returns a GDrive structure with the given API key and max download workers
-func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWorkers int) (*GDrive, error) {
+func GetNewGDrive(ctx context.Context, apiKey, jsonPath string, config *configs.Config, maxDownloadWorkers int) (*GDrive, error) {
 	if jsonPath != "" && apiKey != "" {
 		return nil, fmt.Errorf(
 			"gdrive error %d: Both Google Drive API key and service account credentials file cannot be used at the same time",
@@ -53,6 +54,7 @@ func GetNewGDrive(apiKey, jsonPath string, config *configs.Config, maxDownloadWo
 	}
 
 	gdrive := &GDrive{
+		ctx:                ctx,
 		apiUrl:             "https://www.googleapis.com/drive/v3/files",
 		timeout:            15,
 		downloadTimeout:    900, // 15 minutes
