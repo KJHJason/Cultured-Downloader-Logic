@@ -37,8 +37,7 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 			fantiaDlOptions.Configs, 
 			&progress.ProgressBarInfo{
 				MainProgressBar:        fantiaDlOptions.MainProgBar,
-				DownloadProgressBars:   &fantiaDlOptions.DownloadProgressBars,
-				NewDownloadProgressBar: fantiaDlOptions.NewDownloadProgressBar,
+				DownloadProgressBars:   fantiaDlOptions.DownloadProgressBars,
 			},
 		)
 		errorSlice = append(errorSlice, gdriveErrs...)

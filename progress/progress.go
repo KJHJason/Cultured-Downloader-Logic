@@ -45,14 +45,13 @@ type ProgressBar interface {
 }
 
 type ProgressBarInfo struct {
-	MainProgressBar        ProgressBar
-	DownloadProgressBars   *DlProgressBars
-	NewDownloadProgressBar NewDlProgressBar
+	MainProgressBar      ProgressBar
+	DownloadProgressBars *[]*DownloadProgressBar
 
 	mu sync.Mutex
 }
 
-func (pgi *ProgressBarInfo) AppendDlProgBar(progBar *DlProgress) {
+func (pgi *ProgressBarInfo) AppendDlProgBar(progBar *DownloadProgressBar) {
 	pgi.mu.Lock()
 	defer pgi.mu.Unlock()
 

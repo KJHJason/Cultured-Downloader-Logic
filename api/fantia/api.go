@@ -100,7 +100,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 	return res, nil
 }
 
-func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions) (cancelled bool, toDl []*httpfuncs.ToDownload, errSlice []*error) {
+func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions) (cancelled bool, gdriveUrls []*httpfuncs.ToDownload, errSlice []*error) {
 	msgSuffix := fmt.Sprintf(
 		"[%d/%d]",
 		count,
@@ -153,8 +153,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 
 			ProgressBarInfo: &progress.ProgressBarInfo{
 				MainProgressBar:        dlOptions.MainProgBar,
-				DownloadProgressBars:   &dlOptions.DownloadProgressBars,
-				NewDownloadProgressBar: dlOptions.NewDownloadProgressBar,
+				DownloadProgressBars:   dlOptions.DownloadProgressBars,
 			},
 		},
 		dlOptions.Configs,

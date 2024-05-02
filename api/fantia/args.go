@@ -66,12 +66,13 @@ func (f *FantiaDl) ValidateArgs() error {
 
 // FantiaDlOptions is the struct that contains the options for downloading from Fantia.
 type FantiaDlOptions struct {
-	ctx              context.Context
-	cancel           context.CancelFunc
-	DlThumbnails     bool
-	DlImages         bool
-	DlAttachments    bool
-	DlGdrive         bool
+	ctx                context.Context
+	cancel             context.CancelFunc
+	DlThumbnails       bool
+	DlImages           bool
+	DlAttachments      bool
+	DlGdrive           bool
+	DetectOtherDlLinks bool
 
 	GdriveClient *gdrive.GDrive
 
@@ -86,9 +87,8 @@ type FantiaDlOptions struct {
 	Notifier       notify.Notifier
 
 	// Progress indicators
-	MainProgBar            progress.ProgressBar
-	DownloadProgressBars   progress.DlProgressBars
-	NewDownloadProgressBar progress.NewDlProgressBar
+	MainProgBar          progress.ProgressBar
+	DownloadProgressBars *[]*progress.DownloadProgressBar
 }
 
 func (f *FantiaDlOptions) GetConfigs() *configs.Config {

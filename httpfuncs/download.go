@@ -96,7 +96,7 @@ type PartialDlInfo struct {
 	ExpectedFileSize int64
 } 
 
-func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string, partialDlInfo PartialDlInfo, dlProgBar *progress.DlProgress) error {
+func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string, partialDlInfo PartialDlInfo, dlProgBar *progress.DownloadProgressBar) error {
 	fileFlags := os.O_CREATE | os.O_WRONLY
 	if partialDlInfo.DownloadPartial {
 		fileFlags |= os.O_APPEND
@@ -142,7 +142,7 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 						estimatedTime = -1 // -1 indicates that the ETA is unknown
 					} else {
 						estimatedTime = float64(expectedFileSize-writtenBytes) / downloadSpeed
-						derefDlProgBar.UpdateDownloadPercentage(float64(writtenBytes) / float64(expectedFileSize) * 100)
+						derefDlProgBar.UpdatePercentage(int(float64(writtenBytes) / float64(expectedFileSize) * 100))
 					}
 					derefDlProgBar.UpdateDownloadSpeed(downloadSpeed/1024/1024)
 					derefDlProgBar.UpdateDownloadETA(estimatedTime)
@@ -210,9 +210,9 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, overwriteExistingFile bool, dlOptions *DlOptions) error {
 	queue <- struct{}{}
 
-	var dlProgBar *progress.DlProgress
-	if dlOptions.ProgressBarInfo.NewDownloadProgressBar != nil {
-		dlProgBar = dlOptions.ProgressBarInfo.NewDownloadProgressBar(reqArgs.Context, progress.Messages{
+	var dlProgBar *progress.DownloadProgressBar
+	if dlOptions.ProgressBarInfo.DownloadProgressBars != nil {
+		dlProgBar = progress.NewDlProgressBar(reqArgs.Context, progress.Messages{
 			Msg:        "Downloading file...",
 			ErrMsg:     "Failed to download file!",
 			SuccessMsg: "Finished downloading file!",

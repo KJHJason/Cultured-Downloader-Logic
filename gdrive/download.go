@@ -95,9 +95,9 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 
 	queue <- struct{}{}
 
-	var dlProgBar *progress.DlProgress
-	if progBarInfo.NewDownloadProgressBar != nil {
-		dlProgBar = progBarInfo.NewDownloadProgressBar(ctx, progress.Messages{
+	var dlProgBar *progress.DownloadProgressBar
+	if progBarInfo.DownloadProgressBars != nil {
+		dlProgBar = progress.NewDlProgressBar(ctx, progress.Messages{
 			Msg:        "Downloading GDrive file...",
 			ErrMsg:     "Failed to download GDrive file!",
 			SuccessMsg: "Finished downloading GDrive file!",
