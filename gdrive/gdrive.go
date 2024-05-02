@@ -7,7 +7,6 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 )
@@ -39,13 +38,13 @@ type GDrive struct {
 }
 
 // Returns a GDrive structure with the given API key and max download workers
-func GetNewGDrive(ctx context.Context, apiKey, jsonPath, userAgent string, maxDownloadWorkers int) (*GDrive, error) {
-	if jsonPath != "" && apiKey != "" {
+func GetNewGDrive(ctx context.Context, apiKey, userAgent string, jsonBytes []byte, maxDownloadWorkers int) (*GDrive, error) {
+	if len(jsonBytes) == 0 && apiKey != "" {
 		return nil, fmt.Errorf(
 			"gdrive error %d: Both Google Drive API key and service account credentials file cannot be used at the same time",
 			errs.DEV_ERROR,
 		)
-	} else if jsonPath == "" && apiKey == "" {
+	} else if len(jsonBytes) == 0 && apiKey == "" {
 		return nil, fmt.Errorf(
 			"gdrive error %d: Google Drive API key or service account credentials file is required",
 			errs.DEV_ERROR,
@@ -73,13 +72,7 @@ func GetNewGDrive(ctx context.Context, apiKey, jsonPath, userAgent string, maxDo
 		return gdrive, nil
 	} 
 
-	if !iofuncs.PathExists(jsonPath) {
-		return nil, fmt.Errorf(
-			"unable to access Drive API due to missing credentials file: %s",
-			jsonPath,
-		)
-	}
-	srv, err := drive.NewService(context.Background(), option.WithCredentialsFile(jsonPath))
+	srv, err := drive.NewService(ctx, option.WithCredentialsJSON(jsonBytes))
 	if err != nil {
 		return nil, fmt.Errorf(
 			"unable to access Drive API due to %w",
