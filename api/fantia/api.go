@@ -13,6 +13,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -149,6 +150,12 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 			Headers:        nil,
 			Cookies:        dlOptions.SessionCookies,
 			UseHttp3:       false,
+
+			ProgressBarInfo: &progress.ProgressBarInfo{
+				MainProgressBar:        dlOptions.MainProgBar,
+				DownloadProgressBars:   &dlOptions.DownloadProgressBars,
+				NewDownloadProgressBar: dlOptions.NewDownloadProgressBar,
+			},
 		},
 		dlOptions.Configs,
 	)

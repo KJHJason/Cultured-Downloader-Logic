@@ -211,14 +211,14 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 	queue <- struct{}{}
 
 	var dlProgBar *progress.DlProgress
-	if dlOptions.NewDownloadProgressBar != nil {
-		dlProgBar = dlOptions.NewDownloadProgressBar(reqArgs.Context, progress.Messages{
+	if dlOptions.ProgressBarInfo.NewDownloadProgressBar != nil {
+		dlProgBar = dlOptions.ProgressBarInfo.NewDownloadProgressBar(reqArgs.Context, progress.Messages{
 			Msg:        "Downloading file...",
 			ErrMsg:     "Failed to download file!",
 			SuccessMsg: "Finished downloading file!",
 		})
 		(*dlProgBar).UpdateFilename(filepath.Base(filePath))
-		dlOptions.AppendDlProgBar(dlProgBar)
+		dlOptions.ProgressBarInfo.AppendDlProgBar(dlProgBar)
 	}
 
 	// Send a HEAD request first to get the expected file size from the Content-Length header.
@@ -326,7 +326,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	defer signal.Stop(sigs)
 
 	baseMsg := "Downloading files [%d/" + fmt.Sprintf("%d]...", urlsLen)
-	progress := dlOptions.MainProgressBar
+	progress := dlOptions.ProgressBarInfo.MainProgressBar
 	progress.SetToProgressBar()
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(

@@ -3,7 +3,6 @@ package httpfuncs
 import (
 	"context"
 	"net/http"
-	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
@@ -49,27 +48,7 @@ type DlOptions struct {
 	// Whether the server supports Accept-Ranges header value
 	SupportRange bool
 
-	// Main Prog bar
-	MainProgressBar progress.ProgressBar
-
-	// Optional download progress bars for more detailed information
-	mu sync.Mutex
-	DownloadProgressBars   progress.DlProgressBars
-	NewDownloadProgressBar progress.NewDlProgressBar
-}
-
-func (dlOptions *DlOptions) AppendDlProgBar(progBar *progress.DlProgress) {
-	dlOptions.mu.Lock()
-	defer dlOptions.mu.Unlock()
-
-	if dlOptions.DownloadProgressBars != nil {
-		dlOptions.DownloadProgressBars = append(dlOptions.DownloadProgressBars, progBar)
-		return
-	}
-
-	newProgBars := make([]*progress.DlProgress, 1)
-	newProgBars[0] = progBar
-	dlOptions.DownloadProgressBars = newProgBars
+	ProgressBarInfo *progress.ProgressBarInfo
 }
 
 type GithubApiRes struct {

@@ -3,23 +3,31 @@ package cdlogic
 import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/fantia"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 // Start the download process for Fantia
-func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.FantiaDlOptions, dlOptions *httpfuncs.DlOptions) []*error {
+func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.FantiaDlOptions) []*error {
 	if !fantiaDlOptions.DlThumbnails && !fantiaDlOptions.DlImages && !fantiaDlOptions.DlAttachments {
 		return nil
 	}
 
+	var errorSlice []*error
 	if len(fantiaDl.FanclubIds) > 0 {
-		fantiaDl.GetCreatorsPosts(fantiaDlOptions)
+		if errSlice := fantiaDl.GetCreatorsPosts(fantiaDlOptions); len(errSlice) > 0 {
+			errorSlice = append(errorSlice, errSlice...)
+		}
 	}
 
-	var errorSlice []*error
 	var gdriveLinks []*httpfuncs.ToDownload
 	var downloadedPosts bool
 	if len(fantiaDl.PostIds) > 0 {
-		fantiaDl.DlFantiaPosts(fantiaDlOptions)
+		gdriveUrls, errSlice := fantiaDl.DlFantiaPosts(fantiaDlOptions)
+		if len(errSlice) > 0 {
+			errorSlice = append(errorSlice, errSlice...)
+		} else {
+			gdriveLinks = append(gdriveLinks, gdriveUrls...)
+		}
 		downloadedPosts = true
 	}
 
@@ -27,7 +35,11 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 		gdriveErrs := fantiaDlOptions.GdriveClient.DownloadGdriveUrls(
 			gdriveLinks, 
 			fantiaDlOptions.Configs, 
-			dlOptions,
+			&progress.ProgressBarInfo{
+				MainProgressBar:        fantiaDlOptions.MainProgBar,
+				DownloadProgressBars:   &fantiaDlOptions.DownloadProgressBars,
+				NewDownloadProgressBar: fantiaDlOptions.NewDownloadProgressBar,
+			},
 		)
 		errorSlice = append(errorSlice, gdriveErrs...)
 		downloadedPosts = true

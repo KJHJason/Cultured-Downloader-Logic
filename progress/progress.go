@@ -1,5 +1,9 @@
 package progress
 
+import (
+	"sync"
+)
+
 type ProgressBar interface {
 	// Add adds the given number to the progress.
 	Add(int)
@@ -38,4 +42,22 @@ type ProgressBar interface {
 	// Mainly for frontend usage.
 	SnapshotTask() // Saves the current progress state for nested progress bars.
 	UpdateFolderPath(string) // The folder path that the contents will be downloaded to.
+}
+
+type ProgressBarInfo struct {
+	MainProgressBar        ProgressBar
+	DownloadProgressBars   *DlProgressBars
+	NewDownloadProgressBar NewDlProgressBar
+
+	mu sync.Mutex
+}
+
+func (pgi *ProgressBarInfo) AppendDlProgBar(progBar *DlProgress) {
+	pgi.mu.Lock()
+	defer pgi.mu.Unlock()
+
+	if pgi.DownloadProgressBars != nil {
+		*pgi.DownloadProgressBars = append(*pgi.DownloadProgressBars, progBar)
+		return
+	}
 }
