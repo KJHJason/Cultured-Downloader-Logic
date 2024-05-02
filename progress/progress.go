@@ -37,5 +37,5 @@ type ProgressBar interface {
 
 	// Mainly for frontend usage.
 	SnapshotTask() // Saves the current progress state for nested progress bars.
-	UpdateFolderPath(string)   // The folder path that the contents will be downloaded to.
+	UpdateFolderPath(string) // The folder path that the contents will be downloaded to.
 }

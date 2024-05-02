@@ -184,6 +184,7 @@ func filterDownloads(files []*GdriveFileToDl) []*GdriveFileToDl {
 }
 
 func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) []*error {
+	defer prog.SnapshotTask()
 	if len(errChan) == 0 {
 		return nil
 	}
@@ -209,8 +210,9 @@ func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) 
 
 	if killProgram {
 		prog.StopInterrupt(
-			"Stopped downloading GDrive files (incomplete downloads will be deleted)...",
+			"Stopped downloading GDrive files (incomplete downloads may be deleted)...",
 		)
+		return nil
 	}
 	return errSlice
 }
@@ -437,6 +439,7 @@ func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, con
 		}
 	}
 	mainProg.Stop(hasErr)
+	mainProg.SnapshotTask()
 
 	errSlice = append(errSlice, gdrive.DownloadMultipleFiles(gdriveFilesInfo, config, dlOptions)...)
 	return errSlice

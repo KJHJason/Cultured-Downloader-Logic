@@ -174,6 +174,7 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 		),
 	)
 	progress.Start()
+	defer progress.SnapshotTask()
 
 	urlsToDownload, gdriveLinks, err := processFantiaPost(
 		illustArgs.res,

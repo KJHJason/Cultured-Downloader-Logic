@@ -32,6 +32,7 @@ const (
 	FANTIA_RECAPTCHA_URL   = "https://fantia.jp/recaptcha"
 	FANTIA_RANGE_SUPPORTED = true
 	FANTIA_MAX_CONCURRENT  = 5
+	FANTIA_POST_API_URL    = "https://fantia.jp/api/v1/posts/"
 
 	PIXIV                 = "pixiv"
 	PIXIV_MOBILE          = "pixiv_mobile"

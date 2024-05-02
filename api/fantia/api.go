@@ -49,6 +49,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 		),
 	)
 	progress.Start()
+	defer progress.SnapshotTask()
 
 	postApiUrl := postArg.url + postArg.postId
 	header := map[string]string{
@@ -98,8 +99,6 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 	return res, nil
 }
 
-const fantiaPostUrl = constants.FANTIA_URL + "/api/v1/posts/"
-
 func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions) (cancelled bool, toDl []*httpfuncs.ToDownload, errSlice []*error) {
 	msgSuffix := fmt.Sprintf(
 		"[%d/%d]",
@@ -111,7 +110,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		&fantiaPostArgs{
 			msgSuffix: msgSuffix,
 			postId:    postId,
-			url:       fantiaPostUrl,
+			url:       constants.FANTIA_POST_API_URL,
 		},
 		dlOptions,
 	)
@@ -228,7 +227,7 @@ func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
 }
 
 // Get all the creator's posts by using goquery to parse the HTML response to get the post IDs
-func GetCreatorPosts(creatorId, pageNum string, supportFrontend bool, dlOptions *FantiaDlOptions) ([]string, error) {
+func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]string, error) {
 	var postIds []string
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
@@ -348,10 +347,9 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []*error {
 			}()
 
 			queue <- struct{}{}
-			postIds, err := GetCreatorPosts(
+			postIds, err := getCreatorPosts(
 				creatorId,
 				f.FanclubPageNums[pageNumIdx],
-				false,
 				dlOptions,
 			)
 			if err != nil {
@@ -380,9 +378,11 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []*error {
 	}
 	if hasCancelled {
 		progress.StopInterrupt("Stopped getting post ID(s) from Fanclub(s) on Fantia...")
+		progress.SnapshotTask()
 		return nil
 	}
 	progress.Stop(hasErr)
+	progress.SnapshotTask()
 
 	for postIdsRes := range resChan {
 		f.PostIds = append(f.PostIds, postIdsRes...)

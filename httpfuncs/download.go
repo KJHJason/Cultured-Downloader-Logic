@@ -343,6 +343,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	)
 	progress.UpdateMax(urlsLen)
 	progress.Start()
+	defer progress.SnapshotTask()
 	for _, urlInfo := range urlInfoSlice {
 		wg.Add(1)
 		go func(fileUrl, filePath string) {
