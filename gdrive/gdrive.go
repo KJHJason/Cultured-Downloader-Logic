@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -40,7 +39,7 @@ type GDrive struct {
 }
 
 // Returns a GDrive structure with the given API key and max download workers
-func GetNewGDrive(ctx context.Context, apiKey, jsonPath string, config *configs.Config, maxDownloadWorkers int) (*GDrive, error) {
+func GetNewGDrive(ctx context.Context, apiKey, jsonPath, userAgent string, maxDownloadWorkers int) (*GDrive, error) {
 	if jsonPath != "" && apiKey != "" {
 		return nil, fmt.Errorf(
 			"gdrive error %d: Both Google Drive API key and service account credentials file cannot be used at the same time",
@@ -62,7 +61,7 @@ func GetNewGDrive(ctx context.Context, apiKey, jsonPath string, config *configs.
 	}
 	if apiKey != "" {
 		gdrive.apiKey = apiKey
-		gdriveIsValid, err := gdrive.GDriveKeyIsValid(config.UserAgent)
+		gdriveIsValid, err := gdrive.GDriveKeyIsValid(userAgent)
 		if err != nil {
 			return nil, err
 		} else if !gdriveIsValid {
