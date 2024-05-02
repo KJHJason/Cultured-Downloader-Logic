@@ -52,14 +52,13 @@ const (
 	PIXIV_FANBOX_RANGE_SUPPORTED = false
 	PIXIV_FANBOX_MAX_CONCURRENT  = 2 // Pixiv Fanbox throttles the download speed
 
-
 	KEMONO                       = "kemono"
-	KEMONO_TITLE                 = "Kemono Party"
+	KEMONO_TITLE                 = "Kemono"
 	KEMONO_PER_PAGE              = 50
 	KEMONO_URL                   = "https://kemono.su"
 	KEMONO_API_URL               = "https://kemono.su/api/v1"
 	KEMONO_RANGE_SUPPORTED       = true
-	KEMONO_BASE_REGEX_STR        = `https://kemono\.(?:party|su)/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)`
+	KEMONO_BASE_REGEX_STR        = `https://kemono\.su/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)`
 	KEMONO_POST_SUFFIX_REGEX_STR = `/post/(?P<postId>\d+)`
 	KEMONO_SERVICE_GROUP_NAME    = "service"
 	KEMONO_CREATOR_ID_GROUP_NAME = "creatorId"
@@ -142,6 +141,48 @@ var (
 	)
 	KEMONO_CREATOR_URL_REGEX_SERVICE_IDX    = KEMONO_CREATOR_URL_REGEX.SubexpIndex(KEMONO_SERVICE_GROUP_NAME)
 	KEMONO_CREATOR_URL_REGEX_CREATOR_ID_IDX = KEMONO_CREATOR_URL_REGEX.SubexpIndex(KEMONO_CREATOR_ID_GROUP_NAME)
+
+	// For URL(s) input validations
+	FANTIA_POST_URL_REGEX = regexp.MustCompile(
+		`^https://fantia.jp/posts/(?P<id>\d+)$`,
+	)
+	FANTIA_POST_ID_IDX = FANTIA_POST_URL_REGEX.SubexpIndex("id")
+
+	FANTIA_CREATOR_URL_REGEX = regexp.MustCompile(
+		`^https://fantia\.jp/fanclubs/(?P<id>\d+)(?:/posts)?$`,
+	)
+	FANTIA_CREATOR_ID_IDX = FANTIA_CREATOR_URL_REGEX.SubexpIndex("id")
+
+	PIXIV_FANBOX_POST_URL_REGEX1 = regexp.MustCompile(
+		`^https://www\.fanbox\.cc/@[\w&.-]+/posts/(?P<id>\d+)$`,
+	)
+	PIXIV_FANBOX_POST_ID_IDX1 = PIXIV_FANBOX_POST_URL_REGEX1.SubexpIndex("id")
+
+	PIXIV_FANBOX_POST_URL_REGEX2 = regexp.MustCompile(
+		`^https://[\w&.-]+\.fanbox\.cc/posts/(?P<id>\d+)$`,
+	)
+	PIXIV_FANBOX_POST_ID_IDX2 = PIXIV_FANBOX_POST_URL_REGEX2.SubexpIndex("id")
+
+	PIXIV_FANBOX_CREATOR_URL_REGEX1 = regexp.MustCompile(
+		`^https://(?P<id>[\w&.-]+)\.fanbox\.cc(?:/)?(?:posts)?$`,
+	)
+	PIXIV_FANBOX_CREATOR_ID_IDX1 = PIXIV_FANBOX_CREATOR_URL_REGEX1.SubexpIndex("id")
+
+	PIXIV_FANBOX_CREATOR_URL_REGEX2 = regexp.MustCompile(
+		`https://www\.fanbox\.cc/@(?P<id>[\w&.-]+)(?:/posts)?`,
+	)
+	PIXIV_FANBOX_CREATOR_ID_IDX2 = PIXIV_FANBOX_CREATOR_URL_REGEX2.SubexpIndex("id")
+
+	// can be illust or manga
+	PIXIV_ARTWORK_URL_REGEX = regexp.MustCompile(
+		`https://www\.pixiv\.net/(?:en/)?artworks/(?P<id>\d+)`,
+	)
+	PIXIV_ARTWORK_ID_IDX = PIXIV_ARTWORK_URL_REGEX.SubexpIndex("id")
+
+	PIXIV_ARTIST_URL_REGEX = regexp.MustCompile(
+		`https://www\.pixiv\.net/(?:en/)?users/(?P<id>\d+)`,
+	)
+	PIXIV_ARTIST_ID_IDX = PIXIV_ARTIST_URL_REGEX.SubexpIndex("id")
 )
 
 func init() {
