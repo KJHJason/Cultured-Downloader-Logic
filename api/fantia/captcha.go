@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -16,7 +17,15 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-const captchaBtnSelector = `//input[@name='commit']`
+const (
+	captchaBtnSelector = `//input[@name='commit']`
+	timeout = 45
+)
+
+var (
+	captchaMu  sync.Mutex
+	solvedTime *time.Time
+)
 
 type CaptchaOptions interface {
 	GetConfigs()        *configs.Config
@@ -45,7 +54,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		chromedp.WaitVisible(`//h3[@class='mb-15'][contains(text(), 'ファンティアでクリエイターを応援しよう！')]`, chromedp.BySearch),
 	}
 
-	allocCtx, cancel = context.WithTimeout(allocCtx, 45 * time.Second)
+	allocCtx, cancel = context.WithTimeout(allocCtx, timeout * time.Second)
 	if err := api.ExecuteChromedpActions(allocCtx, cancel, actions...); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return err
@@ -76,6 +85,15 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 }
 
 func SolveCaptcha(captchaOptions CaptchaOptions) error {
+	captchaMu.Lock()
+	defer captchaMu.Unlock()
+
+	if solvedTime != nil && (time.Since(*solvedTime) < timeout * time.Second) {
+		// if the reCAPTCHA was solved within the last few seconds,
+		// then skip solving it to avoid solving it multiple times
+		return nil
+	}
+
 	if len(captchaOptions.GetSessionCookies()) == 0 {
 		// Since reCAPTCHA is per session for Fantia, the program shall avoid 
 		// trying to solve it and alert the user to login or create a Fantia account.

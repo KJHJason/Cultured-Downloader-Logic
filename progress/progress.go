@@ -17,9 +17,11 @@ type ProgressBar interface {
 
 	// Change to spinner, meaning there is no clear indicator of the progress.
 	SetToSpinner()
+	GetIsSpinner() bool
 
 	// Change to progress bar, meaning there is a clear indicator of the progress.
 	SetToProgressBar()
+	GetIsProgBar() bool
 
 	// Stops the progress due to an interrupt signal.
 	StopInterrupt(string)

@@ -18,7 +18,7 @@ type DownloadProgressBar struct {
 	filename      string
 	downloadSpeed float64
 	downloadETA   float64
-	mu            *sync.RWMutex
+	mu            sync.RWMutex
 }
 
 func NewDlProgressBar(ctx context.Context, messages Messages) *DownloadProgressBar {
@@ -35,7 +35,7 @@ func NewDlProgressBar(ctx context.Context, messages Messages) *DownloadProgressB
 		filename:      "",
 		downloadSpeed: 0,
 		downloadETA:   -1,
-		mu:            &sync.RWMutex{},
+		mu:            sync.RWMutex{},
 	}
 }
 
