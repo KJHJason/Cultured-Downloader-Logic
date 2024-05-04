@@ -100,20 +100,12 @@ func LogErrors(exit bool, level int, errs ...error) bool {
 	return hasCanceled
 }
 
-func LogErrorsAddr(exit bool, level int, errs ...*error) bool {
-	errSlice := make([]error, 0, len(errs))
-	for _, err := range errs {
-		errSlice = append(errSlice, *err)
-	}
-	return LogErrors(exit, level, errSlice...)
-}
-
 // Uses the thread-safe LogError() function to log a channel of errors
 //
 // Also returns if any errors were due to context.Canceled which is caused by Ctrl + C.
-func LogChanErrors(exit bool, level int, errChan chan error) (bool, []*error) {
+func LogChanErrors(exit bool, level int, errChan chan error) (bool, []error) {
 	var hasCanceled bool
-	errSlice := make([]*error, 0, len(errChan))
+	errSlice := make([]error, 0, len(errChan))
 	for err := range errChan {
 		if err == context.Canceled {
 			if !hasCanceled {
@@ -122,7 +114,7 @@ func LogChanErrors(exit bool, level int, errChan chan error) (bool, []*error) {
 			continue
 		}
 		LogError(err, exit, level)
-		errSlice = append(errSlice, &err)
+		errSlice = append(errSlice, err)
 	}
 	return hasCanceled, errSlice
 }

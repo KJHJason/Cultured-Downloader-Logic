@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"path/filepath"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
@@ -12,6 +13,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/PuerkitoBio/goquery"
@@ -66,13 +68,14 @@ func (f *FantiaDl) ValidateArgs() error {
 
 // FantiaDlOptions is the struct that contains the options for downloading from Fantia.
 type FantiaDlOptions struct {
-	ctx                context.Context
-	cancel             context.CancelFunc
-	DlThumbnails       bool
-	DlImages           bool
-	DlAttachments      bool
-	DlGdrive           bool
-	DetectOtherDlLinks bool
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	DlThumbnails        bool
+	DlImages            bool
+	DlAttachments       bool
+	DlGdrive            bool
+	DetectOtherDlLinks  bool
+	BaseDownloadDirPath string
 
 	GdriveClient *gdrive.GDrive
 
@@ -195,6 +198,17 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 			"fantia error %d, notifier is nil",
 			errs.DEV_ERROR,
 		)
+	}
+
+	if f.BaseDownloadDirPath == "" {
+		f.BaseDownloadDirPath = filepath.Join(iofuncs.DOWNLOAD_PATH, constants.FANTIA_TITLE)
+	} else {
+		if !iofuncs.DirPathExists(f.BaseDownloadDirPath) {
+			return fmt.Errorf(
+				"fantia error %d, download path does not exist or is not a directory, please create the directory and try again",
+				errs.INPUT_ERROR,
+			)
+		}
 	}
 
 	if f.MainProgBar == nil {

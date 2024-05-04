@@ -42,8 +42,8 @@ type ProgressBar interface {
 	UpdateErrorMsg(string)
 
 	// Mainly for frontend usage.
-	SnapshotTask() // Saves the current progress state for nested progress bars.
-	UpdateFolderPath(string) // The folder path that the contents will be downloaded to.
+	SnapshotTask()           // Saves the current progress state for nested progress bars.
+	MakeLatestSnapshotMain() // Makes the latest snapshot the main progress bar.
 }
 
 type ProgressBarInfo struct {

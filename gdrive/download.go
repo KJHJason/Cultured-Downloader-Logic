@@ -183,14 +183,14 @@ func filterDownloads(files []*GdriveFileToDl) []*GdriveFileToDl {
 	return allowedForDownload
 }
 
-func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) []*error {
+func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) []error {
 	defer prog.SnapshotTask()
 	if len(errChan) == 0 {
 		return nil
 	}
 
 	killProgram := false
-	errSlice := make([]*error, 0, len(errChan))
+	errSlice := make([]error, 0, len(errChan))
 	for errInfo := range errChan {
 		errMsg := censorApiKeyFromStr(errInfo.Err.Error())
 		if errMsg == context.Canceled.Error() {
@@ -200,7 +200,7 @@ func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) 
 			continue
 		}
 
-		errSlice = append(errSlice, &errInfo.Err)
+		errSlice = append(errSlice, errInfo.Err)
 		logger.LogMessageToPath(
 			censorApiKeyFromStr(errMsg),
 			errInfo.FilePath,
@@ -218,7 +218,7 @@ func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) 
 }
 
 // Downloads the multiple GDrive file in parallel using GDrive API v3
-func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *configs.Config, progBarInfo *progress.ProgressBarInfo) []*error {
+func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *configs.Config, progBarInfo *progress.ProgressBarInfo) []error {
 	allowedForDownload := filterDownloads(files)
 	dlLen := len(allowedForDownload)
 	if dlLen == 0 {
@@ -375,7 +375,7 @@ func (gdrive *GDrive) getGdriveFileInfo(gdriveId *GDriveToDl, config *configs.Co
 }
 
 // Downloads multiple GDrive files based on a slice of GDrive URL strings in parallel
-func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, config *configs.Config, progBarInfo *progress.ProgressBarInfo) []*error {
+func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, config *configs.Config, progBarInfo *progress.ProgressBarInfo) []error {
 	if len(gdriveUrls) == 0 {
 		return nil
 	}
@@ -426,7 +426,7 @@ func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, con
 	}
 
 	hasErr := false
-	errSlice := make([]*error, 0, len(gdriveErrSlice))
+	errSlice := make([]error, 0, len(gdriveErrSlice))
 	if len(gdriveErrSlice) > 0 {
 		hasErr = true
 		for _, err := range gdriveErrSlice {
@@ -435,7 +435,7 @@ func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, con
 				err.FilePath,
 				logger.ERROR,
 			)
-			errSlice = append(errSlice, &err.Err)
+			errSlice = append(errSlice, err.Err)
 		}
 	}
 	mainProg.Stop(hasErr)

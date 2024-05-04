@@ -7,12 +7,12 @@ import (
 )
 
 // Start the download process for Fantia
-func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.FantiaDlOptions) []*error {
+func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.FantiaDlOptions) []error {
 	if !fantiaDlOptions.DlThumbnails && !fantiaDlOptions.DlImages && !fantiaDlOptions.DlAttachments {
 		return nil
 	}
 
-	var errorSlice []*error
+	var errorSlice []error
 	if len(fantiaDl.FanclubIds) > 0 {
 		if errSlice := fantiaDl.GetCreatorsPosts(fantiaDlOptions); len(errSlice) > 0 {
 			errorSlice = append(errorSlice, errSlice...)
@@ -33,11 +33,11 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 
 	if fantiaDlOptions.GdriveClient != nil && len(gdriveLinks) > 0 {
 		gdriveErrs := fantiaDlOptions.GdriveClient.DownloadGdriveUrls(
-			gdriveLinks, 
-			fantiaDlOptions.Configs, 
+			gdriveLinks,
+			fantiaDlOptions.Configs,
 			&progress.ProgressBarInfo{
-				MainProgressBar:        fantiaDlOptions.MainProgBar,
-				DownloadProgressBars:   fantiaDlOptions.DownloadProgressBars,
+				MainProgressBar:      fantiaDlOptions.MainProgBar,
+				DownloadProgressBars: fantiaDlOptions.DownloadProgressBars,
 			},
 		)
 		errorSlice = append(errorSlice, gdriveErrs...)

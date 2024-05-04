@@ -100,7 +100,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 	return res, nil
 }
 
-func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions) (cancelled bool, gdriveUrls []*httpfuncs.ToDownload, errSlice []*error) {
+func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions) (cancelled bool, gdriveUrls []*httpfuncs.ToDownload, errSlice []error) {
 	msgSuffix := fmt.Sprintf(
 		"[%d/%d]",
 		count,
@@ -116,7 +116,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		dlOptions,
 	)
 	if err != nil {
-		return false, nil, []*error{&err}
+		return false, nil, []error{err}
 	}
 
 	urlsToDownload, postGdriveUrls, err := processIllustDetailApiRes(
@@ -133,27 +133,28 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		if err != nil {
 			// stop the download if the captcha auto-solving fails
 			dlOptions.Cancel()
-			return false, nil, []*error{&err}
+			return false, nil, []error{err}
 		}
 
 		return DlFantiaPost(count, maxCount, postId, dlOptions)
 	} else if err != nil {
-		return false, nil, []*error{&err}
+		return false, nil, []error{err}
 	}
 
 	// Download the urls
 	cancelled, errorSlice := httpfuncs.DownloadUrls(
 		urlsToDownload,
 		&httpfuncs.DlOptions{
-			Context:		dlOptions.GetContext(),
+			Context:        dlOptions.GetContext(),
 			MaxConcurrency: constants.MAX_CONCURRENT_DOWNLOADS,
 			Headers:        nil,
 			Cookies:        dlOptions.SessionCookies,
 			UseHttp3:       false,
 
+			SupportRange:    constants.FANTIA_RANGE_SUPPORTED,
 			ProgressBarInfo: &progress.ProgressBarInfo{
-				MainProgressBar:        dlOptions.MainProgBar,
-				DownloadProgressBars:   dlOptions.DownloadProgressBars,
+				MainProgressBar:      dlOptions.MainProgBar,
+				DownloadProgressBars: dlOptions.DownloadProgressBars,
 			},
 		},
 		dlOptions.Configs,
@@ -170,8 +171,8 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 // Note that only the downloading of the URL(s) is/are executed concurrently
 // to reduce the chance of the signed AWS S3 URL(s) from expiring before the download is
 // executed or completed due to a download queue to avoid resource exhaustion of the user's system.
-func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*error ) {
-	var errSlice []*error
+func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []error) {
+	var errSlice []error
 	var gdriveLinks []*httpfuncs.ToDownload
 	postIdsLen := len(f.PostIds)
 	for i, postId := range f.PostIds {
@@ -191,7 +192,7 @@ func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDow
 	}
 
 	if len(errSlice) > 0 {
-		logger.LogErrorsAddr(false, logger.ERROR, errSlice...)
+		logger.LogErrors(false, logger.ERROR, errSlice...)
 	}
 	return gdriveLinks, errSlice
 }
@@ -293,7 +294,7 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 }
 
 // Retrieves all the posts based on the slice of creator IDs and updates its PostIds slice
-func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []*error {
+func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 	creatorIdsLen := len(f.FanclubIds)
 	if creatorIdsLen == 0 {
 		return nil
@@ -372,7 +373,7 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []*error {
 	close(resChan)
 	close(errChan)
 
-	var errorSlice []*error
+	var errorSlice []error
 	hasErr, hasCancelled := false, false
 	if len(errChan) > 0 {
 		hasErr = true

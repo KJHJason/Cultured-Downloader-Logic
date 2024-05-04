@@ -68,7 +68,7 @@ var errRecaptcha = fmt.Errorf("recaptcha detected for the current session")
 
 // Process the JSON response from Fantia's API and
 // returns a slice of urls and a slice of gdrive urls to download from
-func processFantiaPost(res *http.Response, downloadPath string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	// processes a fantia post
 	// returns a map containing the post id and the url to download the file from
 	var postJson FantiaPost
@@ -91,15 +91,7 @@ func processFantiaPost(res *http.Response, downloadPath string, dlOptions *Fanti
 	postId := strconv.Itoa(post.ID)
 	postTitle := post.Title
 	creatorName := post.Fanclub.User.Name
-	postFolderPath := iofuncs.GetPostFolder(
-		filepath.Join(
-			downloadPath,
-			constants.FANTIA_TITLE,
-		),
-		creatorName,
-		postId,
-		postTitle,
-	)
+	postFolderPath := iofuncs.GetPostFolder(dlOptions.BaseDownloadDirPath, creatorName, postId, postTitle)
 
 	var urlsSlice []*httpfuncs.ToDownload
 	thumbnail := post.Thumb.Original
@@ -178,7 +170,6 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 
 	urlsToDownload, gdriveLinks, err := processFantiaPost(
 		illustArgs.res,
-		iofuncs.DOWNLOAD_PATH,
 		dlOptions,
 	)
 	if err != nil {
