@@ -148,10 +148,6 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 	if hasDlProgBar {
 		// Measure download speed and ETA
 		startTime := time.Now()
-
-		// write the initial details to the progress bar in the event
-		// the download is fast and the progress bar is not updated before it ticks
-		writeDlDetailsToProgBar(dlProgBar, startTime, writtenBytes, expectedFileSize)
 		go func() {
 			for {
 				select {

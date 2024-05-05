@@ -224,7 +224,11 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		} else {
 			f.SessionCookies = []*http.Cookie{cookie}
 		}
-	}
+	} else if len(f.SessionCookies) > 0 {
+		if err := api.VerifyCookies(constants.FANTIA, userAgent, f.SessionCookies); err != nil {
+			return err
+		}
+	} 
 
 	if f.DlGdrive && f.GdriveClient == nil {
 		f.DlGdrive = false

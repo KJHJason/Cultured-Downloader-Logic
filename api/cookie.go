@@ -163,3 +163,29 @@ func VerifyAndGetCookie(website, cookieValue, userAgent string) (*http.Cookie, e
 	}
 	return cookie, nil
 }
+
+func VerifyCookies(website, userAgent string, cookies []*http.Cookie) error {
+	baseCookie := GetCookie("placeholder-value", website)
+	for _, cookie := range cookies {
+		if cookie.Name != baseCookie.Name {
+			continue
+		}
+
+		cookieIsValid, err := VerifyCookie(cookie, website, userAgent)
+		processCookieVerification(website, err)
+		if !cookieIsValid {
+			return fmt.Errorf(
+				"error %d: %s cookie is invalid",
+				errs.INPUT_ERROR,
+				GetReadableSiteStr(website),
+			)
+		}
+		return nil
+	}
+
+	return fmt.Errorf(
+		"error %d: %s cookie not found",
+		errs.INPUT_ERROR,
+		GetReadableSiteStr(website),
+	)
+}
