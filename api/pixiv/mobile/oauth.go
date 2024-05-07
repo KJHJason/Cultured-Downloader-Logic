@@ -99,6 +99,13 @@ func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 
 // Refresh the access token
 func RefreshAccessToken(timeout int, refreshToken string) (*PixivOAuthTokenInfo, error) {
+	if !pixivOauthCodeRegex.MatchString(refreshToken) {
+		return nil, fmt.Errorf(
+			"pixiv mobile error %d: invalid refresh token format, please check if the refresh token is correct",
+			errs.INPUT_ERROR,
+		)
+	}
+
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_MOBILE, true)
 	res, err := httpfuncs.CallRequestWithData(
 		&httpfuncs.RequestArgs{
