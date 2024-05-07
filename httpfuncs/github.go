@@ -11,15 +11,22 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
+var (
+	ErrProcessLatestVer = fmt.Errorf(
+		"github error %d: unable to process the latest version",
+		errs.DEV_ERROR,
+	)
+	ErrProcessVer = fmt.Errorf(
+		"github error %d: unable to process the current version",
+		errs.DEV_ERROR,
+	)
+)
+
 func processVer(apiResVer string) (*versionInfo, error) {
 	// split the version string by "."
 	ver := strings.Split(apiResVer, ".")
 	if len(ver) != 3 {
-		return nil, fmt.Errorf(
-			"github error %d: unable to process the latest version, %q",
-			errs.DEV_ERROR,
-			apiResVer,
-		)
+		return nil, ErrProcessLatestVer
 	}
 
 	// convert the version string to int
@@ -27,11 +34,7 @@ func processVer(apiResVer string) (*versionInfo, error) {
 	for i, v := range ver {
 		verInt, err := strconv.Atoi(v)
 		if err != nil {
-			return nil, fmt.Errorf(
-				"github error %d: unable to process the latest version, %q",
-				errs.DEV_ERROR,
-				apiResVer,
-			)
+			return nil, ErrProcessLatestVer
 		}
 		verSlice[i] = verInt
 	}
@@ -65,7 +68,8 @@ func checkIfVerIsOutdated(curVer *versionInfo, latestVer *versionInfo) bool {
 }
 
 // check for the latest version of the program
-func CheckVer(url string, ver string, showProg bool, progBar progress.ProgressBar) (bool, error) {
+func CheckVer(repo string, ver string, showProg bool, progBar progress.ProgressBar) (bool, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo)
 	if !constants.GITHUB_VER_REGEX.MatchString(ver) {
 		return false, fmt.Errorf(
 			"github error %d: unable to process the current version, %q",
@@ -128,7 +132,7 @@ func CheckVer(url string, ver string, showProg bool, progBar progress.ProgressBa
 			progBar.UpdateErrorMsg(errMsg)
 			progBar.Stop(true)
 		}
-		return false, errors.New(errMsg)
+		return false, err
 	}
 
 	programVer, err := processVer(ver)
@@ -141,7 +145,7 @@ func CheckVer(url string, ver string, showProg bool, progBar progress.ProgressBa
 			progBar.UpdateErrorMsg(errMsg)
 			progBar.Stop(true)
 		}
-		return false, errors.New(errMsg)
+		return false, ErrProcessVer
 	}
 
 	outdated := checkIfVerIsOutdated(programVer, latestVer)

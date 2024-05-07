@@ -11,7 +11,7 @@ import (
 const (
 	DEBUG_MODE                     = false // Will save a copy of all JSON response from the API
 	DEFAULT_PERMS                  = 0755 // Owner: rwx, Group: rx, Others: rx
-	VERSION                        = "1.0.3"
+	VERSION                        = "1.1.0"
 	MAX_RETRY_DELAY                = 3
 	MIN_RETRY_DELAY                = 1
 	RETRY_COUNTER                  = 4
