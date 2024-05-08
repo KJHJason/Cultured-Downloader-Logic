@@ -144,18 +144,18 @@ func GetMinMaxFromStr(numStr string) (int, int, bool, error) {
 	return min, max, true, nil
 }
 
-// Checks if the given str is in the given arr and returns a boolean
-func SliceContains(arr []string, str string) bool {
+type SliceTypes interface {
+	~string | ~int
+}
+
+// Checks if the given target is in the given arr and returns a boolean
+func SliceContains[T SliceTypes](arr []T, target T) bool {
 	for _, el := range arr {
-		if el == str {
+		if el == target {
 			return true
 		}
 	}
 	return false
-}
-
-type SliceTypes interface {
-	~string | ~int
 }
 
 // Removes duplicates from the given slice.

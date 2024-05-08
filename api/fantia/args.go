@@ -110,17 +110,17 @@ func (f *FantiaDlOptions) GetContext() context.Context {
 	return f.ctx
 }
 
-func (f *FantiaDlOptions) GetCancel() context.CancelFunc {
-	return f.cancel
-}
-
 func (f *FantiaDlOptions) SetContext(ctx context.Context) {
 	f.ctx, f.cancel = context.WithCancel(ctx)
 }
 
-// Cancel cancels the context of the FantiaDlOptions struct.
-func (f *FantiaDlOptions) Cancel() {
+// CancelCtx releases the resources used and cancels the context of the FantiaDlOptions struct.
+func (f *FantiaDlOptions) CancelCtx() {
 	f.cancel()
+}
+
+func (f *FantiaDlOptions) CtxIsActive() bool {
+	return f.ctx.Err() == nil
 }
 
 // GetCsrfToken gets the CSRF token from Fantia's index HTML
@@ -209,6 +209,7 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 				errs.INPUT_ERROR,
 			)
 		}
+		f.BaseDownloadDirPath = filepath.Join(f.BaseDownloadDirPath, constants.FANTIA_TITLE)
 	}
 
 	if f.MainProgBar == nil {
@@ -218,17 +219,18 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		)
 	}
 
-	if f.SessionCookieId != "" {
+	if len(f.SessionCookies) > 0 {
+		if err := api.VerifyCookies(constants.FANTIA, userAgent, f.SessionCookies); err != nil {
+			return err
+		}
+		f.SessionCookieId = ""
+	} else if f.SessionCookieId != "" {
 		if cookie, err := api.VerifyAndGetCookie(constants.FANTIA, f.SessionCookieId, userAgent); err != nil {
 			return err
 		} else {
 			f.SessionCookies = []*http.Cookie{cookie}
 		}
-	} else if len(f.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.FANTIA, userAgent, f.SessionCookies); err != nil {
-			return err
-		}
-	} 
+	}
 
 	if f.DlGdrive && f.GdriveClient == nil {
 		f.DlGdrive = false

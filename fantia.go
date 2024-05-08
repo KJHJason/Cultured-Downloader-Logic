@@ -8,6 +8,7 @@ import (
 
 // Start the download process for Fantia
 func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.FantiaDlOptions) []error {
+	defer fantiaDlOptions.CancelCtx()
 	if !fantiaDlOptions.DlThumbnails && !fantiaDlOptions.DlImages && !fantiaDlOptions.DlAttachments {
 		return nil
 	}
@@ -21,7 +22,7 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 
 	var gdriveLinks []*httpfuncs.ToDownload
 	var downloadedPosts bool
-	if len(fantiaDl.PostIds) > 0 {
+	if len(fantiaDl.PostIds) > 0 && fantiaDlOptions.CtxIsActive() {
 		gdriveUrls, errSlice := fantiaDl.DlFantiaPosts(fantiaDlOptions)
 		if len(errSlice) > 0 {
 			errorSlice = append(errorSlice, errSlice...)
@@ -31,7 +32,7 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 		downloadedPosts = true
 	}
 
-	if fantiaDlOptions.GdriveClient != nil && len(gdriveLinks) > 0 {
+	if fantiaDlOptions.GdriveClient != nil && len(gdriveLinks) > 0 && fantiaDlOptions.CtxIsActive() {
 		gdriveErrs := fantiaDlOptions.GdriveClient.DownloadGdriveUrls(
 			gdriveLinks,
 			fantiaDlOptions.Configs,

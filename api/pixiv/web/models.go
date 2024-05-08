@@ -1,4 +1,8 @@
-package models
+package pixivweb
+
+import (
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
+)
 
 type ArtworkDetails struct {
 	Body struct {
@@ -8,16 +12,16 @@ type ArtworkDetails struct {
 	}
 }
 
-type PixivWebArtworkUgoiraJson struct {
+type ArtworkUgoiraJson struct {
 	Body struct {
 		Src         string `json:"src"`
 		OriginalSrc string `json:"originalSrc"`
 		MimeType    string `json:"mime_type"`
-		Frames      UgoiraFramesJson `json:"frames"`
+		Frames      ugoira.UgoiraFramesJson `json:"frames"`
 	} `json:"body"`
 }
 
-type PixivWebArtworkJson struct {
+type ArtworkJson struct {
 	Body []struct {
 		Urls struct {
 			ThumbMini string `json:"thumb_mini"`
@@ -40,7 +44,7 @@ type PixivTag struct {
 	} `json:"body"`
 }
 
-type PixivWebIllustratorJson struct {
+type IllustratorJson struct {
     Body struct {
         Illusts interface{} `json:"illusts"`
         Manga   interface{} `json:"manga"`

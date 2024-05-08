@@ -40,7 +40,7 @@ func (gdrive *GDrive) getFolderContentsWithClient(folderId string) ([]*GdriveFil
 		if pageToken != "" {
 			action = action.PageToken(pageToken)
 		}
-		files, err := action.Do()
+		files, err := action.Context(gdrive.ctx).Do()
 		if err != nil {
 			return nil, fmt.Errorf(
 				"gdrive error %d: failed to get folder contents with ID of %s, more info => %w",
@@ -227,7 +227,7 @@ func (gdrive *GDrive) getFileDetailsWithAPI(gdriveInfo *GDriveToDl, config *conf
 
 // Retrieves the file details of the given GDrive file using Google's GDrive package
 func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl) (*GdriveFileToDl, error) {
-	file, err := gdrive.client.Files.Get(gdriveInfo.Id).Fields(GDRIVE_FILE_FIELDS).Do()
+	file, err := gdrive.client.Files.Get(gdriveInfo.Id).Fields(GDRIVE_FILE_FIELDS).Context(gdrive.ctx).Do()
 	if err != nil {
 		return nil, fmt.Errorf(
 			"gdrive error %d: failed to get file details with ID of %s, more info => %w",

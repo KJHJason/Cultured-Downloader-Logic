@@ -1,20 +1,21 @@
 package pixivmobile
 
 import (
+	"context"
 	cryptorand "crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
-	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
-type PixivOAuthTokenInfo struct {
+type OAuthTokenInfo struct {
 	AccessToken  string    // The access token that will be used to communicate with the Pixiv's Mobile API
 	ExpiresAt    time.Time // The time when the access token expires
 }
@@ -90,7 +91,7 @@ func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 		)
 	}
 
-	var oauthJson models.PixivOauthFlowJson
+	var oauthJson OauthFlowJson
 	if err := httpfuncs.LoadJsonFromResponse(res, &oauthJson); err != nil {
 		return "", err
 	}
@@ -98,9 +99,9 @@ func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 }
 
 // Refresh the access token
-func RefreshAccessToken(timeout int, refreshToken string) (*PixivOAuthTokenInfo, error) {
+func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (OAuthTokenInfo, *UserDetails, error) {
 	if !pixivOauthCodeRegex.MatchString(refreshToken) {
-		return nil, fmt.Errorf(
+		return OAuthTokenInfo{}, nil, fmt.Errorf(
 			"pixiv mobile error %d: invalid refresh token format, please check if the refresh token is correct",
 			errs.INPUT_ERROR,
 		)
@@ -115,6 +116,7 @@ func RefreshAccessToken(timeout int, refreshToken string) (*PixivOAuthTokenInfo,
 			UserAgent: USER_AGENT,
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
+			Context:   ctx,
 		},
 		map[string]string{
 			"client_id":      CLIENT_ID,
@@ -134,6 +136,10 @@ func RefreshAccessToken(timeout int, refreshToken string) (*PixivOAuthTokenInfo,
 				res.Status,
 			)
 		} else {
+			if errors.Is(err, context.Canceled) {
+				return OAuthTokenInfo{}, nil, err
+			}
+
 			err = fmt.Errorf(
 				"pixiv mobile error %d: failed to refresh token due to %v\n"+
 					"Please check your internet connection and try again",
@@ -141,34 +147,50 @@ func RefreshAccessToken(timeout int, refreshToken string) (*PixivOAuthTokenInfo,
 				err,
 			)
 		}
-		return nil, err
+		return OAuthTokenInfo{}, nil, err
 	}
 
-	var oauthJson models.PixivOauthJson
+	var oauthJson OauthJson
 	if err := httpfuncs.LoadJsonFromResponse(res, &oauthJson); err != nil {
-		return nil, err
+		return OAuthTokenInfo{}, nil, err
 	}
 
 	expiresIn := oauthJson.ExpiresIn - 15 // usually 3600 but minus 15 seconds to be safe
-	oauthInfo := PixivOAuthTokenInfo{
+	oauthInfo := OAuthTokenInfo{
 		ExpiresAt:   time.Now().Add(time.Duration(expiresIn) * time.Second),
 		AccessToken: oauthJson.AccessToken,
 	}
-	return &oauthInfo, nil
+	return oauthInfo, &oauthJson.User, nil
 }
 
-// Reads the response JSON and checks if the access token has expired,
+// Refreshes the access token for future requests.
+//
+// Note: this function is not thread-safe! Please use the refreshTokenFieldIfReq function instead.
+func (pixiv *PixivMobile) refreshTokenField() error {
+	oauthInfo, user, err := RefreshAccessToken(pixiv.ctx, pixiv.apiTimeout, pixiv.refreshToken)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			pixiv.cancel()
+			return err
+		}
+		return err
+	}
+	pixiv.accessTokenMap = oauthInfo
+	if pixiv.user == nil {
+		pixiv.user = user
+	}
+	return nil
+}
+
+// Checks if the current access token has expired,
 // if so, refreshes the access token for future requests.
 //
 // Returns a boolean indicating if the access token was refreshed.
-// func (pixiv *PixivMobile) refreshTokenIfReq() (bool, error) {
-// 	if pixiv.accessTokenMap.accessToken != "" && pixiv.accessTokenMap.expiresAt.After(time.Now()) {
-// 		return false, nil
-// 	}
-
-// 	err := pixiv.refreshAccessToken()
-// 	if err != nil {
-// 		return true, err
-// 	}
-// 	return true, nil
-// }
+func (pixiv *PixivMobile) refreshTokenFieldIfReq() (bool, error) {
+	pixiv.accessTokenMu.Lock()
+	defer pixiv.accessTokenMu.Unlock()
+	if pixiv.accessTokenMap.AccessToken != "" && pixiv.accessTokenMap.ExpiresAt.After(time.Now()) {
+		return false, nil
+	}
+	return true, pixiv.refreshTokenField()
+}

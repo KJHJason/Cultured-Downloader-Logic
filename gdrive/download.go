@@ -183,7 +183,7 @@ func filterDownloads(files []*GdriveFileToDl) []*GdriveFileToDl {
 	return allowedForDownload
 }
 
-func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) []error {
+func (gdrive *GDrive) processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) []error {
 	defer prog.SnapshotTask()
 	if len(errChan) == 0 {
 		return nil
@@ -192,8 +192,7 @@ func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) 
 	killProgram := false
 	errSlice := make([]error, 0, len(errChan))
 	for errInfo := range errChan {
-		errMsg := censorApiKeyFromStr(errInfo.Err.Error())
-		if errMsg == context.Canceled.Error() {
+		if errors.Is(errInfo.Err, context.Canceled) {
 			if !killProgram {
 				killProgram = true
 			}
@@ -201,6 +200,7 @@ func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) 
 		}
 
 		errSlice = append(errSlice, errInfo.Err)
+		errMsg := censorApiKeyFromStr(errInfo.Err.Error())
 		logger.LogMessageToPath(
 			censorApiKeyFromStr(errMsg),
 			errInfo.FilePath,
@@ -209,6 +209,7 @@ func processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) 
 	}
 
 	if killProgram {
+		gdrive.cancel()
 		prog.StopInterrupt(
 			"Stopped downloading GDrive files (incomplete downloads may be deleted)...",
 		)
@@ -301,7 +302,7 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *con
 		hasErr = true
 	}
 	prog.Stop(hasErr)
-	return processGdriveDlError(errChan, prog)
+	return gdrive.processGdriveDlError(errChan, prog)
 }
 
 // Uses regex to extract the file ID and the file type (type: file, folder) from the given URL
@@ -418,6 +419,13 @@ func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, con
 	for _, gdriveId := range gdriveIds {
 		fileInfo, err := gdrive.getGdriveFileInfo(gdriveId, config)
 		if err != nil {
+			if errors.Is(err.Err, context.Canceled) {
+				gdrive.cancel()
+				mainProg.StopInterrupt("Stopped getting GDrive file information...")
+				mainProg.SnapshotTask()
+				return nil
+			}
+
 			gdriveErrSlice = append(gdriveErrSlice, err)
 		} else {
 			gdriveFilesInfo = append(gdriveFilesInfo, fileInfo...)

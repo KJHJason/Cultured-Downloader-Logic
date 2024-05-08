@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -89,7 +90,7 @@ func LogError(err error, exit bool, level int) {
 func LogErrors(exit bool, level int, errs ...error) bool {
 	var hasCanceled bool
 	for _, err := range errs {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			if !hasCanceled {
 				hasCanceled = true
 			}
@@ -107,7 +108,7 @@ func LogChanErrors(exit bool, level int, errChan chan error) (bool, []error) {
 	var hasCanceled bool
 	errSlice := make([]error, 0, len(errChan))
 	for err := range errChan {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			if !hasCanceled {
 				hasCanceled = true
 			}

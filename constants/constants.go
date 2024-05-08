@@ -16,7 +16,7 @@ const (
 	MIN_RETRY_DELAY                = 1
 	RETRY_COUNTER                  = 4
 	MAX_CONCURRENT_DOWNLOADS       = 4
-	PIXIV_MAX_CONCURRENT_DOWNLOADS = 3
+	PIXIV_MAX_CONCURRENT_DOWNLOADS = 2
 	MAX_API_CALLS                  = 10
 	CLI_REPO_URL                   = "https://api.github.com/repos/KJHJason/Cultured-Downloader-CLI/releases/latest"
 	LOGIC_REPO_URL                 = "https://api.github.com/repos/KJHJason/Cultured-Downloader-Logic/releases/latest"
@@ -48,7 +48,7 @@ const (
 	PIXIV_API_URL         = "https://www.pixiv.net/ajax"
 	PIXIV_MOBILE_URL      = "https://app-api.pixiv.net"
 	PIXIV_RANGE_SUPPORTED = true
-	PIXIV_MAX_CONCURRENT  = 5
+	PIXIV_MAX_CONCURRENT  = 3
 
 	PIXIV_FANBOX                 = "fanbox"
 	PIXIV_FANBOX_TITLE           = "Pixiv Fanbox"
@@ -115,11 +115,11 @@ var (
 	)
 
 	HTTP3_SUPPORT_ARR = [...]string{
-		"https://www.pixiv.net",
-		"https://app-api.pixiv.net",
+		PIXIV_URL,
+		PIXIV_MOBILE_URL,
 
 		"https://www.google.com",
-		"https://drive.google.com",
+		GDRIVE_URL,
 	}
 
 	// For Pixiv Fanbox

@@ -132,7 +132,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		err = SolveCaptcha(dlOptions)
 		if err != nil {
 			// stop the download if the captcha auto-solving fails
-			dlOptions.Cancel()
+			dlOptions.CancelCtx()
 			return false, nil, []error{err}
 		}
 
@@ -146,7 +146,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		urlsToDownload,
 		&httpfuncs.DlOptions{
 			Context:        dlOptions.GetContext(),
-			MaxConcurrency: constants.MAX_CONCURRENT_DOWNLOADS,
+			MaxConcurrency: constants.FANTIA_MAX_CONCURRENT,
 			Headers:        nil,
 			Cookies:        dlOptions.SessionCookies,
 			UseHttp3:       false,
@@ -161,6 +161,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 	)
 
 	if cancelled {
+		dlOptions.CancelCtx()
 		return true, nil, errorSlice
 	}
 	return false, postGdriveUrls, nil
@@ -310,7 +311,7 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 	}
 
 	var wg sync.WaitGroup
-	maxConcurrency := constants.MAX_API_CALLS
+	maxConcurrency := constants.FANTIA_MAX_CONCURRENT
 	if creatorIdsLen < maxConcurrency {
 		maxConcurrency = creatorIdsLen
 	}
@@ -384,6 +385,7 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 		}
 	}
 	if hasCancelled {
+		dlOptions.CancelCtx()
 		progress.StopInterrupt("Stopped getting post ID(s) from Fanclub(s) on Fantia...")
 		progress.SnapshotTask()
 		return nil

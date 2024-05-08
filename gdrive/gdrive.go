@@ -29,6 +29,7 @@ var (
 
 type GDrive struct {
 	ctx                context.Context
+	cancel             context.CancelFunc
 	apiKey             string         // Google Drive API key to use
 	client             *drive.Service // Google Drive service client (if using service account credentials)
 	apiUrl             string         // https://www.googleapis.com/drive/v3/files
@@ -51,8 +52,10 @@ func GetNewGDrive(ctx context.Context, apiKey, userAgent string, jsonBytes []byt
 		)
 	}
 
+	gdriveCtx, cancel := context.WithCancel(ctx)
 	gdrive := &GDrive{
-		ctx:                ctx,
+		ctx:                gdriveCtx,
+		cancel:             cancel,
 		apiUrl:             "https://www.googleapis.com/drive/v3/files",
 		timeout:            15,
 		downloadTimeout:    900, // 15 minutes
@@ -106,7 +109,7 @@ func (gdrive *GDrive) GDriveKeyIsValid(userAgent string) (bool, error) {
 	)
 	if err != nil {
 		return false, fmt.Errorf(
-			"gdrive error %d: failed to check if Google Drive API key is valid, more info => %v",
+			"gdrive error %d: failed to check if Google Drive API key is valid, more info => %w",
 			errs.CONNECTION_ERROR,
 			err,
 		)

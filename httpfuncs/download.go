@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -191,7 +192,7 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 			}
 		}
 
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			if hasDlProgBar {
 				(*dlProgBar).UpdateErrMsg("Download process was cancelled!")
 				(*dlProgBar).Stop(true)
