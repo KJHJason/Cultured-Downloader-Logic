@@ -4,14 +4,14 @@ import (
 	"strconv"
 	"path/filepath"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
 // Process the artwork JSON and returns a slice of map that contains the urls of the images and the file path
-func (pixiv *PixivMobile) processArtworkJson(artworkJson *models.PixivMobileIllustJson, downloadPath string) ([]*httpfuncs.ToDownload, *models.Ugoira, error) {
+func (pixiv *PixivMobile) processArtworkJson(artworkJson *IllustJson, downloadPath string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
 	if artworkJson == nil {
 		return nil, nil, nil
 	}
@@ -19,9 +19,9 @@ func (pixiv *PixivMobile) processArtworkJson(artworkJson *models.PixivMobileIllu
 	artworkId := strconv.Itoa(artworkJson.Id)
 	artworkTitle := artworkJson.Title
 	artworkType := artworkJson.Type
-	illustratorName := artworkJson.User.Name
+	artistName := artworkJson.User.Name
 	artworkFolderPath := iofuncs.GetPostFolder(
-		filepath.Join(downloadPath, constants.PIXIV_TITLE), illustratorName, artworkId, artworkTitle,
+		filepath.Join(downloadPath, constants.PIXIV_TITLE), artistName, artworkId, artworkTitle,
 	)
 
 	if artworkType == "ugoira" {
@@ -53,7 +53,7 @@ func (pixiv *PixivMobile) processArtworkJson(artworkJson *models.PixivMobileIllu
 
 // The same as the processArtworkJson function but for mutliple JSONs at once
 // (Those with the "illusts" key which holds a slice of maps containing the artwork JSON)
-func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *models.PixivMobileArtworksJson, downloadPath string) ([]*httpfuncs.ToDownload, []*models.Ugoira, []error) {
+func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *ArtworksJson, downloadPath string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	if resJson == nil {
 		return nil, nil, nil
 	}
@@ -64,7 +64,7 @@ func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *models.PixivMobile
 	}
 
 	var errSlice []error
-	var ugoiraToDl []*models.Ugoira
+	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 	for _, artwork := range artworksMaps {
 		artworks, ugoira, err := pixiv.processArtworkJson(artwork, downloadPath)

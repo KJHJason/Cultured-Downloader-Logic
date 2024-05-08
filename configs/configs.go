@@ -1,10 +1,11 @@
 package configs
 
 import (
-	"os"
+	"context"
+	"errors"
 	"os/exec"
-
-	"github.com/fatih/color"
+	"strings"
+	"time"
 )
 
 type Config struct {
@@ -27,14 +28,28 @@ type Config struct {
 	UserAgent      string
 }
 
-func (c *Config) ValidateFfmpegPathLogic() error {
-	_, ffmpegErr := exec.LookPath(c.FfmpegPath)
-	return ffmpegErr
+func ValidateFfmpegPathLogic(ctx context.Context, ffmpegPath string) error {
+	_, ffmpegErr := exec.LookPath(ffmpegPath)
+	if ffmpegErr != nil {
+		return ffmpegErr
+	}
+
+	cmdCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	// execute the ffmpeg binary to check if it's working
+	cmd := exec.CommandContext(cmdCtx, ffmpegPath, "-version")
+	stdout, ffmpegErr := cmd.Output()
+	if ffmpegErr != nil {
+		return ffmpegErr
+	}
+
+	if len(stdout) > 0 && strings.HasPrefix(string(stdout), "ffmpeg version") {
+		return nil
+	}
+	return errors.New("unexpected output from ffmpeg binary, please ensure it is the correct ffmpeg binary")
 }
 
-func ValidateFfmpegAndPrintErr(c *Config) {
-	if ffmpegErr := c.ValidateFfmpegPathLogic(); ffmpegErr != nil {
-		color.Red("FFmpeg is not installed.\nPlease install it from https://ffmpeg.org/ and either use the --ffmpeg_path flag or add the FFmpeg path to your PATH environment variable or alias depending on your OS.")
-		os.Exit(1)
-	}
+func (c *Config) ValidateFfmpegPathLogic(ctx context.Context) error {
+	return ValidateFfmpegPathLogic(ctx, c.FfmpegPath)
 }

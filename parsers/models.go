@@ -33,3 +33,8 @@ func NewCookieInfoArgs(name string, sameSite http.SameSite) *cookieInfoArgs {
 		sameSite: sameSite,
 	}
 }
+
+func NewCookieInfoArgsByWebsite(website string) *cookieInfoArgs {
+	sessionCookieInfo := GetSessionCookieInfo(website)
+	return NewCookieInfoArgs(sessionCookieInfo.Name, sessionCookieInfo.SameSite)
+}

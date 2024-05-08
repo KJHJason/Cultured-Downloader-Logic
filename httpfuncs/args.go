@@ -5,28 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"regexp"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-)
-
-var (
-	// Since the URLs below will be redirected to Fantia's AWS S3 URL, 
-	// we need to use HTTP/2 as it is not supported by HTTP/3 yet.
-	FANTIA_ALBUM_URL = regexp.MustCompile(
-		`^https://fantia.jp/posts/[\d]+/album_image`,
-	)
-	FANTIA_DOWNLOAD_URL = regexp.MustCompile(
-		`^https://fantia.jp/posts/[\d]+/download/[\d]+`,
-	)
-
-	HTTP3_SUPPORT_ARR = [...]string{
-		"https://www.pixiv.net",
-		"https://app-api.pixiv.net",
-
-		"https://www.google.com",
-		"https://drive.google.com",
-	}
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 type RequestArgs struct {
@@ -65,12 +46,12 @@ func (args *RequestArgs) validateHttp3Arg() {
 	if !args.Http2 && !args.Http3 {
 		// if http2 and http3 are not enabled,
 		// do a check to determine which protocol to use.
-		if FANTIA_DOWNLOAD_URL.MatchString(args.Url) || FANTIA_ALBUM_URL.MatchString(args.Url) {
+		if constants.FANTIA_DOWNLOAD_URL.MatchString(args.Url) || constants.FANTIA_ALBUM_URL.MatchString(args.Url) {
 			args.Http2 = true
 		} else {
 			// check if the URL supports HTTP/3 first
 			// before falling back to the default HTTP/2.
-			for _, domain := range HTTP3_SUPPORT_ARR {
+			for _, domain := range constants.HTTP3_SUPPORT_ARR {
 				if strings.HasPrefix(args.Url, domain) {
 					args.Http3 = true
 					break
@@ -85,7 +66,7 @@ func (args *RequestArgs) validateHttp3Arg() {
 		panic(
 			fmt.Errorf(
 				"error %d: http2 and http3 cannot be enabled at the same time",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 			),
 		)
 	}
@@ -135,7 +116,7 @@ func (args *RequestArgs) ValidateArgs() {
 		panic(
 			fmt.Errorf(
 				"error %d: method cannot be empty",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 			),
 		)
 	}
@@ -144,7 +125,7 @@ func (args *RequestArgs) ValidateArgs() {
 		panic(
 			fmt.Errorf(
 				"error %d: url cannot be empty",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 			),
 		)
 	}
@@ -153,7 +134,7 @@ func (args *RequestArgs) ValidateArgs() {
 		panic(
 			fmt.Errorf(
 				"error %d: timeout cannot be negative",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 			),
 		)
 	} else if args.Timeout == 0 {

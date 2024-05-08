@@ -8,6 +8,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
@@ -43,10 +44,11 @@ type PixivWebDlOptions struct {
 	cancel context.CancelFunc
 
 	// Sort order of the results. Can be "date_desc" or "date_asc".
-	SortOrder   string
-	SearchMode  string
-	RatingMode  string
-	ArtworkType string
+	SortOrder    string
+	SearchMode   string
+	SearchAiType int // 1: filter AI works, 0: Display AI works
+	RatingMode   string
+	ArtworkType  string
 
 	Configs *configs.Config
 
@@ -55,22 +57,26 @@ type PixivWebDlOptions struct {
 
 	Notifier notify.Notifier
 
-	// Prog Bar
-	TagSearchProgBar           progress.Progress
-	GetPostsDetailProgBar      progress.Progress
-	GetIllustratorPostsProgBar progress.Progress
+	// Progress indicators
+	MainProgBar          progress.ProgressBar
+	DownloadProgressBars *[]*progress.DownloadProgressBar
 }
 
 func (p *PixivWebDlOptions) GetContext() context.Context {
 	return p.ctx
 }
 
-func (p *PixivWebDlOptions) GetCancel() context.CancelFunc {
-	return p.cancel
+// CancelCtx releases the resources used and cancels the context of the PixivWebDlOptions struct.
+func (p *PixivWebDlOptions) CancelCtx() {
+	p.cancel()
 }
 
 func (p *PixivWebDlOptions) SetContext(ctx context.Context) {
 	p.ctx, p.cancel = context.WithCancel(ctx)
+}
+
+func (p *PixivWebDlOptions) CtxIsActive() bool {
+	return p.ctx.Err() == nil
 }
 
 // ValidateArgs validates the arguments of the Pixiv download options.
@@ -81,25 +87,30 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		p.SetContext(context.Background())
 	}
 
-	captchaMap := map[string]progress.Progress{
-		"TagSearchProgBar":           p.TagSearchProgBar,
-		"GetPostsDetailProgBar":      p.GetPostsDetailProgBar,
-		"GetIllustratorPostsProgBar": p.GetIllustratorPostsProgBar,
-	}
-	for captchaName, captchaProgBar := range captchaMap {
-		if captchaProgBar == nil {
-			return fmt.Errorf(
-				"kemono error %d, %s is nil",
-				constants.DEV_ERROR,
-				captchaName,
-			)
+	if len(p.SessionCookies) > 0 {
+		if err := api.VerifyCookies(constants.PIXIV, userAgent, p.SessionCookies); err != nil {
+			return err
 		}
+		p.SessionCookieId = ""
+	} else if p.SessionCookieId != "" {
+		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV, p.SessionCookieId, userAgent); err != nil {
+			return err
+		} else {
+			p.SessionCookies = []*http.Cookie{cookie}
+		}
+	} 
+
+	if p.MainProgBar == nil {
+		return fmt.Errorf(
+			"pixiv web error %d, main progress bar is nil",
+			errs.DEV_ERROR,
+		)
 	}
 
 	if p.Notifier == nil {
 		return fmt.Errorf(
-			"pixiv error %d: Notifier cannot be nil",
-			constants.DEV_ERROR,
+			"pixiv web error %d: Notifier cannot be nil",
+			errs.DEV_ERROR,
 		)
 	}
 
@@ -109,8 +120,8 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		ACCEPTED_SORT_ORDER,
 		[]string{
 			fmt.Sprintf(
-				"pixiv error %d: Sort order %s is not allowed",
-				constants.INPUT_ERROR,
+				"pixiv web error %d: Sort order %s is not allowed",
+				errs.INPUT_ERROR,
 				p.SortOrder,
 			),
 		},
@@ -125,8 +136,8 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		ACCEPTED_SEARCH_MODE,
 		[]string{
 			fmt.Sprintf(
-				"pixiv error %d: Search order %s is not allowed",
-				constants.INPUT_ERROR,
+				"pixiv web error %d: Search order %s is not allowed",
+				errs.INPUT_ERROR,
 				p.SearchMode,
 			),
 		},
@@ -141,8 +152,8 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		ACCEPTED_RATING_MODE,
 		[]string{
 			fmt.Sprintf(
-				"pixiv error %d: Rating order %s is not allowed",
-				constants.INPUT_ERROR,
+				"pixiv web error %d: Rating order %s is not allowed",
+				errs.INPUT_ERROR,
 				p.RatingMode,
 			),
 		},
@@ -157,22 +168,14 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		ACCEPTED_ARTWORK_TYPE,
 		[]string{
 			fmt.Sprintf(
-				"pixiv error %d: Artwork type %s is not allowed",
-				constants.INPUT_ERROR,
+				"pixiv web error %d: Artwork type %s is not allowed",
+				errs.INPUT_ERROR,
 				p.ArtworkType,
 			),
 		},
 	)
 	if err != nil {
 		return err
-	}
-
-	if p.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV, p.SessionCookieId, userAgent); err != nil {
-			return err
-		} else {
-			p.SessionCookies = []*http.Cookie{cookie}
-		}
 	}
 	return nil
 }

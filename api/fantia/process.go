@@ -2,11 +2,13 @@ package fantia
 
 import (
 	"fmt"
+	"errors"
 	"net/http"
 	"path/filepath"
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -66,7 +68,7 @@ var errRecaptcha = fmt.Errorf("recaptcha detected for the current session")
 
 // Process the JSON response from Fantia's API and
 // returns a slice of urls and a slice of gdrive urls to download from
-func processFantiaPost(res *http.Response, downloadPath string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	// processes a fantia post
 	// returns a map containing the post id and the url to download the file from
 	var postJson FantiaPost
@@ -78,7 +80,7 @@ func processFantiaPost(res *http.Response, downloadPath string, dlOptions *Fanti
 		if postJson.Redirect != "/recaptcha" {
 			return nil, nil, fmt.Errorf(
 				"fantia error %d: unknown redirect url, %q", 
-				constants.UNEXPECTED_ERROR, 
+				errs.UNEXPECTED_ERROR, 
 				postJson.Redirect,
 			)
 		}
@@ -89,15 +91,7 @@ func processFantiaPost(res *http.Response, downloadPath string, dlOptions *Fanti
 	postId := strconv.Itoa(post.ID)
 	postTitle := post.Title
 	creatorName := post.Fanclub.User.Name
-	postFolderPath := iofuncs.GetPostFolder(
-		filepath.Join(
-			downloadPath,
-			constants.FANTIA_TITLE,
-		),
-		creatorName,
-		postId,
-		postTitle,
-	)
+	postFolderPath := iofuncs.GetPostFolder(dlOptions.BaseDownloadDirPath, creatorName, postId, postTitle)
 
 	var urlsSlice []*httpfuncs.ToDownload
 	thumbnail := post.Thumb.Original
@@ -148,7 +142,8 @@ type processIllustArgs struct {
 
 // Process the JSON response to get the urls to download
 func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
-	progress := dlOptions.ProcessJsonProgBar
+	progress := dlOptions.MainProgBar
+	progress.SetToSpinner()
 	progress.UpdateBaseMsg(
 		fmt.Sprintf(
 			"Processing retrieved JSON for post %s from Fantia %s...",
@@ -171,14 +166,16 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 		),
 	)
 	progress.Start()
+	defer progress.SnapshotTask()
 
 	urlsToDownload, gdriveLinks, err := processFantiaPost(
 		illustArgs.res,
-		iofuncs.DOWNLOAD_PATH,
 		dlOptions,
 	)
 	if err != nil {
-		progress.UpdateErrorMsg("reCAPTCHA detected for the current session...")
+		if errors.Is(err, errRecaptcha) {
+			progress.UpdateErrorMsg("reCAPTCHA detected for the current session...")
+		}
 		progress.Stop(true)
 		return nil, nil, err
 	}

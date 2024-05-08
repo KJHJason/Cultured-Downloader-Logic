@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
@@ -42,10 +42,11 @@ type PixivMobileDlOptions struct {
 	cancel context.CancelFunc
 
 	// Sort order of the results. Can be "date_desc" or "date_asc".
-	SortOrder   string
-	SearchMode  string
-	RatingMode  string
-	ArtworkType string
+	SortOrder    string
+	SearchMode   string
+	SearchAiType int // 0: filter AI works, 1: Display AI works
+	RatingMode   string
+	ArtworkType  string
 
 	Configs *configs.Config
 
@@ -54,8 +55,10 @@ type PixivMobileDlOptions struct {
 
 	Notifier notify.Notifier
 
-	// Prog bar
-	TagSearchProgBar progress.Progress
+	// Progress indicators
+	MainProgBar          progress.ProgressBar
+	DownloadProgressBars *[]*progress.DownloadProgressBar
+
 }
 
 func (p *PixivMobileDlOptions) GetContext() context.Context {
@@ -70,6 +73,15 @@ func (p *PixivMobileDlOptions) SetContext(ctx context.Context) {
 	p.ctx, p.cancel = context.WithCancel(ctx)
 }
 
+// CancelCtx releases the resources used and cancels the context of the PixivMobileDlOptions struct.
+func (p *PixivMobileDlOptions) CancelCtx() {
+	p.cancel()
+}
+
+func (p *PixivMobileDlOptions) CtxIsActive() bool {
+	return p.ctx.Err() == nil
+}
+
 // ValidateArgs validates the arguments of the Pixiv download options.
 //
 // Should be called after initialising the struct.
@@ -78,17 +90,17 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 		p.SetContext(context.Background())
 	}
 
-	if p.TagSearchProgBar == nil {
+	if p.MainProgBar == nil {
 		return fmt.Errorf(
-			"pixiv error %d: TagSearchProgBar is nil",
-			constants.DEV_ERROR,
+			"pixiv mobile error %d: main progress bar is empty",
+			errs.DEV_ERROR,
 		)
 	}
 
 	if p.Notifier == nil {
 		return fmt.Errorf(
-			"pixiv error %d: notifier is nil",
-			constants.DEV_ERROR,
+			"pixiv mobile error %d: notifier is nil",
+			errs.DEV_ERROR,
 		)
 	}
 
@@ -98,8 +110,8 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 		ACCEPTED_SORT_ORDER,
 		[]string{
 			fmt.Sprintf(
-				"pixiv error %d: Sort order %s is not allowed",
-				constants.INPUT_ERROR,
+				"pixiv mobile error %d: Sort order %s is not allowed",
+				errs.INPUT_ERROR,
 				p.SortOrder,
 			),
 		},
@@ -114,8 +126,8 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 		ACCEPTED_SEARCH_MODE,
 		[]string{
 			fmt.Sprintf(
-				"pixiv error %d: Search order %s is not allowed",
-				constants.INPUT_ERROR,
+				"pixiv mobile error %d: Search order %s is not allowed",
+				errs.INPUT_ERROR,
 				p.SearchMode,
 			),
 		},
@@ -130,8 +142,8 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 		ACCEPTED_RATING_MODE,
 		[]string{
 			fmt.Sprintf(
-				"pixiv error %d: Rating order %s is not allowed",
-				constants.INPUT_ERROR,
+				"pixiv mobile error %d: Rating order %s is not allowed",
+				errs.INPUT_ERROR,
 				p.RatingMode,
 			),
 		},
@@ -146,8 +158,8 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 		ACCEPTED_ARTWORK_TYPE,
 		[]string{
 			fmt.Sprintf(
-				"pixiv error %d: Artwork type %s is not allowed",
-				constants.INPUT_ERROR,
+				"pixiv mobile error %d: Artwork type %s is not allowed",
+				errs.INPUT_ERROR,
 				p.ArtworkType,
 			),
 		},
@@ -157,7 +169,26 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	if p.RefreshToken != "" {
-		p.MobileClient = NewPixivMobile(p.RefreshToken, 10, p.ctx)
+		p.MobileClient, err = NewPixivMobile(p.RefreshToken, 10, p.ctx, p.cancel)
+		if err != nil {
+			return err
+		}
+
+		// The web API value is the opposite of the mobile API;
+		// Movile API:
+		// - 0: Filter AI works
+		// - 1: Display AI works
+		// Web API:
+		// - 0: Display AI works
+		// - 1: Filter AI works
+		// Hence, we will have to invert the value.
+		if p.SearchAiType == 1 { 
+			p.SearchAiType = 0 
+		} else if p.SearchAiType == 0 {
+			p.SearchAiType = 1
+		} else { // invalid value
+			p.SearchAiType = 0 // default to filter AI works
+		}
 
 		// Now that we have the client, 
 		// we will have to update the ajax equivalent parameters to suit the mobile API.
@@ -185,7 +216,7 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 			panic(
 				fmt.Sprintf(
 					"pixiv mobile error %d: invalid search mode %q",
-					constants.DEV_ERROR,
+					errs.DEV_ERROR,
 					p.SearchMode,
 				),
 			)
@@ -194,12 +225,13 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 		// Convert sort order to the correct value
 		// based on the Pixiv's ajax web API
 		var newSortOrder string
-		if strings.Contains(p.SortOrder, "popular") {
+		isPremium := p.MobileClient.user.IsPremium
+		if isPremium && strings.Contains(p.SortOrder, "popular") {
 			newSortOrder = "popular_desc" // only supports popular_desc
-		} else if p.SortOrder == "date_d" {
-			newSortOrder = "date_desc"
-		} else {
+		} else if p.SortOrder == "date" {
 			newSortOrder = "date_asc"
+		} else {
+			newSortOrder = "date_desc"
 		}
 		p.SortOrder = newSortOrder
 	}

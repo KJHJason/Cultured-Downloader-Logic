@@ -2,12 +2,14 @@ package pixivfanbox
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
@@ -22,8 +24,8 @@ func GetPixivFanboxHeaders() map[string]string {
 
 // Query Pixiv Fanbox's API based on the slice of post IDs and
 // returns a map of urls and a map of GDrive urls to download from.
-func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
-	maxConcurrency := constants.MAX_API_CALLS
+func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, []error) {
+	maxConcurrency := constants.PIXIV_FANBOX_MAX_CONCURRENT
 	postIdsLen := len(pf.PostIds)
 	if postIdsLen < maxConcurrency {
 		maxConcurrency = postIdsLen
@@ -34,7 +36,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	errChan := make(chan error, postIdsLen)
 
 	baseMsg := "Getting post details from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", postIdsLen)
-	progress := dlOptions.PostProgBar
+	progress := dlOptions.MainProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -48,8 +50,10 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 			postIdsLen,
 		),
 	)
+	progress.SetToProgressBar()
 	progress.UpdateMax(postIdsLen)
 	progress.Start()
+	defer progress.SnapshotTask()
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_FANBOX, true)
 	url := fmt.Sprintf("%s/post.info", constants.PIXIV_FANBOX_API_URL)
@@ -74,15 +78,16 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 					UserAgent: dlOptions.Configs.UserAgent,
 					Http2:     !useHttp3,
 					Http3:     useHttp3,
+					Context:   dlOptions.ctx,
 				},
 			)
 			if err != nil {
-				if err == context.Canceled {
+				if errors.Is(err, context.Canceled) {
 					errChan <- err
 				} else {
 					errChan <- fmt.Errorf(
-						"pixiv fanbox error %d: failed to get post details for %s, more info => %v",
-						constants.CONNECTION_ERROR,
+						"pixiv fanbox error %d: failed to get post details for %s, more info => %w",
+						errs.CONNECTION_ERROR,
 						url,
 						err,
 					)
@@ -90,7 +95,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 			} else if res.StatusCode != 200 {
 				errChan <- fmt.Errorf(
 					"pixiv fanbox error %d: failed to get post details for %s due to a %s response",
-					constants.CONNECTION_ERROR,
+					errs.CONNECTION_ERROR,
 					url,
 					res.Status,
 				)
@@ -107,18 +112,23 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 
 	hasErr := false
 	hasCancelled := false
+	var errSlice []error
 	if len(errChan) > 0 {
 		hasErr = true
-		if errCtxCancelled := logger.LogChanErrors(false, logger.ERROR, errChan); !hasCancelled && errCtxCancelled {
+		var errCtxCancelled bool
+		if errCtxCancelled, errSlice = logger.LogChanErrors(false, logger.ERROR, errChan); errCtxCancelled {
 			hasCancelled = true
 		} 
 	}
 	if hasCancelled {
+		dlOptions.CancelCtx()
 		progress.StopInterrupt("Stopped getting post details from Pixiv Fanbox...")
-		return nil, nil
+		return nil, nil, errSlice
 	}
 	progress.Stop(hasErr)
-	return processMultiplePostJson(resChan, dlOptions)
+
+	urlsSlice, gdriveUrls := processMultiplePostJson(resChan, dlOptions)
+	return urlsSlice, gdriveUrls, errSlice
 }
 
 func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions) ([]string, error) {
@@ -145,13 +155,13 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 	if err != nil || res.StatusCode != 200 {
 		const errPrefix = "pixiv fanbox error"
 		if err != nil {
-			if err == context.Canceled {
+			if errors.Is(err, context.Canceled) {
 				return nil, err
 			}
 			err = fmt.Errorf(
 				"%s %d: failed to get creator's posts for %s due to %v",
 				errPrefix,
-				constants.CONNECTION_ERROR,
+				errs.CONNECTION_ERROR,
 				creatorId,
 				err,
 			)
@@ -160,7 +170,7 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 			err = fmt.Errorf(
 				"%s %d: failed to get creator's posts for %s due to %s response",
 				errPrefix,
-				constants.RESPONSE_ERROR,
+				errs.RESPONSE_ERROR,
 				creatorId,
 				res.Status,
 			)
@@ -181,21 +191,24 @@ type resStruct struct {
 }
 
 // GetFanboxCreatorPosts returns a slice of post IDs for a given creator
-func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) ([]string, error) {
+func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) (postIds []string, errSlice []error, hasCancelled bool) {
 	paginatedUrls, err := getCreatorPaginatedPosts(creatorId, dlOptions)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, context.Canceled) {
+			return nil, nil, true
+		}
+		return nil, []error{err}, false 
 	}
 
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
-		return nil, err
+		return nil, []error{err}, false
 	}
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_FANBOX, true)
 	headers := GetPixivFanboxHeaders()
 	var wg sync.WaitGroup
-	maxConcurrency := constants.MAX_API_CALLS
+	maxConcurrency := constants.PIXIV_FANBOX_MAX_CONCURRENT
 	if len(paginatedUrls) < maxConcurrency {
 		maxConcurrency = len(paginatedUrls)
 	}
@@ -260,8 +273,6 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 	close(resChan)
 
 	// parse the JSON response
-	var errSlice []error
-	var postIds []string
 	for res := range resChan {
 		if res.err != nil {
 			errSlice = append(errSlice, res.err)
@@ -273,54 +284,71 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 		}
 	}
 
+	hasCancelled = false
 	if len(errSlice) > 0 {
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		hasCancelled = logger.LogErrors(false, logger.ERROR, errSlice...)
+		if hasCancelled {
+			dlOptions.CancelCtx()
+		}
 	}
-	return postIds, nil
+	return postIds, errSlice, hasCancelled
 }
 
 // Retrieves all the posts based on the slice of creator IDs and updates its slice of post IDs accordingly
-func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) {
+func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) []error {
 	creatorIdsLen := len(pf.CreatorIds)
 	if creatorIdsLen != len(pf.CreatorPageNums) {
 		panic(
 			fmt.Errorf(
 				"pixiv fanbox error %d: length of creator IDs and page numbers are not equal",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 			),
 		)
 	}
 
 	var errSlice []error
-	baseMsg := "Getting post ID(s) from creator(s) on Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
-	progress := dlOptions.CreatorPostsProgBar
-	progress.UpdateBaseMsg(baseMsg)
-	progress.UpdateSuccessMsg(
-		fmt.Sprintf(
-			"Finished getting post ID(s) from %d creator(s) on Pixiv Fanbox!",
-			creatorIdsLen,
-		),
-	)
-	progress.UpdateErrorMsg(
-		fmt.Sprintf(
-			"Something went wrong while getting post IDs from %d creator(s) on Pixiv Fanbox!\nPlease refer to logs for more details.",
-			creatorIdsLen,
-		),
-	)
-	progress.UpdateMax(creatorIdsLen)
+	progress := dlOptions.MainProgBar
+	if len(pf.CreatorIds) > 1 {
+		baseMsg := "Getting post ID(s) from creator(s) on Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
+		progress.UpdateBaseMsg(baseMsg)
+		progress.UpdateSuccessMsg(
+			fmt.Sprintf(
+				"Finished getting post ID(s) from %d creator(s) on Pixiv Fanbox!",
+				creatorIdsLen,
+			),
+		)
+		progress.UpdateErrorMsg(
+			fmt.Sprintf(
+				"Something went wrong while getting post IDs from %d creator(s) on Pixiv Fanbox!\nPlease refer to logs for more details.",
+				creatorIdsLen,
+			),
+		)
+		progress.SetToProgressBar()
+		progress.UpdateMax(creatorIdsLen)
+	} else {
+		progress.SetToSpinner()
+		creatorId := pf.CreatorIds[0]
+		progress.UpdateBaseMsg("Getting post ID(s) from creator, " + creatorId + ", on Pixiv Fanbox...")
+		progress.UpdateSuccessMsg("Finished getting post ID(s) from creator, " + creatorId + ", on Pixiv Fanbox!")
+		progress.UpdateErrorMsg("Something went wrong while getting post ID(s) from creator, " + creatorId + ", on Pixiv Fanbox.\nPlease refer to the logs for more details.")
+	}
+
 	progress.Start()
+	defer progress.SnapshotTask()
 	for idx, creatorId := range pf.CreatorIds {
-		retrievedPostIds, err := getFanboxPosts(
+		retrievedPostIds, err, hasCancelled := getFanboxPosts(
 			creatorId,
 			pf.CreatorPageNums[idx],
 			dlOptions,
 		)
+		if hasCancelled {
+			dlOptions.CancelCtx()
+			progress.StopInterrupt("Stopped getting post IDs from creator(s) on Pixiv Fanbox...")
+			return nil
+		}
+
 		if err != nil {
-			if err == context.Canceled {
-				progress.StopInterrupt("Stopped getting post IDs from creator(s) on Pixiv Fanbox...")
-				return
-			}
-			errSlice = append(errSlice, err)
+			errSlice = append(errSlice, err...)
 		} else {
 			pf.PostIds = append(pf.PostIds, retrievedPostIds...)
 		}
@@ -334,4 +362,5 @@ func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) {
 	}
 	progress.Stop(hasErr)
 	pf.PostIds = api.RemoveSliceDuplicates(pf.PostIds)
+	return errSlice
 }

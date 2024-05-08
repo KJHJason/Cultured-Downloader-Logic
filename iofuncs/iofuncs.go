@@ -14,24 +14,30 @@ func PathExists(filepath string) bool {
 	return !os.IsNotExist(err)
 }
 
+// similar to PathExists but checks if the path exists and is a directory
+func DirPathExists(dirPath string) bool {
+	stat, err := os.Stat(dirPath)
+	if err != nil {
+		return false
+	}
+	return stat.IsDir()
+}
+
 // Returns the file size based on the provided file path
 //
 // If the file does not exist or
 // there was an error opening the file at the given file path string, -1 is returned
 func GetFileSize(filePath string) (int64, error) {
-	if !PathExists(filePath) {
-		return -1, os.ErrNotExist
+	fileStat, err := os.Stat(filePath)
+	if err != nil {
+		return -1, err
 	}
 
-	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
-	if err != nil {
-		return -1, err
+	// check if it's a directory
+	if fileStat.IsDir() {
+		return -1, fmt.Errorf("file %s is a directory", filePath)
 	}
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return -1, err
-	}
-	return fileInfo.Size(), nil
+	return fileStat.Size(), nil
 }
 
 // Uses bufio.Reader to read a line from a file and returns it as a byte slice

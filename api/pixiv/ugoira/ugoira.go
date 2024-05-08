@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 // UgoiraDlOptions is the struct that contains the
@@ -34,13 +34,13 @@ func (u *UgoiraOptions) ValidateArgs() error {
 	if u.OutputFormat == ".mp4" && u.Quality < 0 || u.Quality > 51 {
 		return fmt.Errorf(
 			"pixiv error %d: Ugoira quality of %d is not allowed\nUgoira quality for FFmpeg must be between 0 and 51 for .mp4",
-			constants.INPUT_ERROR,
+			errs.INPUT_ERROR,
 			u.Quality,
 		)
 	} else if u.OutputFormat == ".webm" && u.Quality < 0 || u.Quality > 63 {
 		return fmt.Errorf(
 			"pixiv error %d: Ugoira quality of %d is not allowed\nUgoira quality for FFmpeg must be between 0 and 63 for .webm",
-			constants.INPUT_ERROR,
+			errs.INPUT_ERROR,
 			u.Quality,
 		)
 	}
@@ -52,7 +52,7 @@ func (u *UgoiraOptions) ValidateArgs() error {
 		[]string{
 			fmt.Sprintf(
 				"pixiv error %d: Output extension %q is not allowed for ugoira conversion",
-				constants.INPUT_ERROR,
+				errs.INPUT_ERROR,
 				u.OutputFormat,
 			),
 		},

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -217,7 +218,7 @@ func processFanboxImagePost(postBody json.RawMessage, postFolderPath string, dlO
 
 // Process the JSON response from Pixiv Fanbox's API and
 // returns a map of urls and a map of GDrive urls to download from
-func processFanboxPostJson(res *http.Response, downloadPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFanboxPostJson(res *http.Response, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	var post FanboxPostJson
 	if err := httpfuncs.LoadJsonFromResponse(res, &post); err != nil {
 		return nil, nil, err
@@ -228,7 +229,7 @@ func processFanboxPostJson(res *http.Response, downloadPath string, dlOptions *P
 	postTitle := postJson.Title
 	creatorId := postJson.CreatorId
 	postFolderPath := iofuncs.GetPostFolder(
-		filepath.Join(downloadPath, "Pixiv-Fanbox"),
+		dlOptions.BaseDownloadDirPath,
 		creatorId,
 		postId,
 		postTitle,
@@ -277,7 +278,7 @@ func processFanboxPostJson(res *http.Response, downloadPath string, dlOptions *P
 		jsonBytes, _ := json.MarshalIndent(post, "", "\t")
 		return nil, nil, fmt.Errorf(
 			"pixiv fanbox error %d: unknown post type, %q\nPixiv Fanbox post content:\n%s",
-			constants.JSON_ERROR,
+			errs.JSON_ERROR,
 			postType,
 			string(jsonBytes),
 		)
@@ -290,13 +291,11 @@ func processFanboxPostJson(res *http.Response, downloadPath string, dlOptions *P
 	return urlsSlice, gdriveLinks, nil
 }
 
-func processMultiplePostJson(resChan chan *http.Response, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
-	// parse the responses
+func processMultiplePostJson(resChan chan *http.Response, dlOptions *PixivFanboxDlOptions) (urlsSlice []*httpfuncs.ToDownload, gdriveUrls []*httpfuncs.ToDownload) {
 	var errSlice []error
-	var urlsSlice, gdriveUrls []*httpfuncs.ToDownload
 	resChanLen := len(resChan)
 	baseMsg := "Processing received JSON(s) from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", resChanLen)
-	progress := dlOptions.ProcessJsonProgBar
+	progress := dlOptions.MainProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -310,14 +309,12 @@ func processMultiplePostJson(resChan chan *http.Response, dlOptions *PixivFanbox
 			resChanLen,
 		),
 	)
+	progress.SetToProgressBar()
 	progress.UpdateMax(resChanLen)
 	progress.Start()
+	defer progress.SnapshotTask()
 	for res := range resChan {
-		postUrls, postGdriveLinks, err := processFanboxPostJson(
-			res,
-			iofuncs.DOWNLOAD_PATH,
-			dlOptions,
-		)
+		postUrls, postGdriveLinks, err := processFanboxPostJson(res, dlOptions)
 		if err != nil {
 			errSlice = append(errSlice, err)
 		} else {

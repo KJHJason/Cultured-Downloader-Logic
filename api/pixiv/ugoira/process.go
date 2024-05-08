@@ -2,6 +2,7 @@ package ugoira
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,9 +13,9 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/extractor"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -23,7 +24,7 @@ import (
 )
 
 // Map the Ugoira frame delays to their respective filenames
-func MapDelaysToFilename(ugoiraFramesJson models.UgoiraFramesJson) map[string]int64 {
+func MapDelaysToFilename(ugoiraFramesJson UgoiraFramesJson) map[string]int64 {
 	frameInfoMap := map[string]int64{}
 	for _, frame := range ugoiraFramesJson {
 		frameInfoMap[frame.File] = int64(frame.Delay)
@@ -39,12 +40,12 @@ type UgoiraFfmpegArgs struct {
 }
 
 // Converts the Ugoira to the desired output path using FFmpeg
-func ConvertUgoira(ugoiraInfo *models.Ugoira, imagesFolderPath string, ugoiraFfmpeg *UgoiraFfmpegArgs) error {
+func ConvertUgoira(ugoiraInfo *Ugoira, imagesFolderPath string, ugoiraFfmpeg *UgoiraFfmpegArgs) error {
 	outputExt := filepath.Ext(ugoiraFfmpeg.outputPath)
 	if !api.SliceContains(UGOIRA_ACCEPTED_EXT, outputExt) {
 		return fmt.Errorf(
-			"pixiv error %d: Output extension %v is not allowed for ugoira conversion",
-			constants.INPUT_ERROR,
+			"pixiv error %d: Output extension %s is not allowed for ugoira conversion",
+			errs.INPUT_ERROR,
 			outputExt,
 		)
 	}
@@ -76,12 +77,12 @@ func ConvertUgoira(ugoiraInfo *models.Ugoira, imagesFolderPath string, ugoiraFfm
 	err = cmd.Run()
 	if err != nil {
 		os.Remove(ugoiraFfmpeg.outputPath)
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			return err
 		}
 		return fmt.Errorf(
-			"pixiv error %d: failed to convert ugoira to %s, more info => %v",
-			constants.CMD_ERROR,
+			"pixiv error %d: failed to convert ugoira to %s, more info => %w",
+			errs.CMD_ERROR,
 			ugoiraFfmpeg.outputPath,
 			err,
 		)
@@ -100,9 +101,9 @@ func GetUgoiraFilePaths(ugoireFilePath, ugoiraUrl, outputFormat string) (string,
 	return filePath, outputFilePath
 }
 
-func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config) {
+func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config) []error {
 	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
-	ctx, cancel := context.WithCancel(ugoiraArgs.Context)
+	ctx, cancel := context.WithCancel(ugoiraArgs.context)
 	defer cancel()
 
 	// Catch SIGINT/SIGTERM signal and cancel the context when received
@@ -117,7 +118,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	var errSlice []error
 	downloadInfoLen := len(ugoiraArgs.ToDownload)
 	baseMsg := "Converting Ugoira to %s [%d/" + fmt.Sprintf("%d]...", downloadInfoLen)
-	progress := ugoiraArgs.UgoiraProgBar
+	progress := ugoiraArgs.MainProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -133,7 +134,9 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 			ugoiraOptions.OutputFormat,
 		),
 	)
+	progress.SetToProgressBar()
 	progress.UpdateMax(downloadInfoLen)
+	defer progress.SnapshotTask()
 	progress.Start()
 	for i, ugoira := range ugoiraArgs.ToDownload {
 		zipFilePath, outputPath := GetUgoiraFilePaths(ugoira.FilePath, ugoira.Url, ugoiraOptions.OutputFormat)
@@ -152,7 +155,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 		)
 		err := extractor.ExtractFiles(ctx, zipFilePath, unzipFolderPath, true)
 		if err != nil {
-			if err == context.Canceled {
+			if errors.Is(err, context.Canceled) {
 				progress.StopInterrupt(
 					fmt.Sprintf(
 						"Stopped converting ugoira to %s [%d/%d]!",
@@ -163,8 +166,8 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 				)
 			}
 			err := fmt.Errorf(
-				"pixiv error %d: failed to unzip file %s, more info => %v",
-				constants.OS_ERROR,
+				"pixiv error %d: failed to unzip file %s, more info => %w",
+				errs.OS_ERROR,
 				zipFilePath,
 				err,
 			)
@@ -198,22 +201,28 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 			progress.StopInterrupt(
 				fmt.Sprintf("Stopped converting ugoira to %s!", ugoiraOptions.OutputFormat),
 			)
-			return
+			ugoiraArgs.cancel()
 		}
 	}
 	progress.Stop(hasErr)
+	return errSlice
 }
 
 type UgoiraArgs struct {
-	Context       context.Context
+	context       context.Context
+	cancel        context.CancelFunc
 	UseMobileApi  bool
-	ToDownload    []*models.Ugoira
+	ToDownload    []*Ugoira
 	Cookies       []*http.Cookie
-	UgoiraProgBar progress.Progress
+	MainProgBar   progress.ProgressBar
+}
+
+func (u *UgoiraArgs) SetContext(ctx context.Context) {
+	u.context, u.cancel = context.WithCancel(ctx)
 }
 
 // Downloads multiple Ugoira artworks and converts them based on the output format
-func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config, reqHandler httpfuncs.RequestHandler) {
+func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config, reqHandler httpfuncs.RequestHandler, progBarInfo *progress.ProgressBarInfo) []error {
 	var urlsToDownload []*httpfuncs.ToDownload
 	for _, ugoira := range ugoiraArgs.ToDownload {
 		filePath, outputFilePath := GetUgoiraFilePaths(
@@ -233,26 +242,33 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 	var headers map[string]string
 	if ugoiraArgs.UseMobileApi {
 		headers = map[string]string{
-			"Referer": "https://app-api.pixiv.net",
+			"Referer": constants.PIXIV_MOBILE_URL,
 		}
 	} else {
 		headers = pixivcommon.GetPixivRequestHeaders()
 		useHttp3 = httpfuncs.IsHttp3Supported(constants.PIXIV, true)
 	}
 
-	err := httpfuncs.DownloadUrlsWithHandler(
+	cancelled, err := httpfuncs.DownloadUrlsWithHandler(
 		urlsToDownload,
 		&httpfuncs.DlOptions{
-			Context:        ugoiraArgs.Context,
-			MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
-			Headers:        headers,
-			Cookies:        ugoiraArgs.Cookies,
-			UseHttp3:       useHttp3,
+			Context:         ugoiraArgs.context,
+			MaxConcurrency:  constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
+			Headers:         headers,
+			Cookies:         ugoiraArgs.Cookies,
+			UseHttp3:        useHttp3,
+			ProgressBarInfo: progBarInfo,
 		},
 		config, // Note: if isMobileApi is true, custom user-agent will be ignored
 		reqHandler,
 	)
-	if err != context.Canceled {
-		convertMultipleUgoira(ugoiraArgs, ugoiraOptions, config)
+	if cancelled {
+		ugoiraArgs.cancel()
+		return nil
 	}
+	if len(err) > 0 {
+		return err
+	}
+
+	return convertMultipleUgoira(ugoiraArgs, ugoiraOptions, config)
 }

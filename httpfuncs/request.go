@@ -6,15 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
-	"github.com/fatih/color"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/quic-go/quic-go/http3"
 )
 
@@ -40,7 +36,7 @@ func AddHeaders(headers map[string]string, defaultUserAgent string, req *http.Re
 		return
 	}
 
-	if userAgent, ok := headers["User-Agent"]; !ok || userAgent == ""{
+	if userAgent, ok := headers["User-Agent"]; !ok || userAgent == "" {
 		headers["User-Agent"] = defaultUserAgent
 	}
 
@@ -112,7 +108,7 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error
 		constants.RETRY_COUNTER,
 	)
 	if err != nil {
-		err = fmt.Errorf("%s, more info => %v",
+		err = fmt.Errorf("%s, more info => %w",
 			errMsg,
 			err,
 		)
@@ -141,8 +137,8 @@ func CallRequest(reqArgs *RequestArgs) (*http.Response, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"error %d: unable to create a new request, more info => %v",
-			constants.DEV_ERROR,
+			"error %d: unable to create a new request, more info => %w",
+			errs.DEV_ERROR,
 			err,
 		)
 	}
@@ -151,7 +147,7 @@ func CallRequest(reqArgs *RequestArgs) (*http.Response, error) {
 }
 
 // Check for active internet connection (To be used at the start of the program)
-func CheckInternetConnection() {
+func CheckInternetConnection() error {
 	_, err := CallRequest(
 		&RequestArgs{
 			Url:         "https://www.google.com",
@@ -162,165 +158,13 @@ func CheckInternetConnection() {
 		},
 	)
 	if err != nil {
-		color.Red(
-			fmt.Sprintf(
-				"error %d: unable to connect to the internet, more info => %v",
-				constants.DEV_ERROR,
-				err,
-			),
-		)
-		os.Exit(1)
-	}
-}
-
-type versionInfo struct {
-	Major int
-	Minor int
-	Patch int
-}
-
-func processVer(apiResVer string) (*versionInfo, error) {
-	// split the version string by "."
-	ver := strings.Split(apiResVer, ".")
-	if len(ver) != 3 {
-		return nil, fmt.Errorf(
-			"github error %d: unable to process the latest version, %q",
-			constants.DEV_ERROR,
-			apiResVer,
+		return fmt.Errorf(
+			"error %d: unable to connect to the internet, more info => %w",
+			errs.DEV_ERROR,
+			err,
 		)
 	}
-
-	// convert the version string to int
-	verSlice := make([]int, 3)
-	for i, v := range ver {
-		verInt, err := strconv.Atoi(v)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"github error %d: unable to process the latest version, %q",
-				constants.DEV_ERROR,
-				apiResVer,
-			)
-		}
-		verSlice[i] = verInt
-	}
-
-	return &versionInfo{
-		Major: verSlice[0],
-		Minor: verSlice[1],
-		Patch: verSlice[2],
-	}, nil
-}
-
-var verRegex = regexp.MustCompile(`\d+\.\d+\.\d+`)
-const CLI_REPO_URL = "https://api.github.com/repos/KJHJason/Cultured-Downloader-CLI/releases/latest"
-
-// check if the latest version is greater than the current version
-func checkIfVerIsOutdated(curVer *versionInfo, latestVer *versionInfo) bool {
-	// well, I do hate nested if statements, but if it works, it works.
-	if latestVer.Major > curVer.Major {
-		return true
-	} else if latestVer.Major == curVer.Major {
-		if latestVer.Minor > curVer.Minor {
-			return true
-		} else if latestVer.Minor == curVer.Minor {
-			if latestVer.Patch > curVer.Patch {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// check for the latest version of the program
-func CheckVer(url string, ver string, showProg bool, progBar progress.Progress) (bool, error) {
-	if !verRegex.MatchString(ver) {
-		return false, fmt.Errorf(
-			"github error %d: unable to process the current version, %q",
-			constants.DEV_ERROR,
-			ver,
-		)
-	}
-
-	if showProg && progBar != nil {
-		progBar.UpdateBaseMsg("Checking for the latest version...")
-		progBar.UpdateErrorMsg("Failed to check for the latest version, please refer to the logs for more details...")
-		progBar.Start()
-	}
-
-	res, err := CallRequest(
-		&RequestArgs{
-			Url:         url,
-			Method:      "GET",
-			Timeout:     5,
-			CheckStatus: false,
-			Http3:       false,
-			Http2:       true,
-		},
-	)
-	if err != nil || res.StatusCode != 200 {
-		errMsg := fmt.Sprintf(
-			"github error %d: unable to check for the latest version",
-			constants.CONNECTION_ERROR,
-		)
-		if err != nil {
-			errMsg += fmt.Sprintf(", more info => %v", err)
-		}
-
-		if showProg && progBar != nil {
-			progBar.Stop(true)
-		}
-		return false, errors.New(errMsg)
-	}
-
-	var apiRes GithubApiRes
-	if err := LoadJsonFromResponse(res, &apiRes); err != nil {
-		errMsg := fmt.Sprintf(
-			"github error %d: unable to marshal the response from the API into an interface",
-			constants.UNEXPECTED_ERROR,
-		)
-		if showProg && progBar != nil {
-			progBar.Stop(true)
-		}
-		return false, errors.New(errMsg)
-	}
-
-	latestVer, err := processVer(apiRes.TagName)
-	if err != nil {
-		errMsg := fmt.Sprintf(
-			"github error %d: unable to process the latest version",
-			constants.UNEXPECTED_ERROR,
-		)
-		if showProg && progBar != nil {
-			progBar.Stop(true)
-		}
-		return false, errors.New(errMsg)
-	}
-
-	programVer, err := processVer(ver)
-	if err != nil {
-		errMsg := fmt.Sprintf(
-			"error %d: unable to process the program version",
-			constants.DEV_ERROR,
-		)
-		panic(errMsg)
-	}
-
-	outdated := checkIfVerIsOutdated(programVer, latestVer) 
-	if showProg && progBar != nil {
-		if outdated {
-			progBar.UpdateErrorMsg(
-				fmt.Sprintf(
-					"Warning: this program is outdated, the latest version %q is available at %s",
-					apiRes.TagName,
-					apiRes.HtmlUrl,
-				),
-			)
-		} else {
-			progBar.UpdateSuccessMsg("This program is up to date!")
-		}
-		progBar.Stop(outdated)
-	}
-	return outdated, nil
+	return nil
 }
 
 // Sends a request with the given data

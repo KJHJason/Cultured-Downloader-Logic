@@ -8,6 +8,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/parsers"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
@@ -60,7 +61,7 @@ func getHeaders(website, userAgent string) map[string]string {
 		panic(
 			fmt.Errorf(
 				"error %d, invalid website, %q, in getHeaders",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 				website,
 			),
 		)
@@ -90,7 +91,7 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 		panic(
 			fmt.Errorf(
 				"error %d, invalid website, %q, in VerifyCookie",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 				website,
 			),
 		)
@@ -114,7 +115,7 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 		},
 	)
 	if err != nil {
-		return false, fmt.Errorf("error occurred when trying to verify cookie...\n%v", err)
+		return false, fmt.Errorf("error occurred when trying to verify cookie...\n%w", err)
 	}
 	resp.Body.Close()
 
@@ -131,13 +132,13 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 func processCookieVerification(website string, err error) error {
 	if err != nil {
 		logger.LogError(
-			fmt.Errorf("error occurred when trying to verify %s cookie...\n%v", GetReadableSiteStr(website), err),
+			fmt.Errorf("error occurred when trying to verify %s cookie...\n%w", GetReadableSiteStr(website), err),
 			false,
 			logger.ERROR,
 		)
 		return fmt.Errorf(
 			"error %d: could not verify %s cookie.\nPlease refer to the log file for more details",
-			constants.INPUT_ERROR,
+			errs.INPUT_ERROR,
 			GetReadableSiteStr(website),
 		)
 	}
@@ -156,9 +157,35 @@ func VerifyAndGetCookie(website, cookieValue, userAgent string) (*http.Cookie, e
 	if !cookieIsValid {
 		return nil, fmt.Errorf(
 			"error %d: %s cookie is invalid",
-			constants.INPUT_ERROR,
+			errs.INPUT_ERROR,
 			GetReadableSiteStr(website),
 		)
 	}
 	return cookie, nil
+}
+
+func VerifyCookies(website, userAgent string, cookies []*http.Cookie) error {
+	baseCookie := GetCookie("placeholder-value", website)
+	for _, cookie := range cookies {
+		if cookie.Name != baseCookie.Name {
+			continue
+		}
+
+		cookieIsValid, err := VerifyCookie(cookie, website, userAgent)
+		processCookieVerification(website, err)
+		if !cookieIsValid {
+			return fmt.Errorf(
+				"error %d: %s cookie is invalid",
+				errs.INPUT_ERROR,
+				GetReadableSiteStr(website),
+			)
+		}
+		return nil
+	}
+
+	return fmt.Errorf(
+		"error %d: %s cookie not found",
+		errs.INPUT_ERROR,
+		GetReadableSiteStr(website),
+	)
 }

@@ -17,6 +17,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -28,25 +29,25 @@ func md5HashFile(file *os.File) (string, error) {
 	_, err := io.Copy(md5Checksum, file)
 	if err != nil {
 		return "", fmt.Errorf(
-			"gdrive error %d: failed to calculate file's md5 checksum, more info => %v",
-			constants.OS_ERROR,
+			"gdrive error %d: failed to calculate file's md5 checksum, more info => %w",
+			errs.OS_ERROR,
 			err,
 		)
 	}
 	return fmt.Sprintf("%x", md5Checksum.Sum(nil)), nil
 }
 
-func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, error) {
+func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, int64, error) {
 	if !iofuncs.PathExists(filePath) {
-		return false, nil
+		return false, 0, nil
 	}
 
 	// check the md5 checksum and the file size
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
-		return false, fmt.Errorf(
-			"gdrive error %d: failed to open file %q, more info => %v",
-			constants.OS_ERROR,
+		return false, 0, fmt.Errorf(
+			"gdrive error %d: failed to open file %q, more info => %w",
+			errs.OS_ERROR,
 			filePath,
 			err,
 		)
@@ -55,9 +56,9 @@ func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, error) {
 
 	fileStatInfo, err := file.Stat()
 	if err != nil {
-		return false, fmt.Errorf(
-			"gdrive error %d: failed to get file stat info of %q, more info => %v",
-			constants.OS_ERROR,
+		return false, 0, fmt.Errorf(
+			"gdrive error %d: failed to get file stat info of %q, more info => %w",
+			errs.OS_ERROR,
 			filePath,
 			err,
 		)
@@ -65,14 +66,19 @@ func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, error) {
 
 	fileSize := fileStatInfo.Size()
 	if strconv.FormatInt(fileSize, 10) != fileInfo.Size {
-		return false, nil
+		return false, fileSize, nil
 	}
 
 	md5Checksum, err := md5HashFile(file)
 	if err != nil {
-		return false, err
+		return false, 0, err
 	}
-	return md5Checksum == fileInfo.Md5Checksum, nil
+
+	matchChecksum := md5Checksum == fileInfo.Md5Checksum
+	if !matchChecksum {
+		fileSize = 0 // overwrite the file
+	}
+	return matchChecksum, fileSize, nil
 }
 
 // Downloads the given GDrive file using GDrive API v3
@@ -81,36 +87,43 @@ func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, error) {
 // Downloads the given GDrive file using GDrive API v3
 //
 // If the md5Checksum has a mismatch, the file will be overwritten and downloaded again
-func (gdrive *GDrive) DownloadFile(fileInfo *GdriveFileToDl, filePath string, config *configs.Config, queue chan struct{}) error {
-	skipDl, err := checkIfCanSkipDl(filePath, fileInfo)
+func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl, filePath string, config *configs.Config, progBarInfo *progress.ProgressBarInfo, queue chan struct{}) error {
+	skipDl, writtenBytes, err := checkIfCanSkipDl(filePath, fileInfo)
 	if skipDl || err != nil {
 		return err
 	}
 
-	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Catch SIGINT/SIGTERM signal and cancel the context when received
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigs
-		cancel()
-	}()
-	defer signal.Stop(sigs)
-
 	queue <- struct{}{}
+
+	var dlProgBar *progress.DownloadProgressBar
+	if progBarInfo.DownloadProgressBars != nil {
+		dlProgBar = progress.NewDlProgressBar(ctx, progress.Messages{
+			Msg:        "Downloading GDrive file...",
+			ErrMsg:     "Failed to download GDrive file!",
+			SuccessMsg: "Finished downloading GDrive file!",
+		})
+		(*dlProgBar).UpdateFilename(filepath.Base(filePath))
+		progBarInfo.AppendDlProgBar(dlProgBar)
+	}
 
 	var res *http.Response
 	url := fmt.Sprintf("%s/%s", gdrive.apiUrl, fileInfo.Id)
 	if gdrive.client != nil {
-		res, err = gdrive.client.Files.Get(fileInfo.Id).AcknowledgeAbuse(true).Context(ctx).Download()
+		fileCall := gdrive.client.Files.Get(fileInfo.Id).AcknowledgeAbuse(true).Context(ctx)
+		if writtenBytes > 0 {
+			// If the file has been partially downloaded, resume the download from where it left off
+			fileCall.Header().Add("Range", fmt.Sprintf("bytes=%d-", writtenBytes))
+		}
+		res, err = fileCall.Download()
 	} else {
 		params := map[string]string{
 			"key":              gdrive.apiKey,
 			"alt":              "media", // to tell Google that we are downloading the file
 			"acknowledgeAbuse": "true",  // If the files are marked as abusive, download them anyway
+		}
+		headers := map[string]string{}
+		if writtenBytes > 0 {
+			headers["Range"] = fmt.Sprintf("bytes=%d-", writtenBytes)
 		}
 		res, err = httpfuncs.CallRequest(
 			&httpfuncs.RequestArgs{
@@ -122,6 +135,7 @@ func (gdrive *GDrive) DownloadFile(fileInfo *GdriveFileToDl, filePath string, co
 				UserAgent: config.UserAgent,
 				Http2:     !HTTP3_SUPPORTED,
 				Http3:     HTTP3_SUPPORTED,
+				Headers:   headers,
 			},
 		)
 	}
@@ -132,7 +146,17 @@ func (gdrive *GDrive) DownloadFile(fileInfo *GdriveFileToDl, filePath string, co
 	if res.StatusCode != 200 {
 		return getFailedApiCallErr(res)
 	}
-	return httpfuncs.DlToFile(res, url, filePath)
+
+	dlReqInfo := &httpfuncs.DlRequestInfo{
+		Ctx: ctx,
+		Url: url,
+	}
+	dlPartialInfo := httpfuncs.PartialDlInfo{
+		DownloadPartial:  true,
+		DownloadedBytes:  writtenBytes,
+		ExpectedFileSize: fileInfo.GetIntSize(),
+	}
+	return httpfuncs.DlToFile(res, dlReqInfo, filePath, dlPartialInfo, dlProgBar)
 }
 
 func filterDownloads(files []*GdriveFileToDl) []*GdriveFileToDl {
@@ -159,17 +183,24 @@ func filterDownloads(files []*GdriveFileToDl) []*GdriveFileToDl {
 	return allowedForDownload
 }
 
-func processGdriveDlError(errChan chan *GdriveError, prog progress.Progress) {
+func (gdrive *GDrive) processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) []error {
+	defer prog.SnapshotTask()
+	if len(errChan) == 0 {
+		return nil
+	}
+
 	killProgram := false
+	errSlice := make([]error, 0, len(errChan))
 	for errInfo := range errChan {
-		errMsg := censorApiKeyFromStr(errInfo.Err.Error())
-		if errMsg == context.Canceled.Error() {
+		if errors.Is(errInfo.Err, context.Canceled) {
 			if !killProgram {
 				killProgram = true
 			}
 			continue
 		}
 
+		errSlice = append(errSlice, errInfo.Err)
+		errMsg := censorApiKeyFromStr(errInfo.Err.Error())
 		logger.LogMessageToPath(
 			censorApiKeyFromStr(errMsg),
 			errInfo.FilePath,
@@ -178,19 +209,35 @@ func processGdriveDlError(errChan chan *GdriveError, prog progress.Progress) {
 	}
 
 	if killProgram {
+		gdrive.cancel()
 		prog.StopInterrupt(
-			"Stopped downloading GDrive files (incomplete downloads will be deleted)...",
+			"Stopped downloading GDrive files (incomplete downloads may be deleted)...",
 		)
+		return nil
 	}
+	return errSlice
 }
 
 // Downloads the multiple GDrive file in parallel using GDrive API v3
-func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *configs.Config, prog progress.Progress) {
+func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *configs.Config, progBarInfo *progress.ProgressBarInfo) []error {
 	allowedForDownload := filterDownloads(files)
 	dlLen := len(allowedForDownload)
 	if dlLen == 0 {
-		return
+		return nil
 	}
+
+	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
+	ctx, cancel := context.WithCancel(gdrive.ctx)
+	defer cancel()
+
+	// Catch SIGINT/SIGTERM signal and cancel the context when received
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		cancel()
+	}()
+	defer signal.Stop(sigs)
 
 	maxConcurrency := gdrive.maxDownloadWorkers
 	if dlLen < maxConcurrency {
@@ -201,6 +248,8 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *con
 	errChan := make(chan *GdriveError, dlLen)
 
 	baseMsg := "Downloading GDrive files [%d/" + fmt.Sprintf("%d]...", dlLen)
+	prog := progBarInfo.MainProgressBar
+	prog.SetToProgressBar()
 	prog.UpdateBaseMsg(baseMsg)
 	prog.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -227,10 +276,10 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *con
 			os.MkdirAll(file.FilePath, 0755)
 			filePath := filepath.Join(file.FilePath, file.Name)
 
-			err := gdrive.DownloadFile(file, filePath, config, queue)
+			err := gdrive.DownloadFile(ctx, file, filePath, config, progBarInfo, queue)
 			if err != nil && err != context.Canceled {
 				err = fmt.Errorf(
-					"failed to download file: %s (ID: %s, MIME Type: %s)\nRefer to error details below:\n%v",
+					"failed to download file: %s (ID: %s, MIME Type: %s)\nRefer to error details below:\n%w",
 					file.Name, file.Id, file.MimeType, err,
 				)
 				errChan <- &GdriveError{
@@ -251,9 +300,9 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *con
 	hasErr := false
 	if len(errChan) > 0 {
 		hasErr = true
-		processGdriveDlError(errChan, prog)
 	}
 	prog.Stop(hasErr)
+	return gdrive.processGdriveDlError(errChan, prog)
 }
 
 // Uses regex to extract the file ID and the file type (type: file, folder) from the given URL
@@ -272,7 +321,7 @@ func GetFileIdAndTypeFromUrl(url string) (string, string) {
 	} else {
 		err := fmt.Errorf(
 			"gdrive error %d: could not determine file type from URL, %q",
-			constants.DEV_ERROR,
+			errs.DEV_ERROR,
 			url,
 		)
 		logger.LogError(err, false, logger.ERROR)
@@ -318,7 +367,7 @@ func (gdrive *GDrive) getGdriveFileInfo(gdriveId *GDriveToDl, config *configs.Co
 		return nil, &GdriveError{
 			Err: fmt.Errorf(
 				"gdrive error %d: unknown Google Drive URL type, %q",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 				gdriveId.Type,
 			),
 			FilePath: gdriveId.FilePath,
@@ -327,7 +376,7 @@ func (gdrive *GDrive) getGdriveFileInfo(gdriveId *GDriveToDl, config *configs.Co
 }
 
 // Downloads multiple GDrive files based on a slice of GDrive URL strings in parallel
-func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, config *configs.Config, apiProg progress.Progress, dlProg progress.Progress) error {
+func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, config *configs.Config, progBarInfo *progress.ProgressBarInfo) []error {
 	if len(gdriveUrls) == 0 {
 		return nil
 	}
@@ -346,48 +395,60 @@ func (gdrive *GDrive) DownloadGdriveUrls(gdriveUrls []*httpfuncs.ToDownload, con
 	}
 
 	// Note: Can't do API calls concurrently as to avoid being blocked by Google's bot detection
-	var errSlice []*GdriveError
+	var gdriveErrSlice []*GdriveError
 	var gdriveFilesInfo []*GdriveFileToDl
 	gdriveIdsLen := len(gdriveIds)
 	baseMsg := "Getting GDrive file information from GDrive ID(s) [%d/" + fmt.Sprintf("%d]...", len(gdriveIds))
-	apiProg.UpdateBaseMsg(baseMsg)
-	apiProg.UpdateSuccessMsg(
+	mainProg := progBarInfo.MainProgressBar
+	mainProg.SetToProgressBar()
+	mainProg.UpdateBaseMsg(baseMsg)
+	mainProg.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished getting GDrive file information from %d GDrive ID(s)!",
 			gdriveIdsLen,
 		),
 	)
-	apiProg.UpdateErrorMsg(
+	mainProg.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while getting GDrive file information from %d GDrive ID(s)!\nPlease refer to the generated log files for more details.",
 			gdriveIdsLen,
 		),
 	)
-	apiProg.UpdateMax(gdriveIdsLen)
-	apiProg.Start()
+	mainProg.UpdateMax(gdriveIdsLen)
+	mainProg.Start()
 	for _, gdriveId := range gdriveIds {
 		fileInfo, err := gdrive.getGdriveFileInfo(gdriveId, config)
 		if err != nil {
-			errSlice = append(errSlice, err)
+			if errors.Is(err.Err, context.Canceled) {
+				gdrive.cancel()
+				mainProg.StopInterrupt("Stopped getting GDrive file information...")
+				mainProg.SnapshotTask()
+				return nil
+			}
+
+			gdriveErrSlice = append(gdriveErrSlice, err)
 		} else {
 			gdriveFilesInfo = append(gdriveFilesInfo, fileInfo...)
 		}
-		apiProg.Increment()
+		mainProg.Increment()
 	}
 
 	hasErr := false
-	if len(errSlice) > 0 {
+	errSlice := make([]error, 0, len(gdriveErrSlice))
+	if len(gdriveErrSlice) > 0 {
 		hasErr = true
-		for _, err := range errSlice {
+		for _, err := range gdriveErrSlice {
 			logger.LogMessageToPath(
 				censorApiKeyFromStr(err.Err.Error()),
 				err.FilePath,
 				logger.ERROR,
 			)
+			errSlice = append(errSlice, err.Err)
 		}
 	}
-	apiProg.Stop(hasErr)
+	mainProg.Stop(hasErr)
+	mainProg.SnapshotTask()
 
-	gdrive.DownloadMultipleFiles(gdriveFilesInfo, config, dlProg)
-	return nil
+	errSlice = append(errSlice, gdrive.DownloadMultipleFiles(gdriveFilesInfo, config, progBarInfo)...)
+	return errSlice
 }

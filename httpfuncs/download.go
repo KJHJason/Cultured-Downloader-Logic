@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,11 +13,16 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
+
+	ctxio "github.com/jbenet/go-context/io"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 func getFullFilePath(res *http.Response, filePath string) (string, error) {
@@ -33,8 +39,8 @@ func getFullFilePath(res *http.Response, filePath string) (string, error) {
 	if err != nil {
 		// should never happen but just in case
 		return "", fmt.Errorf(
-			"error %d: failed to unescape URL, more info => %v\nurl: %s",
-			constants.UNEXPECTED_ERROR,
+			"error %d: failed to unescape URL, more info => %w\nurl: %s",
+			errs.UNEXPECTED_ERROR,
 			err,
 			res.Request.URL.String(),
 		)
@@ -43,30 +49,22 @@ func getFullFilePath(res *http.Response, filePath string) (string, error) {
 	filenameWithoutExt := iofuncs.RemoveExtFromFilename(filename)
 	filePath = filepath.Join(
 		filePath,
-		filenameWithoutExt + strings.ToLower(filepath.Ext(filename)),
+		filenameWithoutExt+strings.ToLower(filepath.Ext(filename)),
 	)
 	return filePath, nil
 }
 
 // check if the file size matches the content length
 // if not, then the file does not exist or is corrupted and should be re-downloaded
-func checkIfCanSkipDl(contentLength int64, filePath string, forceOverwrite bool) bool {
-	fileSize, err := iofuncs.GetFileSize(filePath)
-	if err != nil {
-		if err != os.ErrNotExist {
-			// if the error wasn't because the file does not exist,
-			// then log the error and continue with the download process
-			logger.LogError(err, false, logger.ERROR)
-		}
-		return false
-	}
-
+func checkIfCanSkipDl(fileSize, contentLength int64, forceOverwrite, supportRange bool) bool {
 	if fileSize == contentLength {
 		// If the file already exists and the file size
 		// matches the expected file size in the Content-Length header,
 		// then skip the download process.
 		return true
-	} else if !forceOverwrite && fileSize > 0 {
+	}
+
+	if !forceOverwrite && (!supportRange && fileSize > 0) {
 		// If the file already exists and have more than 0 bytes
 		// but the Content-Length header does not exist in the response,
 		// we will assume that the file is already downloaded
@@ -76,71 +74,154 @@ func checkIfCanSkipDl(contentLength int64, filePath string, forceOverwrite bool)
 	return false
 }
 
-func DlToFile(res *http.Response, url, filePath string) error {
-	file, err := os.Create(filePath) // create the file
+// totalBytesWriter is a custom type that implements io.Writer interface to accumulate totalBytes.
+type totalBytesWriter struct {
+	totalBytes *int64
+}
+
+// Write writes len(p) bytes from p to accumulate the total bytes written.
+func (tbw *totalBytesWriter) Write(p []byte) (int, error) {
+	n := len(p)
+	*tbw.totalBytes += int64(n)
+	return n, nil
+}
+
+type DlRequestInfo struct {
+	Ctx context.Context
+	Url string
+}
+
+type PartialDlInfo struct {
+	DownloadPartial  bool
+	DownloadedBytes  int64
+	ExpectedFileSize int64
+}
+
+func writeDlDetailsToProgBar(dlProgBar *progress.DownloadProgressBar, startTime time.Time, writtenBytes, expectedFileSize int64) {
+	durationInSec := time.Since(startTime).Seconds()
+	var downloadSpeed float64
+	if durationInSec > 0 {
+		downloadSpeed = float64(writtenBytes) / durationInSec
+		(*dlProgBar).UpdateDownloadSpeed(downloadSpeed / 1024 / 1024)
+	} else {
+		downloadSpeed = 0
+	}
+
+	var estimatedTime float64
+	if expectedFileSize == -1 || downloadSpeed == 0 { // not present in the response or the time elapsed is too short
+		estimatedTime = -1 // -1 indicates that the ETA is unknown
+	} else {
+		estimatedTime = float64(expectedFileSize-writtenBytes) / downloadSpeed
+		(*dlProgBar).UpdatePercentage(int(float64(writtenBytes) / float64(expectedFileSize) * 100))
+	}
+	(*dlProgBar).UpdateDownloadETA(estimatedTime)
+	// fmt.Printf("\rDownload speed: %.2f MB/s | ETA: %.2f seconds", downloadSpeed/1024/1024, estimatedTime)
+}
+
+func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string, partialDlInfo PartialDlInfo, dlProgBar *progress.DownloadProgressBar) error {
+	fileFlags := os.O_CREATE | os.O_WRONLY
+	if partialDlInfo.DownloadPartial {
+		fileFlags |= os.O_APPEND
+	} else {
+		fileFlags |= os.O_TRUNC
+	}
+
+	file, err := os.OpenFile(filePath, fileFlags, 0644)
 	if err != nil {
 		return fmt.Errorf(
-			"error %d: failed to create file, more info => %v\nfile path: %s",
-			constants.OS_ERROR,
+			"error %d: failed to open/create file, more info => %w\nfile path: %s",
+			errs.OS_ERROR,
 			err,
 			filePath,
 		)
 	}
+	defer file.Close()
+
+	expectedFileSize := partialDlInfo.ExpectedFileSize
+	writtenBytes := partialDlInfo.DownloadedBytes
+	if writtenBytes == -1 { // since the iofuncs.GetFileSize function returns -1 if the file does not exist
+		writtenBytes = 0
+	}
+
+	progressTicker := time.NewTicker(100 * time.Millisecond)
+	dlInfoCtx, cancelDlInfoCtx := context.WithCancel(dlRequestInfo.Ctx)
+	hasDlProgBar := dlProgBar != nil
+	if hasDlProgBar {
+		// Measure download speed and ETA
+		startTime := time.Now()
+		go func() {
+			for {
+				select {
+				case <-dlInfoCtx.Done():
+					(*dlProgBar).UpdateDownloadETA(0)
+					(*dlProgBar).UpdateDownloadSpeed(0)
+					return
+				case <-progressTicker.C:
+					writeDlDetailsToProgBar(dlProgBar, startTime, writtenBytes, expectedFileSize)
+				}
+			}
+		}()
+	}
 
 	// write the body to file
-	// https://stackoverflow.com/a/11693049/16377492
-	_, err = io.Copy(file, res.Body)
-	if err != nil {
-		file.Close()
-		if fileErr := os.Remove(filePath); fileErr != nil {
-			logger.LogError(
-				fmt.Errorf(
-					"download error %d: failed to remove file at %s, more info => %v",
-					constants.OS_ERROR,
-					filePath,
-					fileErr,
-				),
-				false,
-				logger.ERROR,
-			)
+	respReader := ctxio.NewReader(dlRequestInfo.Ctx, res.Body)
+	_, err = io.Copy(io.MultiWriter(file, &totalBytesWriter{&writtenBytes}), respReader)
+	progressTicker.Stop()
+	cancelDlInfoCtx()
+
+	if err == nil && hasDlProgBar {
+		(*dlProgBar).UpdatePercentage(100)
+		(*dlProgBar).Stop(false)
+	} else {
+		if !partialDlInfo.DownloadPartial {
+			// Due to the checkIfCanSkipDl check before downloading,
+			// remove the file if the download process failed or was cancelled
+			// to prevent incomplete files from being kept when the server does not support range requests.
+			fileErr := os.Remove(filePath)
+			if fileErr != nil {
+				logger.LogError(
+					fmt.Errorf(
+						"error %d: failed to remove file %s, more info => %w",
+						errs.OS_ERROR,
+						filePath,
+						fileErr,
+					),
+					false,
+					logger.ERROR,
+				)
+			}
 		}
 
-		if err != context.Canceled {
-			logger.LogError(
-				fmt.Errorf(
-					"failed to download %s due to %v",
-					url,
-					err,
-				), 
-				false, 
-				logger.ERROR,
-			)
-			err = nil
+		if errors.Is(err, context.Canceled) {
+			if hasDlProgBar {
+				(*dlProgBar).UpdateErrMsg("Download process was cancelled!")
+				(*dlProgBar).Stop(true)
+			}
+			return nil
 		}
+
+		if hasDlProgBar {
+			(*dlProgBar).Stop(true)
+		}
+		logger.LogError(
+			fmt.Errorf(
+				"failed to download %s due to %w",
+				dlRequestInfo.Url,
+				err,
+			),
+			false,
+			logger.ERROR,
+		)
 		return err
 	}
-	file.Close()
 	return nil
 }
 
-// DownloadUrl is used to download a file from a URL
-//
+// DownloadUrl is used to download a file from a URL.
 // Note: If the file already exists, the download process will be skipped
-func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, overwriteExistingFile bool) error {
-	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
-	ctx, cancel := context.WithCancel(reqArgs.Context)
-	defer cancel()
-
-	// Catch SIGINT/SIGTERM signal and cancel the context when received
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigs
-		cancel()
-	}()
-	defer signal.Stop(sigs)
-
+func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, overwriteExistingFile bool, dlOptions *DlOptions) error {
 	queue <- struct{}{}
+
 	// Send a HEAD request first to get the expected file size from the Content-Length header.
 	// A GET request might work but most of the time
 	// as the Content-Length header may not present due to chunked encoding.
@@ -148,7 +229,7 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		&RequestArgs{
 			Url:         reqArgs.Url,
 			Method:      "HEAD",
-			Timeout:     10,
+			Timeout:     15,
 			Cookies:     reqArgs.Cookies,
 			Headers:     reqArgs.Headers,
 			UserAgent:   reqArgs.UserAgent,
@@ -156,7 +237,7 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 			RetryDelay:  reqArgs.RetryDelay,
 			Http3:       reqArgs.Http3,
 			Http2:       reqArgs.Http2,
-			Context:     ctx,
+			Context:     reqArgs.Context,
 		},
 	)
 	if err != nil {
@@ -165,13 +246,12 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 	fileReqContentLength := headRes.ContentLength
 	headRes.Body.Close()
 
-	reqArgs.Context = ctx
 	res, err := reqArgs.RequestHandler(reqArgs)
 	if err != nil {
 		if err != context.Canceled {
 			err = fmt.Errorf(
-				"error %d: failed to download file, more info => %v\nurl: %s",
-				constants.DOWNLOAD_ERROR,
+				"error %d: failed to download file, more info => %w\nurl: %s",
+				errs.DOWNLOAD_ERROR,
 				err,
 				reqArgs.Url,
 			)
@@ -185,8 +265,54 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		return err
 	}
 
-	if !checkIfCanSkipDl(fileReqContentLength, filePath, overwriteExistingFile) {
-		err = DlToFile(res, reqArgs.Url, filePath)
+	downloadedBytes, err := iofuncs.GetFileSize(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// if the error wasn't because the file does not exist,
+			// then log the error and continue with the download process
+			logger.LogError(err, false, logger.ERROR)
+		}
+	}
+
+	downloadPartial := false
+	if dlOptions.SupportRange {
+		if downloadedBytes > 0 && downloadedBytes < fileReqContentLength {
+			downloadPartial = true
+			if reqArgs.Headers == nil {
+				reqArgs.Headers = make(map[string]string)
+			}
+			reqArgs.Headers["Range"] = fmt.Sprintf("bytes=%d-", downloadedBytes)
+		}
+	}
+
+	var dlProgBar *progress.DownloadProgressBar
+	hasDlProgBar := dlOptions.ProgressBarInfo.DownloadProgressBars != nil
+	if hasDlProgBar {
+		dlProgBar = progress.NewDlProgressBar(reqArgs.Context, progress.Messages{
+			Msg:        "Downloading file...",
+			ErrMsg:     "Failed to download file!",
+			SuccessMsg: "Finished downloading file!",
+		})
+		dlProgBar.UpdateFilename(filepath.Base(filePath))
+		dlOptions.ProgressBarInfo.AppendDlProgBar(dlProgBar)
+	}
+
+	if !checkIfCanSkipDl(downloadedBytes, fileReqContentLength, overwriteExistingFile, dlOptions.SupportRange) {
+		dlReqInfo := &DlRequestInfo{
+			Ctx: reqArgs.Context,
+			Url: reqArgs.Url,
+		}
+		dlPartialInfo := PartialDlInfo{
+			DownloadPartial:  downloadPartial,
+			DownloadedBytes:  downloadedBytes,
+			ExpectedFileSize: fileReqContentLength,
+		}
+		err = DlToFile(res, dlReqInfo, filePath, dlPartialInfo, dlProgBar)
+	} else {
+		if hasDlProgBar {
+			dlProgBar.UpdateSuccessMsg("File already exists!")
+			dlProgBar.Stop(false)
+		}
 	}
 	return err
 }
@@ -194,10 +320,10 @@ func DownloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 // DownloadUrls is used to download multiple files from URLs concurrently
 //
 // Note: If the file already exists, the download process will be skipped
-func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config, reqHandler RequestHandler) error {
+func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config, reqHandler RequestHandler) (cancelled bool, errors []error) {
 	urlsLen := len(urlInfoSlice)
 	if urlsLen == 0 {
-		return nil
+		return false, nil
 	}
 	if urlsLen < dlOptions.MaxConcurrency {
 		dlOptions.MaxConcurrency = urlsLen
@@ -207,8 +333,22 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	queue := make(chan struct{}, dlOptions.MaxConcurrency)
 	errChan := make(chan error, urlsLen)
 
+	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
+	ctx, cancel := context.WithCancel(dlOptions.Context)
+	defer cancel()
+
+	// Catch SIGINT/SIGTERM signal and cancel the context when received
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		cancel()
+	}()
+	defer signal.Stop(sigs)
+
 	baseMsg := "Downloading files [%d/" + fmt.Sprintf("%d]...", urlsLen)
-	progress := dlOptions.DownloadProgressBar
+	progress := dlOptions.ProgressBarInfo.MainProgressBar
+	progress.SetToProgressBar()
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -224,6 +364,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	)
 	progress.UpdateMax(urlsLen)
 	progress.Start()
+	defer progress.SnapshotTask()
 	for _, urlInfo := range urlInfoSlice {
 		wg.Add(1)
 		go func(fileUrl, filePath string) {
@@ -231,7 +372,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 				wg.Done()
 				<-queue
 			}()
-			err := DownloadUrl(
+			err := downloadUrl(
 				filePath,
 				queue,
 				&RequestArgs{
@@ -245,9 +386,10 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 					RetryDelay:     dlOptions.RetryDelay,
 					UserAgent:      config.UserAgent,
 					RequestHandler: reqHandler,
-					Context:        dlOptions.Context,
+					Context:        ctx,
 				},
 				config.OverwriteFiles,
+				dlOptions,
 			)
 			if err != nil {
 				errChan <- err
@@ -263,18 +405,21 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	close(errChan)
 
 	hasErr := false
+	var errorSlice []error
 	if len(errChan) > 0 {
 		hasErr = true
-		if hasCancelled := logger.LogChanErrors(false, logger.ERROR, errChan); hasCancelled {
-			progress.StopInterrupt("Stopped downloading files (incomplete downloads will be deleted)...")
-			return context.Canceled
-		} 
+		if hasCancelled, errSlice := logger.LogChanErrors(false, logger.ERROR, errChan); hasCancelled {
+			progress.StopInterrupt("Stopped downloading files (incomplete downloads will be resumed later or be deleted)...")
+			return true, errSlice
+		} else {
+			errorSlice = errSlice
+		}
 	}
 	progress.Stop(hasErr)
-	return nil
+	return false, errorSlice
 }
 
 // Same as DownloadUrlsWithHandler but uses the default request handler (CallRequest)
-func DownloadUrls(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config) error {
+func DownloadUrls(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config) (cancelled bool, errors []error) {
 	return DownloadUrlsWithHandler(urlInfoSlice, dlOptions, config, CallRequest)
 }

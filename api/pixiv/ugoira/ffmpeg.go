@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
@@ -22,7 +22,7 @@ type ffmpegOptions struct {
 	outputPath          string
 }
 
-func writeDelays(ugoiraInfo *models.Ugoira, imagesFolderPath string) (string, []string, error) {
+func writeDelays(ugoiraInfo *Ugoira, imagesFolderPath string) (string, []string, error) {
 	// sort the ugoira frames by their filename which are %6d.imageExt
 	sortedFilenames := make([]string, 0, len(ugoiraInfo.Frames))
 	for fileName := range ugoiraInfo.Frames {
@@ -54,8 +54,8 @@ func writeDelays(ugoiraInfo *models.Ugoira, imagesFolderPath string) (string, []
 	f, err := os.Create(concatDelayFilePath)
 	if err != nil {
 		return "", nil, fmt.Errorf(
-			"pixiv error %d: failed to create delays.txt, more info => %v",
-			constants.OS_ERROR,
+			"pixiv error %d: failed to create delays.txt, more info => %w",
+			errs.OS_ERROR,
 			err,
 		)
 	}
@@ -64,8 +64,8 @@ func writeDelays(ugoiraInfo *models.Ugoira, imagesFolderPath string) (string, []
 	_, err = f.WriteString(delaysText)
 	if err != nil {
 		return "", nil, fmt.Errorf(
-			"pixiv error %d: failed to write delay string to delays.txt, more info => %v",
-			constants.OS_ERROR,
+			"pixiv error %d: failed to write delay string to delays.txt, more info => %w",
+			errs.OS_ERROR,
 			err,
 		)
 	}
@@ -140,8 +140,8 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 	err := imagePaletteCmd.Run()
 	if err != nil {
 		return nil, fmt.Errorf(
-			"pixiv error %d: failed to generate palette for ugoira gif, more info => %v",
-			constants.CMD_ERROR,
+			"pixiv error %d: failed to generate palette for ugoira gif, more info => %w",
+			errs.CMD_ERROR,
 			err,
 		)
 	}
@@ -189,7 +189,7 @@ func getFfmpegFlagsForUgoira(options *ffmpegOptions, imagesFolderPath string) ([
 		panic(
 			fmt.Sprintf(
 				"pixiv error %d: Output extension %v is not allowed for ugoira conversion",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 				options.outputExt,
 			),
 		)

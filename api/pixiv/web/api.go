@@ -2,6 +2,7 @@ package pixivweb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -9,19 +10,20 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	errs "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
-func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*models.ArtworkDetails, error) {
+func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*ArtworkDetails, error) {
 	artworkDetailsRes, err := httpfuncs.CallRequest(reqArgs)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"pixiv error %d: failed to get artwork details for ID %v from %s",
-			constants.CONNECTION_ERROR,
+			"pixiv web error %d: failed to get artwork details for ID %v from %s",
+			errs.CONNECTION_ERROR,
 			artworkId,
 			reqArgs.Url,
 		)
@@ -30,15 +32,15 @@ func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*
 	if artworkDetailsRes.StatusCode != 200 {
 		artworkDetailsRes.Body.Close()
 		return nil, fmt.Errorf(
-			"pixiv error %d: failed to get details for artwork ID %s due to %s response from %s",
-			constants.RESPONSE_ERROR,
+			"pixiv web error %d: failed to get details for artwork ID %s due to %s response from %s",
+			errs.RESPONSE_ERROR,
 			artworkId,
 			artworkDetailsRes.Status,
 			reqArgs.Url,
 		)
 	}
 
-	var artworkDetailsJsonRes models.ArtworkDetails
+	var artworkDetailsJsonRes ArtworkDetails
 	if err := httpfuncs.LoadJsonFromResponse(artworkDetailsRes, &artworkDetailsJsonRes); err != nil {
 		return nil, fmt.Errorf(
 			"%v\ndetails: failed to read response body for Pixiv artwork ID %s",
@@ -58,8 +60,8 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 		url = fmt.Sprintf("%s/illust/%s/ugoira_meta", constants.PIXIV_API_URL, artworkId)
 	default:
 		return nil, fmt.Errorf(
-			"pixiv error %d: unsupported artwork type %d for artwork ID %s",
-			constants.JSON_ERROR,
+			"pixiv web error %d: unsupported artwork type %d for artwork ID %s",
+			errs.JSON_ERROR,
 			artworkType,
 			artworkId,
 		)
@@ -69,8 +71,8 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 	artworkUrlsRes, err := httpfuncs.CallRequest(reqArgs)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"pixiv error %d: failed to get artwork URLs for ID %s from %s due to %v",
-			constants.CONNECTION_ERROR,
+			"pixiv web error %d: failed to get artwork URLs for ID %s from %s due to %v",
+			errs.CONNECTION_ERROR,
 			artworkId,
 			url,
 			err,
@@ -80,8 +82,8 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 	if artworkUrlsRes.StatusCode != 200 {
 		artworkUrlsRes.Body.Close()
 		return nil, fmt.Errorf(
-			"pixiv error %d: failed to get artwork URLs for ID %s due to %s response from %s",
-			constants.RESPONSE_ERROR,
+			"pixiv web error %d: failed to get artwork URLs for ID %s due to %s response from %s",
+			errs.RESPONSE_ERROR,
 			artworkId,
 			artworkUrlsRes.Status,
 			url,
@@ -92,7 +94,7 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 
 // Retrieves details of an artwork ID and returns
 // the folder path to download the artwork to, the JSON response, and the artwork type
-func getArtworkDetails(artworkId, downloadPath string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, *models.Ugoira, error) {
+func getArtworkDetails(artworkId, downloadPath string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
 	if artworkId == "" {
 		return nil, nil, nil
 	}
@@ -146,15 +148,15 @@ func getArtworkDetails(artworkId, downloadPath string, dlOptions *PixivWebDlOpti
 
 // Retrieves multiple artwork details based on the given slice of artwork IDs
 // and returns a map to use for downloading and a slice of Ugoira structures
-func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*models.Ugoira) {
+func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	var errSlice []error
-	var ugoiraDetails []*models.Ugoira
+	var ugoiraDetails []*ugoira.Ugoira
 	var artworkDetails []*httpfuncs.ToDownload
 	artworkIdsLen := len(artworkIds)
 	lastArtworkId := artworkIds[artworkIdsLen-1]
 
 	baseMsg := "Getting and processing artwork details from Pixiv [%d/" + fmt.Sprintf("%d]...", artworkIdsLen)
-	progress := dlOptions.GetPostsDetailProgBar
+	progress := dlOptions.MainProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -168,8 +170,10 @@ func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptio
 			artworkIdsLen,
 		),
 	)
+	progress.SetToProgressBar()
 	progress.UpdateMax(artworkIdsLen)
 	progress.Start()
+	defer progress.SnapshotTask()
 	for _, artworkId := range artworkIds {
 		artworksToDl, ugoiraInfo, err := getArtworkDetails(
 			artworkId,
@@ -198,16 +202,17 @@ func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptio
 	if len(errSlice) > 0 {
 		hasErr = true
 		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+			dlOptions.CancelCtx()
 			progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv!")
-			return nil, nil
+			return nil, nil, errSlice
 		}
 	}
 	progress.Stop(hasErr)
-	return artworkDetails, ugoiraDetails
+	return artworkDetails, ugoiraDetails, errSlice
 }
 
 // Query Pixiv's API for all the illustrator's posts
-func getIllustratorPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions) ([]string, error) {
+func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions) ([]string, error) {
 	headers := pixivcommon.GetPixivRequestHeaders()
 	headers["Referer"] = pixivcommon.GetIllustUrl(illustratorId)
 	url := fmt.Sprintf("%s/user/%s/profile/all", constants.PIXIV_API_URL, illustratorId)
@@ -226,12 +231,12 @@ func getIllustratorPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOpt
 		},
 	)
 	if err != nil {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			return nil, err
 		}
 		return nil, fmt.Errorf(
-			"pixiv error %d: failed to get illustrator's posts with an ID of %s due to %v",
-			constants.CONNECTION_ERROR,
+			"pixiv web error %d: failed to get illustrator's posts with an ID of %s due to %v",
+			errs.CONNECTION_ERROR,
 			illustratorId,
 			err,
 		)
@@ -239,14 +244,14 @@ func getIllustratorPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOpt
 	if res.StatusCode != 200 {
 		res.Body.Close()
 		return nil, fmt.Errorf(
-			"pixiv error %d: failed to get illustrator's posts with an ID of %s due to %s response",
-			constants.RESPONSE_ERROR,
+			"pixiv web error %d: failed to get illustrator's posts with an ID of %s due to %s response",
+			errs.RESPONSE_ERROR,
 			illustratorId,
 			res.Status,
 		)
 	}
 
-	var jsonBody models.PixivWebIllustratorJson
+	var jsonBody IllustratorJson
 	if err := httpfuncs.LoadJsonFromResponse(res, &jsonBody); err != nil {
 		return nil, err
 	}
@@ -255,14 +260,14 @@ func getIllustratorPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOpt
 }
 
 // Get posts from multiple illustrators and returns a slice of artwork IDs
-func GetMultipleIllustratorPosts(illustratorIds, pageNums []string, downloadPath string, dlOptions *PixivWebDlOptions) []string {
+func GetMultipleArtistsPosts(illustratorIds, pageNums []string, downloadPath string, dlOptions *PixivWebDlOptions) ([]string, []error) {
 	var errSlice []error
 	var artworkIdsSlice []string
 	illustratorIdsLen := len(illustratorIds)
 	lastIllustratorIdx := illustratorIdsLen - 1
 
 	baseMsg := "Getting artwork details from illustrator(s) on Pixiv [%d/" + fmt.Sprintf("%d]...", illustratorIdsLen)
-	progress := dlOptions.GetIllustratorPostsProgBar
+	progress := dlOptions.MainProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -276,10 +281,12 @@ func GetMultipleIllustratorPosts(illustratorIds, pageNums []string, downloadPath
 			illustratorIdsLen,
 		),
 	)
+	progress.SetToProgressBar()
 	progress.UpdateMax(illustratorIdsLen)
 	progress.Start()
+	defer progress.SnapshotTask()
 	for idx, illustratorId := range illustratorIds {
-		artworkIds, err := getIllustratorPosts(
+		artworkIds, err := getArtistPosts(
 			illustratorId,
 			pageNums[idx],
 			dlOptions,
@@ -300,13 +307,14 @@ func GetMultipleIllustratorPosts(illustratorIds, pageNums []string, downloadPath
 	if len(errSlice) > 0 {
 		hasErr = true
 		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+			dlOptions.CancelCtx()
 			progress.StopInterrupt("Stopped getting artwork details from illustrator(s) on Pixiv!")
-			return nil
+			return nil, errSlice
 		}
 	}
 	progress.Stop(hasErr)
 
-	return artworkIdsSlice
+	return artworkIdsSlice, errSlice
 }
 
 type pageNumArgs struct {
@@ -331,13 +339,13 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 		reqArgs.Params["p"] = strconv.Itoa(page) // page number
 		res, err := httpfuncs.CallRequest(reqArgs)
 		if err != nil {
-			if err == context.Canceled {
+			if errors.Is(err, context.Canceled) {
 				errSlice = append(errSlice, err)
 				return nil, errSlice
 			}
 			err = fmt.Errorf(
-				"pixiv error %d: failed to get tag search results for %s due to %v",
-				constants.CONNECTION_ERROR,
+				"pixiv web error %d: failed to get tag search results for %s due to %w",
+				errs.CONNECTION_ERROR,
 				tagName,
 				err,
 			)
@@ -366,11 +374,11 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 // Query Pixiv's API and search for posts based on the supplied tag name
 // which will return a map and a slice of Ugoira structures for downloads
 // Returns the map, the slice, a boolean indicating if there was an error, and a boolean indicating if the user cancelled the operation
-func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*models.Ugoira, bool, bool) {
+func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		logger.LogError(err, false, logger.ERROR)
-		return nil, nil, true, false
+		return nil, nil, []error{err}, false
 	}
 
 	url := fmt.Sprintf("%s/search/artworks/%s", constants.PIXIV_API_URL, tagName)
@@ -390,6 +398,9 @@ func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptio
 
 		// illust_and_ugoira, manga, all
 		"type": dlOptions.ArtworkType,
+
+		// 0: display AI works, 1: hide AI works
+		"ai_type": strconv.Itoa(dlOptions.SearchAiType),
 	}
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV, true)
@@ -416,18 +427,18 @@ func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptio
 		},
 	)
 
-	hasErr := false
 	if len(errSlice) > 0 {
-		hasErr = true
 		if cancelled := logger.LogErrors(false, logger.ERROR, errSlice...); cancelled {
-			return nil, nil, false, true
+			dlOptions.CancelCtx()
+			return nil, nil, errSlice, true
 		}
 	}
 
-	artworkSlice, ugoiraSlice := GetMultipleArtworkDetails(
+	artworkSlice, ugoiraSlice, newErrSlice := GetMultipleArtworkDetails(
 		artworkIds,
 		downloadPath,
 		dlOptions,
 	)
-	return artworkSlice, ugoiraSlice, hasErr, false
+	errSlice = append(errSlice, newErrSlice...)
+	return artworkSlice, ugoiraSlice, errSlice, false
 }

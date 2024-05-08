@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/parsers"
 )
 
@@ -15,7 +15,7 @@ func ParseNetscapeCookieFile(filePath, sessionId, website string) ([]*http.Cooki
 	if filePath != "" && sessionId != "" {
 		return nil, fmt.Errorf(
 			"error %d: cannot use both cookie file and session id flags",
-			constants.INPUT_ERROR,
+			errs.INPUT_ERROR,
 		)
 	}
 
@@ -26,8 +26,8 @@ func ParseNetscapeCookieFile(filePath, sessionId, website string) ([]*http.Cooki
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"error %d: opening cookie file at %s, more info => %v",
-			constants.OS_ERROR,
+			"error %d: opening cookie file at %s, more info => %w",
+			errs.OS_ERROR,
 			filePath,
 			err,
 		)
@@ -43,7 +43,7 @@ func ParseNetscapeCookieFile(filePath, sessionId, website string) ([]*http.Cooki
 	} else {
 		err = fmt.Errorf(
 			"error %d: invalid cookie file extension, %q, at %s...\nOnly .txt and .json files are supported",
-			constants.INPUT_ERROR,
+			errs.INPUT_ERROR,
 			ext,
 			filePath,
 		)
@@ -56,7 +56,7 @@ func ParseNetscapeCookieFile(filePath, sessionId, website string) ([]*http.Cooki
 	if len(cookies) == 0 {
 		return nil, fmt.Errorf(
 			"error %d: no session cookie found in cookie file at %s for website %q",
-			constants.INPUT_ERROR,
+			errs.INPUT_ERROR,
 			filePath,
 			website,
 		)

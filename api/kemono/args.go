@@ -4,45 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"regexp"
+	"path/filepath"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
-)
-
-const (
-	BASE_REGEX_STR             = `https://kemono\.(?:party|su)/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)`
-	BASE_POST_SUFFIX_REGEX_STR = `/post/(?P<postId>\d+)`
-	SERVICE_GROUP_NAME         = "service"
-	CREATOR_ID_GROUP_NAME      = "creatorId"
-	POST_ID_GROUP_NAME         = "postId"
-	API_MAX_CONCURRENT         = 3
-)
-
-var (
-	POST_URL_REGEX = regexp.MustCompile(
-		fmt.Sprintf(
-			`^%s%s$`,
-			BASE_REGEX_STR,
-			BASE_POST_SUFFIX_REGEX_STR,
-		),
-	)
-	POST_URL_REGEX_SERVICE_INDEX    = POST_URL_REGEX.SubexpIndex(SERVICE_GROUP_NAME)
-	POST_URL_REGEX_CREATOR_ID_INDEX = POST_URL_REGEX.SubexpIndex(CREATOR_ID_GROUP_NAME)
-	POST_URL_REGEX_POST_ID_INDEX    = POST_URL_REGEX.SubexpIndex(POST_ID_GROUP_NAME)
-
-	CREATOR_URL_REGEX = regexp.MustCompile(
-		fmt.Sprintf(
-			`^%s$`,
-			BASE_REGEX_STR,
-		),
-	)
-	CREATOR_URL_REGEX_SERVICE_INDEX    = CREATOR_URL_REGEX.SubexpIndex(SERVICE_GROUP_NAME)
-	CREATOR_URL_REGEX_CREATOR_ID_INDEX = CREATOR_URL_REGEX.SubexpIndex(CREATOR_ID_GROUP_NAME)
 )
 
 type KemonoDl struct {
@@ -59,10 +30,10 @@ type KemonoDl struct {
 func ProcessCreatorUrls(creatorUrls []string, pageNums []string) []*KemonoCreatorToDl {
 	creatorsToDl := make([]*KemonoCreatorToDl, len(creatorUrls))
 	for i, creatorUrl := range creatorUrls {
-		matched := CREATOR_URL_REGEX.FindStringSubmatch(creatorUrl)
+		matched := constants.KEMONO_CREATOR_URL_REGEX.FindStringSubmatch(creatorUrl)
 		creatorsToDl[i] = &KemonoCreatorToDl{
-			Service:   matched[CREATOR_URL_REGEX_SERVICE_INDEX],
-			CreatorId: matched[CREATOR_URL_REGEX_CREATOR_ID_INDEX],
+			Service:   matched[constants.KEMONO_CREATOR_URL_REGEX_SERVICE_IDX],
+			CreatorId: matched[constants.KEMONO_CREATOR_URL_REGEX_CREATOR_ID_IDX],
 			PageNum:   pageNums[i],
 		}
 	}
@@ -73,11 +44,11 @@ func ProcessCreatorUrls(creatorUrls []string, pageNums []string) []*KemonoCreato
 func ProcessPostUrls(postUrls []string) []*KemonoPostToDl {
 	postsToDl := make([]*KemonoPostToDl, len(postUrls))
 	for i, postUrl := range postUrls {
-		matched := POST_URL_REGEX.FindStringSubmatch(postUrl)
+		matched := constants.KEMONO_POST_URL_REGEX.FindStringSubmatch(postUrl)
 		postsToDl[i] = &KemonoPostToDl{
-			Service:   matched[POST_URL_REGEX_SERVICE_INDEX],
-			CreatorId: matched[POST_URL_REGEX_CREATOR_ID_INDEX],
-			PostId:    matched[POST_URL_REGEX_POST_ID_INDEX],
+			Service:   matched[constants.KEMONO_POST_URL_REGEX_SERVICE_IDX],
+			CreatorId: matched[constants.KEMONO_POST_URL_REGEX_CREATOR_ID_IDX],
+			PostId:    matched[constants.KEMONO_POST_URL_REGEX_POST_ID_IDX],
 		}
 	}
 
@@ -117,21 +88,21 @@ func (k *KemonoDl) RemoveDuplicates() {
 }
 
 func (k *KemonoDl) ValidateArgs() error {
-	valid, outlier := api.SliceMatchesRegex(CREATOR_URL_REGEX, k.CreatorUrls)
+	valid, outlier := api.SliceMatchesRegex(constants.KEMONO_CREATOR_URL_REGEX, k.CreatorUrls)
 	if !valid {
 		return fmt.Errorf(
-			"kemono error %d: invalid creator URL found for kemono party: %s",
-			constants.INPUT_ERROR,
+			"kemono error %d: invalid creator URL found for kemono: %s",
+			errs.INPUT_ERROR,
 			outlier,
 		)
 	}
 
-	valid, outlier = api.SliceMatchesRegex(POST_URL_REGEX, k.PostUrls)
+	valid, outlier = api.SliceMatchesRegex(constants.KEMONO_POST_URL_REGEX, k.PostUrls)
 	if !valid {
 		return fmt.Errorf(
 			fmt.Sprintf(
-				"kemono error %d: invalid post URL found for kemono party: %s",
-				constants.INPUT_ERROR,
+				"kemono error %d: invalid post URL found for kemono: %s",
+				errs.INPUT_ERROR,
 				outlier,
 			),
 		)
@@ -165,10 +136,11 @@ func (k *KemonoDl) ValidateArgs() error {
 
 // KemonoDlOptions is the struct that contains the arguments for Kemono download options.
 type KemonoDlOptions struct {
-	ctx              context.Context
-	cancel           context.CancelFunc
-	DlAttachments bool
-	DlGdrive      bool
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	DlAttachments       bool
+	DlGdrive            bool
+	BaseDownloadDirPath string
 
 	Configs *configs.Config
 
@@ -181,30 +153,26 @@ type KemonoDlOptions struct {
 
 	Notifier       notify.Notifier
 
-	// Prog bars
-	PostProgBar              progress.Progress
-	GetCreatorPostProgBar    progress.Progress
-	ProcessJsonProgBar       progress.Progress
-	GetFavouritesPostProgBar progress.Progress
-	GdriveApiProgBar         progress.Progress
-	GdriveDlProgBar          progress.Progress
+	// Progress indicators
+	MainProgBar          progress.ProgressBar
+	DownloadProgressBars *[]*progress.DownloadProgressBar
 }
 
 func (k *KemonoDlOptions) GetContext() context.Context {
 	return k.ctx
 }
 
-func (k *KemonoDlOptions) GetCancel() context.CancelFunc {
-	return k.cancel
-}
-
 func (k *KemonoDlOptions) SetContext(ctx context.Context) {
 	k.ctx, k.cancel = context.WithCancel(ctx)
 }
 
-// Cancel cancels the context of the KemonoDlOptions struct.
-func (k *KemonoDlOptions) Cancel() {
+// CancelCtx releases the resources used and cancels the context of the KemonoDlOptions struct.
+func (k *KemonoDlOptions) CancelCtx() {
 	k.cancel()
+}
+
+func (k *KemonoDlOptions) CtxIsActive() bool {
+	return k.ctx.Err() == nil
 }
 
 // ValidateArgs validates the session cookie ID of the Kemono account to download from.
@@ -216,41 +184,48 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 		k.SetContext(context.Background())
 	}
 
-	captchaMap := map[string]progress.Progress{
-		"PostProgBar":              k.PostProgBar,
-		"GetCreatorPostProgBar":    k.GetCreatorPostProgBar,
-		"ProcessJsonProgBar":       k.ProcessJsonProgBar,
-		"GetFavouritesPostProgBar": k.GetFavouritesPostProgBar,
-		"GdriveApiProgBar":         k.GdriveApiProgBar,
-		"GdriveDlProgBar":          k.GdriveDlProgBar,
-	}
-	for captchaName, captchaProgBar := range captchaMap {
-		if captchaProgBar == nil {
-			return fmt.Errorf(
-				"kemono error %d, %s is nil",
-				constants.DEV_ERROR,
-				captchaName,
-			)
-		}
-	}
-
 	if k.Notifier == nil {
 		return fmt.Errorf(
 			"kemono error %d, notifier is nil",
-			constants.DEV_ERROR,
+			errs.DEV_ERROR,
 		)
 	}
 
-	if k.SessionCookieId != "" {
+	if k.BaseDownloadDirPath == "" {
+		k.BaseDownloadDirPath = filepath.Join(iofuncs.DOWNLOAD_PATH, constants.KEMONO_TITLE)
+	} else {
+		if !iofuncs.DirPathExists(k.BaseDownloadDirPath) {
+			return fmt.Errorf(
+				"kemono error %d, download path does not exist or is not a directory, please create the directory and try again",
+				errs.INPUT_ERROR,
+			)
+		}
+		k.BaseDownloadDirPath = filepath.Join(k.BaseDownloadDirPath, constants.KEMONO_TITLE)
+	}
+
+	if k.MainProgBar == nil {
+		return fmt.Errorf(
+			"kemono error %d, main progress bar is nil",
+			errs.DEV_ERROR,
+		)
+	}
+
+	if len(k.SessionCookies) > 0 {
+		if err := api.VerifyCookies(constants.KEMONO, userAgent, k.SessionCookies); err != nil {
+			return err
+		}
+		k.SessionCookieId = ""
+	} else if k.SessionCookieId != "" {
 		if cookie, err := api.VerifyAndGetCookie(constants.KEMONO, k.SessionCookieId, userAgent); err != nil {
 			return err
 		} else {
-			k.SessionCookies = []*http.Cookie{
-				cookie,
-			}
+			k.SessionCookies = []*http.Cookie{cookie}
 		}
 	} else {
-		return fmt.Errorf("kemono error %d: session cookie ID is required", constants.INPUT_ERROR)
+		return fmt.Errorf(
+			"kemono error %d: session cookie is required",
+			errs.INPUT_ERROR,
+		)
 	}
 
 	if k.DlGdrive && k.GdriveClient == nil {

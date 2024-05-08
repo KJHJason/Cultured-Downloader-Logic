@@ -4,28 +4,35 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
-	"github.com/fatih/color"
+)
+
+const (
+	BASE_URL       = constants.PIXIV_MOBILE_URL
+	CLIENT_ID      = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
+	CLIENT_SECRET  = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
+	USER_AGENT     = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)"
+	AUTH_TOKEN_URL = "https://oauth.secure.pixiv.net/auth/token"
+	LOGIN_URL      = BASE_URL + "/web/v1/login"
+	REDIRECT_URL   = BASE_URL + "/web/v1/users/auth/pixiv/callback"
+
+	UGOIRA_URL        = BASE_URL + "/v1/ugoira/metadata"
+	ARTWORK_URL       = BASE_URL + "/v1/illust/detail"
+	ARTIST_POSTS_URL  = BASE_URL + "/v1/user/illusts"
+	ILLUST_SEARCH_URL = BASE_URL + "/v1/search/illust"
 )
 
 type PixivMobile struct {
-	// Parent context
-	ctx          context.Context
+	user   *UserDetails
+	ctx    context.Context
+	cancel context.CancelFunc
 
 	// API information and its endpoints
-	baseUrl      string
-	clientId     string
-	clientSecret string
-	userAgent    string
-	authTokenUrl string
-	loginUrl     string
-	redirectUri  string
 	refreshToken string
 
 	// User given arguments
@@ -33,36 +40,26 @@ type PixivMobile struct {
 
 	// Access token information
 	accessTokenMu  sync.Mutex
-	accessTokenMap accessTokenInfo
+	accessTokenMap OAuthTokenInfo
 
 	// Prog bar
-	ArtworkProgress     progress.Progress
-	IllustratorProgress progress.Progress
+	MainProgBar progress.ProgressBar
 }
 
 // Get a new PixivMobile structure
-func NewPixivMobile(refreshToken string, timeout int, ctx context.Context) *PixivMobile {
+func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, cancelFunc context.CancelFunc) (*PixivMobile, error) {
 	pixivMobile := &PixivMobile{
-		ctx:           ctx,
-		baseUrl:       constants.PIXIV_MOBILE_URL,
-		clientId:      "MOBrBDS8blbauoSck0ZfDbtuzpyT",
-		clientSecret:  "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
-		userAgent:     "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)",
-		authTokenUrl:  "https://oauth.secure.pixiv.net/auth/token",
-		loginUrl:      constants.PIXIV_MOBILE_URL + "/web/v1/login",
-		redirectUri:   constants.PIXIV_MOBILE_URL + "/web/v1/users/auth/pixiv/callback",
-		refreshToken:  refreshToken,
-		apiTimeout:    timeout,
+		ctx:          ctx,
+		refreshToken: refreshToken,
+		apiTimeout:   timeout,
 	}
 	if refreshToken != "" {
 		// refresh the access token and verify it
-		err := pixivMobile.refreshAccessToken()
-		if err != nil {
-			color.Red(err.Error())
-			os.Exit(1)
+		if err := pixivMobile.refreshTokenField(); err != nil {
+			return nil, err
 		}
 	}
-	return pixivMobile
+	return pixivMobile, nil
 }
 
 // This is due to Pixiv's strict rate limiting.
@@ -84,17 +81,16 @@ func (pixiv *PixivMobile) getHeaders(additional map[string]string) map[string]st
 	}
 
 	baseHeaders := map[string]string{
-		"User-Agent":     pixiv.userAgent,
+		"User-Agent":     USER_AGENT,
 		"App-OS":         "ios",
 		"App-OS-Version": "14.6",
-		"Authorization":  "Bearer " + pixiv.accessTokenMap.accessToken,
+		"Authorization":  "Bearer " + pixiv.accessTokenMap.AccessToken,
 	}
 	for k, v := range baseHeaders {
 		headers[k] = v
 	}
 	return headers
 }
-
 
 // Sends a request to the Pixiv API and refreshes the access token if required
 //
@@ -116,7 +112,7 @@ func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*http.Res
 		return nil, err
 	}
 
-	refreshed, err := pixiv.refreshTokenIfReq()
+	refreshed, err := pixiv.refreshTokenFieldIfReq()
 	if err != nil {
 		return nil, err
 	}

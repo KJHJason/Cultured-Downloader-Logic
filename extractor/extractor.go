@@ -2,15 +2,18 @@ package extractor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/mholt/archiver/v4"
+	"github.com/jbenet/go-context/io"
 )
 
 type archiveExtractor struct {
@@ -22,7 +25,7 @@ type archiveExtractor struct {
 func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveExtractor) error {
 	handler := func(ctx context.Context, file archiver.File) error {
 		extractedFilePath := filepath.Join(dest, file.NameInArchive)
-		os.MkdirAll(filepath.Dir(extractedFilePath), 0755)
+		os.MkdirAll(filepath.Dir(extractedFilePath), constants.DEFAULT_PERMS)
 
 		af, err := file.Open()
 		if err != nil {
@@ -40,7 +43,7 @@ func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveE
 		}
 		defer out.Close()
 
-		_, err = io.Copy(out, af)
+		_, err = io.Copy(out, ctxio.NewReader(ctx, af))
 		if err != nil {
 			return err
 		}
@@ -56,7 +59,7 @@ func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveE
 
 	err := extractor.ex.Extract(ctx, input, nil, handler)
 	if err != nil {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			// delete all the files that were extracted
 			if osErr := os.RemoveAll(dest); osErr != nil {
 				logger.LogError(osErr, false, logger.ERROR)
@@ -64,8 +67,8 @@ func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveE
 			return err
 		}
 		return fmt.Errorf(
-			"error %d: unable to extract zip file %s, more info => %v",
-			constants.OS_ERROR,
+			"error %d: unable to extract zip file %s, more info => %w",
+			errs.OS_ERROR,
 			src,
 			err,
 		)
@@ -74,14 +77,12 @@ func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveE
 }
 
 func getExtractor(f *os.File, src string) (*archiveExtractor, error) {
-	format, archiveReader, err := archiver.Identify(
-		filepath.Base(src),
-		f,
-	)
-	if err == archiver.ErrNoMatch {
+	filename := filepath.Base(src)
+	format, archiveReader, err := archiver.Identify(filename, f)
+	if errors.Is(err, archiver.ErrNoMatch) {
 		return nil, fmt.Errorf(
 			"error %d: %s is not a valid zip file",
-			constants.OS_ERROR,
+			errs.OS_ERROR,
 			src,
 		)
 	} else if err != nil {
@@ -99,8 +100,8 @@ func getExtractor(f *os.File, src string) (*archiveExtractor, error) {
 	ex, ok := format.(archiver.Extractor)
 	if !ok {
 		return nil, fmt.Errorf(
-			"error %d: unable to extract zip file %s, more info => %v",
-			constants.UNEXPECTED_ERROR,
+			"error %d: unable to extract zip file %s, more info => %w",
+			errs.UNEXPECTED_ERROR,
 			src,
 			err,
 		)
@@ -118,7 +119,7 @@ func getErrIfNotIgnored(src string, ignoreIfMissing bool) error {
 	} 
 	return fmt.Errorf(
 		"error %d: %s does not exist",
-		constants.OS_ERROR,
+		errs.OS_ERROR,
 		src,
 	)
 }
@@ -135,7 +136,7 @@ func ExtractFiles(ctx context.Context, src, dest string, ignoreIfMissing bool) e
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: unable to open zip file %s",
-			constants.OS_ERROR,
+			errs.OS_ERROR,
 			src,
 		)
 	}

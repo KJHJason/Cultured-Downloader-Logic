@@ -2,6 +2,7 @@ package kemono
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/PuerkitoBio/goquery"
@@ -25,17 +27,16 @@ func getKemonoPartyHeaders() map[string]string {
 }
 
 func parseCreatorHtml(res *http.Response, url string) (string, error) {
-	// parse the response
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	res.Body.Close()
 	if err != nil {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			return "", err
 		}
 
 		err = fmt.Errorf(
-			"kemono error %d, failed to parse response body when getting creator name from Kemono Party at %s\nmore info => %v",
-			constants.HTML_ERROR,
+			"kemono error %d, failed to parse response body when getting creator name from Kemono at %s\nmore info => %w",
+			errs.HTML_ERROR,
 			url,
 			err,
 		)
@@ -46,8 +47,8 @@ func parseCreatorHtml(res *http.Response, url string) (string, error) {
 	creatorName := doc.Find("span[itemprop=name]").Text()
 	if creatorName == "" {
 		return "", fmt.Errorf(
-			"kemono error %d, failed to get creator name from Kemono Party at %s\nplease report this issue",
-			constants.HTML_ERROR,
+			"kemono error %d, failed to get creator name from Kemono at %s\nplease report this issue",
+			errs.HTML_ERROR,
 			url,
 		)
 	}
@@ -99,7 +100,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 	return creatorName, nil
 }
 
-func getPostDetails(post *KemonoPostToDl, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
@@ -130,15 +131,15 @@ func getPostDetails(post *KemonoPostToDl, downloadPath string, dlOptions *Kemono
 		return nil, nil, err
 	}
 
-	postsToDl, gdriveLinks := processMultipleJson(KemonoJson{&resJson}, downloadPath, dlOptions)
+	postsToDl, gdriveLinks := processMultipleJson(KemonoJson{&resJson}, dlOptions)
 	return postsToDl, gdriveLinks, nil
 }
 
-func GetMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
+func GetMultiplePosts(posts []*KemonoPostToDl, dlOptions *KemonoDlOptions) (urlsToDownload []*httpfuncs.ToDownload, gdriveLinks []*httpfuncs.ToDownload, errSlice []error) {
 	var maxConcurrency int
 	postLen := len(posts)
-	if postLen > API_MAX_CONCURRENT {
-		maxConcurrency = API_MAX_CONCURRENT
+	if postLen > constants.KEMONO_MAX_CONCURRENT {
+		maxConcurrency = constants.KEMONO_MAX_CONCURRENT
 	} else {
 		maxConcurrency = postLen
 	}
@@ -147,7 +148,7 @@ func GetMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *K
 	resChan := make(chan *kemonoChanRes, postLen)
 
 	baseMsg := "Getting post details from Kemono [%d/" + fmt.Sprintf("%d]...", postLen)
-	progress := dlOptions.PostProgBar
+	progress := dlOptions.MainProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -161,8 +162,10 @@ func GetMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *K
 			postLen,
 		),
 	)
+	progress.SetToProgressBar()
 	progress.UpdateMax(postLen)
 	progress.Start()
+	defer progress.SnapshotTask()
 	for _, post := range posts {
 		wg.Add(1)
 		go func(post *KemonoPostToDl) {
@@ -173,7 +176,7 @@ func GetMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *K
 			}()
 
 			queue <- struct{}{}
-			toDownload, foundGdriveLinks, err := getPostDetails(post, downloadPath, dlOptions)
+			toDownload, foundGdriveLinks, err := getPostDetails(post, dlOptions)
 			if err != nil {
 				resChan <- &kemonoChanRes{
 					err: err,
@@ -191,32 +194,34 @@ func GetMultiplePosts(posts []*KemonoPostToDl, downloadPath string, dlOptions *K
 	close(resChan)
 
 	hasError, hasCancelled := false, false
-	var urlsToDownload, gdriveLinks []*httpfuncs.ToDownload
 	for res := range resChan {
-		if res.err != nil {
-			if res.err == context.Canceled {
-				hasCancelled = true
-				continue
-			}
-			if !hasError {
-				hasError = true
-			}
-			logger.LogError(res.err, false, logger.ERROR)
+		if res.err == nil {
+			urlsToDownload = append(urlsToDownload, res.urlsToDownload...)
+			gdriveLinks = append(gdriveLinks, res.gdriveLinks...)
 			continue
 		}
-		urlsToDownload = append(urlsToDownload, res.urlsToDownload...)
-		gdriveLinks = append(gdriveLinks, res.gdriveLinks...)
+
+		if errors.Is(res.err, context.Canceled) {
+			hasCancelled = true
+			continue
+		}
+		if !hasError {
+			hasError = true
+		}
+		logger.LogError(res.err, false, logger.ERROR)
+		errSlice = append(errSlice, res.err)
 	}
 
 	if hasCancelled {
+		dlOptions.CancelCtx()
 		progress.StopInterrupt("Stopped getting post details from Kemono...")
-		return nil, nil
+		return nil, nil, errSlice
 	}
 	progress.Stop(hasError)
-	return urlsToDownload, gdriveLinks
+	return urlsToDownload, gdriveLinks, errSlice
 }
 
-func getCreatorPosts(creator *KemonoCreatorToDl, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func getCreatorPosts(creator *KemonoCreatorToDl, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(creator.PageNum)
 	if err != nil {
@@ -261,7 +266,7 @@ func getCreatorPosts(creator *KemonoCreatorToDl, downloadPath string, dlOptions 
 			break
 		}
 
-		posts, gdriveLinks := processMultipleJson(resJson, downloadPath, dlOptions)
+		posts, gdriveLinks := processMultipleJson(resJson, dlOptions)
 		postsToDl = append(postsToDl, posts...)
 		gdriveLinksToDl = append(gdriveLinksToDl, gdriveLinks...)
 
@@ -273,42 +278,53 @@ func getCreatorPosts(creator *KemonoCreatorToDl, downloadPath string, dlOptions 
 	return postsToDl, gdriveLinksToDl, nil
 }
 
-func GetMultipleCreators(creators []*KemonoCreatorToDl, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
-	var errSlice []error
-	var urlsToDownload, gdriveLinks []*httpfuncs.ToDownload
+func GetMultipleCreators(creators []*KemonoCreatorToDl, dlOptions *KemonoDlOptions) (urlsToDownload []*httpfuncs.ToDownload, gdriveLinks []*httpfuncs.ToDownload, errSlice []error) {
 	creatorLen := len(creators)
-	baseMsg := "Getting creator's posts from Kemono [%d/" + fmt.Sprintf("%d]...", creatorLen)
-	progress := dlOptions.GetCreatorPostProgBar
-	progress.UpdateBaseMsg(baseMsg)
-	progress.UpdateSuccessMsg(
-		fmt.Sprintf(
-			"Finished getting %d creator's posts from Kemono!",
-			creatorLen,
-		),
-	)
-	progress.UpdateErrorMsg(
-		fmt.Sprintf(
-			"Something went wrong while getting %d creator's posts from Kemono.\nPlease refer to the logs for more details.",
-			creatorLen,
-		),
-	)
-	progress.UpdateMax(creatorLen)
+
+	progress := dlOptions.MainProgBar
+	if creatorLen > 1 {
+		baseMsg := "Getting creator's posts from Kemono [%d/" + fmt.Sprintf("%d]...", creatorLen)
+		progress.UpdateBaseMsg(baseMsg)
+		progress.UpdateSuccessMsg(
+			fmt.Sprintf(
+				"Finished getting %d creator's posts from Kemono!",
+				creatorLen,
+			),
+		)
+		progress.UpdateErrorMsg(
+			fmt.Sprintf(
+				"Something went wrong while getting %d creator's posts from Kemono.\nPlease refer to the logs for more details.",
+				creatorLen,
+			),
+		)
+		progress.SetToProgressBar()
+		progress.UpdateMax(creatorLen)
+	} else {
+		progress.SetToSpinner()
+		creatorId := creators[0].CreatorId
+		progress.UpdateBaseMsg("Getting posts from creator, " + creatorId + ", on Kemono...")
+		progress.UpdateSuccessMsg("Finished getting posts from creator, " + creatorId + ", on Kemono!")
+		progress.UpdateErrorMsg("Something went wrong while getting posts from creator, " + creatorId + ", on Kemono.\nPlease refer to the logs for more details.")
+	}
 	progress.Start()
+	defer progress.SnapshotTask()
+
 	hasCancelled := false
 	for _, creator := range creators {
-		postsToDl, gdriveLinksToDl, err := getCreatorPosts(creator, downloadPath, dlOptions)
-		if err != nil {
-			errSlice = append(errSlice, err)
-			if err == context.Canceled {
-				hasCancelled = true
-				progress.StopInterrupt("Stopped getting creator's posts from Kemono...")
-				break
-			}
+		postsToDl, gdriveLinksToDl, err := getCreatorPosts(creator, dlOptions)
+		if err == nil {
+			urlsToDownload = append(urlsToDownload, postsToDl...)
+			gdriveLinks = append(gdriveLinks, gdriveLinksToDl...)
 			progress.Increment()
 			continue
 		}
-		urlsToDownload = append(urlsToDownload, postsToDl...)
-		gdriveLinks = append(gdriveLinks, gdriveLinksToDl...)
+
+		if errors.Is(err, context.Canceled) {
+			hasCancelled = true
+			progress.StopInterrupt("Stopped getting creator's posts from Kemono...")
+			break
+		}
+		errSlice = append(errSlice, err)
 		progress.Increment()
 	}
 
@@ -318,10 +334,11 @@ func GetMultipleCreators(creators []*KemonoCreatorToDl, downloadPath string, dlO
 		logger.LogErrors(false, logger.ERROR, errSlice...)
 	}
 	if hasCancelled {
-		return nil, nil
+		dlOptions.CancelCtx()
+		return nil, nil, errSlice
 	}
 	progress.Stop(hasErr)
-	return urlsToDownload, gdriveLinks
+	return urlsToDownload, gdriveLinks, errSlice
 }
 
 func processFavCreator(resJson KemonoFavCreatorJson) []*KemonoCreatorToDl {
@@ -336,13 +353,13 @@ func processFavCreator(resJson KemonoFavCreatorJson) []*KemonoCreatorToDl {
 	return creators
 }
 
-func GetFavourites(downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func GetFavourites(dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, []error) {
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)
 	params := map[string]string{
 		"type": "artist",
 	}
 	reqArgs := &httpfuncs.RequestArgs{
-		Url:         constants.KEMONO_API_URL + "/v1/account/favorites",
+		Url:         constants.KEMONO_API_URL + "/account/favorites",
 		Method:      "GET",
 		Cookies:     dlOptions.SessionCookies,
 		Params:      params,
@@ -355,12 +372,12 @@ func GetFavourites(downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfunc
 	}
 	res, err := httpfuncs.CallRequest(reqArgs)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, []error{err}
 	}
 
 	var creatorResJson KemonoFavCreatorJson
 	if err := httpfuncs.LoadJsonFromResponse(res, &creatorResJson); err != nil {
-		return nil, nil, err
+		return nil, nil, []error{err}
 	}
 	artistToDl := processFavCreator(creatorResJson)
 
@@ -369,18 +386,18 @@ func GetFavourites(downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfunc
 	}
 	res, err = httpfuncs.CallRequest(reqArgs)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, []error{err}
 	}
 
 	var postResJson KemonoJson
 	if err := httpfuncs.LoadJsonFromResponse(res, &postResJson); err != nil {
-		return nil, nil, err
+		return nil, nil, []error{err}
 	}
-	urlsToDownload, gdriveLinks := processMultipleJson(postResJson, downloadPath, dlOptions)
+	urlsToDownload, gdriveLinks := processMultipleJson(postResJson, dlOptions)
 
-	creatorsPost, creatorsGdrive := GetMultipleCreators(artistToDl, downloadPath, dlOptions)
+	creatorsPost, creatorsGdrive, errSlice := GetMultipleCreators(artistToDl, dlOptions)
 	urlsToDownload = append(urlsToDownload, creatorsPost...)
 	gdriveLinks = append(gdriveLinks, creatorsGdrive...)
 
-	return urlsToDownload, gdriveLinks, nil
+	return urlsToDownload, gdriveLinks, errSlice
 }

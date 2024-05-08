@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 type ConfigFile struct {
@@ -49,8 +49,8 @@ func saveConfig(newDownloadPath, configFilePath string) error {
 	configFile, err := json.MarshalIndent(config, "", "    ")
 	if err != nil {
 		return fmt.Errorf(
-			"error %d: failed to marshal config file, more info => %v",
-			constants.JSON_ERROR,
+			"error %d: failed to marshal config file, more info => %w",
+			errs.JSON_ERROR,
 			err,
 		)
 	}
@@ -58,8 +58,8 @@ func saveConfig(newDownloadPath, configFilePath string) error {
 	err = os.WriteFile(configFilePath, configFile, 0666)
 	if err != nil {
 		return fmt.Errorf(
-			"error %d: failed to write config file, more info => %v",
-			constants.OS_ERROR,
+			"error %d: failed to write config file, more info => %w",
+			errs.OS_ERROR,
 			err,
 		)
 	}
@@ -72,8 +72,8 @@ func overwriteConfig(newDownloadPath, configFilePath string) error {
 	configFile, err := os.ReadFile(configFilePath)
 	if err != nil {
 		return fmt.Errorf(
-			"error %d: failed to read config file, more info => %v",
-			constants.OS_ERROR,
+			"error %d: failed to read config file, more info => %w",
+			errs.OS_ERROR,
 			err,
 		)
 	}
@@ -82,8 +82,8 @@ func overwriteConfig(newDownloadPath, configFilePath string) error {
 	err = json.Unmarshal(configFile, &config)
 	if err != nil {
 		return fmt.Errorf(
-			"error %d: failed to unmarshal config file, more info => %v",
-			constants.JSON_ERROR,
+			"error %d: failed to unmarshal config file, more info => %w",
+			errs.JSON_ERROR,
 			err,
 		)
 	}
@@ -97,8 +97,8 @@ func overwriteConfig(newDownloadPath, configFilePath string) error {
 	configFile, err = json.MarshalIndent(config, "", "    ")
 	if err != nil {
 		return fmt.Errorf(
-			"error %d: failed to marshal config file, more info => %v",
-			constants.JSON_ERROR,
+			"error %d: failed to marshal config file, more info => %w",
+			errs.JSON_ERROR,
 			err,
 		)
 	}
@@ -106,8 +106,8 @@ func overwriteConfig(newDownloadPath, configFilePath string) error {
 	err = os.WriteFile(configFilePath, configFile, 0666)
 	if err != nil {
 		return fmt.Errorf(
-			"error %d: failed to write config file, more info => %v",
-			constants.OS_ERROR,
+			"error %d: failed to write config file, more info => %w",
+			errs.OS_ERROR,
 			err,
 		)
 	}
@@ -119,7 +119,7 @@ func SetDefaultDownloadPath(newDownloadPath string) error {
 	if !PathExists(newDownloadPath) {
 		return fmt.Errorf(
 			"error %d: download path does not exist, please create the directory and try again", 
-			constants.INPUT_ERROR,
+			errs.INPUT_ERROR,
 		)
 	}
 

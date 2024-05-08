@@ -5,13 +5,12 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/models"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
-func processIllustratorPostJson(resJson *models.PixivWebIllustratorJson, pageNum string, pixivDlOptions *PixivWebDlOptions) ([]string, error) {
+func processIllustratorPostJson(resJson *IllustratorJson, pageNum string, pixivDlOptions *PixivWebDlOptions) ([]string, error) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, err
@@ -65,16 +64,16 @@ func processIllustratorPostJson(resJson *models.PixivWebIllustratorJson, pageNum
 
 // Process the artwork details JSON and returns a map of urls
 // with its file path or a Ugoira struct (One of them will be null depending on the artworkType)
-func processArtworkJson(res *http.Response, artworkType int64, postDownloadDir string) ([]*httpfuncs.ToDownload, *models.Ugoira, error) {
+func processArtworkJson(res *http.Response, artworkType int64, postDownloadDir string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
 	if artworkType == UGOIRA {
-		var ugoiraJson models.PixivWebArtworkUgoiraJson
+		var ugoiraJson ArtworkUgoiraJson
 		if err := httpfuncs.LoadJsonFromResponse(res, &ugoiraJson); err != nil {
 			return nil, nil, err
 		}
 
 		ugoiraMap := ugoiraJson.Body
 		originalUrl := ugoiraMap.OriginalSrc
-		ugoiraInfo := &models.Ugoira{
+		ugoiraInfo := &ugoira.Ugoira{
 			Url:      originalUrl,
 			FilePath: postDownloadDir,
 			Frames:   ugoira.MapDelaysToFilename(ugoiraMap.Frames),
@@ -82,7 +81,7 @@ func processArtworkJson(res *http.Response, artworkType int64, postDownloadDir s
 		return nil, ugoiraInfo, nil
 	}
 
-	var artworkUrls models.PixivWebArtworkJson
+	var artworkUrls ArtworkJson
 	if err := httpfuncs.LoadJsonFromResponse(res, &artworkUrls); err != nil {
 		return nil, nil, err
 	}
@@ -99,7 +98,7 @@ func processArtworkJson(res *http.Response, artworkType int64, postDownloadDir s
 
 // Process the tag search results JSON and returns a slice of artwork IDs
 func processTagJsonResults(res *http.Response) ([]string, error) {
-	var pixivTagJson models.PixivTag
+	var pixivTagJson PixivTag
 	if err := httpfuncs.LoadJsonFromResponse(res, &pixivTagJson); err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package kemono
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -44,10 +45,11 @@ func getKemonoFilePath(postFolderPath, childDir, fileName string) string {
 	return filepath.Join(postFolderPath, childDir, fileName)
 }
 
-func processJson(resJson *MainKemonoJson, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
+func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
 	var creatorNamePath string
 	if creatorName, err := getCreatorName(resJson.Service, resJson.User, dlOptions); err != nil {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
+			dlOptions.CancelCtx()
 			return nil, nil
 		}
 		err = fmt.Errorf(
@@ -63,7 +65,7 @@ func processJson(resJson *MainKemonoJson, downloadPath string, dlOptions *Kemono
 	}
 
 	postFolderPath := iofuncs.GetPostFolder(
-		filepath.Join(downloadPath, "Kemono-Party", resJson.Service),
+		filepath.Join(dlOptions.BaseDownloadDirPath, resJson.Service),
 		creatorNamePath,
 		resJson.Id,
 		resJson.Title,
@@ -112,10 +114,10 @@ func processJson(resJson *MainKemonoJson, downloadPath string, dlOptions *Kemono
 	return toDownload, gdriveLinks
 }
 
-func processMultipleJson(resJson KemonoJson, downloadPath string, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
+func processMultipleJson(resJson KemonoJson, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
 	var urlsToDownload, gdriveLinks []*httpfuncs.ToDownload
 	for _, post := range resJson {
-		toDownload, foundGdriveLinks := processJson(post, downloadPath, dlOptions)
+		toDownload, foundGdriveLinks := processJson(post, dlOptions)
 		urlsToDownload = append(urlsToDownload, toDownload...)
 		gdriveLinks = append(gdriveLinks, foundGdriveLinks...)
 	}

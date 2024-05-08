@@ -1,4 +1,4 @@
-package models
+package ugoira
 
 type Ugoira struct {
 	Url      string

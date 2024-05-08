@@ -3,15 +3,14 @@ package api
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/fatih/color"
 )
 
 // Returns a readable format of the website name for the user
@@ -32,7 +31,7 @@ func GetReadableSiteStr(site string) string {
 		panic(
 			fmt.Errorf(
 				"error %d: invalid website, %q, in GetReadableSiteStr",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 				site,
 			),
 		)
@@ -74,7 +73,7 @@ func ValidatePageNumInput(baseSliceLen int, pageNums []string, errMsgs []string)
 		} else {
 			msgBody = fmt.Errorf(
 				"error %d: %d URLS provided, but %d page numbers provided\nPlease provide the same number of page numbers as the number of URLs",
-				constants.INPUT_ERROR,
+				errs.INPUT_ERROR,
 				baseSliceLen,
 				pageNumsLen,
 			)
@@ -86,20 +85,11 @@ func ValidatePageNumInput(baseSliceLen int, pageNums []string, errMsgs []string)
 	if !valid {
 		return fmt.Errorf(
 			"error %d: invalid page number format: %q\nPlease follow the format, \"1-10\", as an example.\nNote that \"0\" are not accepted! E.g. \"0-9\" is invalid",
-			constants.INPUT_ERROR,
+			errs.INPUT_ERROR,
 			outlier,
 		)
 	}
 	return nil
-}
-
-// Similar to ValidatePageNumInput, but will call os.Exit(1) if the page nums are not in the correct format
-func ValidatePageNumInputPanic(baseSliceLen int, pageNums []string, errMsgs []string) {
-	err := ValidatePageNumInput(baseSliceLen, pageNums, errMsgs)
-	if err != nil {
-		color.Red(err.Error())
-		os.Exit(1)
-	}
 }
 
 // Returns the min, max, hasMaxNum, and error from the given string of "num" or "min-max"
@@ -123,7 +113,7 @@ func GetMinMaxFromStr(numStr string) (int, int, bool, error) {
 		if err != nil {
 			return -1, -1, false, fmt.Errorf(
 				"error %d: failed to convert min page number, %q, to int",
-				constants.UNEXPECTED_ERROR,
+				errs.UNEXPECTED_ERROR,
 				nums[0],
 			)
 		}
@@ -132,7 +122,7 @@ func GetMinMaxFromStr(numStr string) (int, int, bool, error) {
 		if err != nil {
 			return -1, -1, false, fmt.Errorf(
 				"error %d: failed to convert max page number, %q, to int",
-				constants.UNEXPECTED_ERROR,
+				errs.UNEXPECTED_ERROR,
 				nums[1],
 			)
 		}
@@ -145,7 +135,7 @@ func GetMinMaxFromStr(numStr string) (int, int, bool, error) {
 		if err != nil {
 			return -1, -1, false, fmt.Errorf(
 				"error %d: failed to convert page number, %q, to int",
-				constants.UNEXPECTED_ERROR,
+				errs.UNEXPECTED_ERROR,
 				numStr,
 			)
 		}
@@ -154,18 +144,18 @@ func GetMinMaxFromStr(numStr string) (int, int, bool, error) {
 	return min, max, true, nil
 }
 
-// Checks if the given str is in the given arr and returns a boolean
-func SliceContains(arr []string, str string) bool {
+type SliceTypes interface {
+	~string | ~int
+}
+
+// Checks if the given target is in the given arr and returns a boolean
+func SliceContains[T SliceTypes](arr []T, target T) bool {
 	for _, el := range arr {
-		if el == str {
+		if el == target {
 			return true
 		}
 	}
 	return false
-}
-
-type SliceTypes interface {
-	~string | ~int
 }
 
 // Removes duplicates from the given slice.
@@ -220,13 +210,21 @@ func ValidateStrArgs(str string, slice, errMsgs []string) (string, error) {
 // Otherwise, os.Exit(1) is called after printing error messages for the user to read
 func ValidateIds(args []string) error {
 	for _, id := range args {
-		if !constants.NUMBER_REGEX.MatchString(id) {
-			return fmt.Errorf(
-				"error %d: invalid ID, %q, must be a number",
-				constants.INPUT_ERROR,
-				id,
-			)
+		err := ValidateId(id)
+		if err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+func ValidateId(arg string) error {
+	if !constants.NUMBER_REGEX.MatchString(arg) {
+		return fmt.Errorf(
+			"error %d: invalid ID, %q, must be a number",
+			errs.INPUT_ERROR,
+			arg,
+		)
 	}
 	return nil
 }

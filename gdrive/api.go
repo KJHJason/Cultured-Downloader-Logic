@@ -1,12 +1,14 @@
 package gdrive
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"strconv"
 	"net/http"
+	"strconv"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
@@ -20,9 +22,9 @@ func censorApiKeyFromStr(str string) string {
 func getFailedApiCallErr(res *http.Response) error {
 	requestUrl := res.Request.URL.String()
 	return fmt.Errorf(
-		"error while fetching from GDrive...\n" +
-			"GDrive URL (May not be accurate): https://drive.google.com/file/d/%s/view?usp=sharing\n" +
-				"Status Code: %s\nURL: %s",
+		"error while fetching from GDrive...\n"+
+			"GDrive URL (May not be accurate): https://drive.google.com/file/d/%s/view?usp=sharing\n"+
+			"Status Code: %s\nURL: %s",
 		httpfuncs.GetLastPartOfUrl(requestUrl),
 		res.Status,
 		censorApiKeyFromStr(requestUrl),
@@ -30,7 +32,7 @@ func getFailedApiCallErr(res *http.Response) error {
 }
 
 // Returns the contents of the given GDrive folder using Google's GDrive package
-func (gdrive *GDrive) getFolderContentsWithClient(folderId, logPath string, config *configs.Config) ([]*GdriveFileToDl, error) {
+func (gdrive *GDrive) getFolderContentsWithClient(folderId string) ([]*GdriveFileToDl, error) {
 	var pageToken string
 	var gdriveFiles []*GdriveFileToDl
 	for {
@@ -38,11 +40,11 @@ func (gdrive *GDrive) getFolderContentsWithClient(folderId, logPath string, conf
 		if pageToken != "" {
 			action = action.PageToken(pageToken)
 		}
-		files, err := action.Do()
+		files, err := action.Context(gdrive.ctx).Do()
 		if err != nil {
 			return nil, fmt.Errorf(
-				"gdrive error %d: failed to get folder contents with ID of %s, more info => %v",
-				constants.CONNECTION_ERROR,
+				"gdrive error %d: failed to get folder contents with ID of %s, more info => %w",
+				errs.CONNECTION_ERROR,
 				folderId,
 				err,
 			)
@@ -69,7 +71,7 @@ func (gdrive *GDrive) getFolderContentsWithClient(folderId, logPath string, conf
 }
 
 // Returns the contents of the given GDrive folder using API calls to GDrive API v3
-func (gdrive *GDrive) getFolderContentsWithApi(folderId, logPath string, config *configs.Config) ([]*GdriveFileToDl, error) {
+func (gdrive *GDrive) getFolderContentsWithApi(folderId string, config *configs.Config) ([]*GdriveFileToDl, error) {
 	params := map[string]string{
 		"key":    gdrive.apiKey,
 		"q":      fmt.Sprintf("'%s' in parents", folderId),
@@ -92,12 +94,17 @@ func (gdrive *GDrive) getFolderContentsWithApi(folderId, logPath string, config 
 				UserAgent: config.UserAgent,
 				Http2:     !HTTP3_SUPPORTED,
 				Http3:     HTTP3_SUPPORTED,
+				Context:   gdrive.ctx,
 			},
 		)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return nil, err
+			}
+
 			return nil, fmt.Errorf(
-				"gdrive error %d: failed to get folder contents with ID of %s, more info => %v",
-				constants.CONNECTION_ERROR,
+				"gdrive error %d: failed to get folder contents with ID of %s, more info => %w",
+				errs.CONNECTION_ERROR,
 				folderId,
 				err,
 			)
@@ -106,7 +113,7 @@ func (gdrive *GDrive) getFolderContentsWithApi(folderId, logPath string, config 
 		if res.StatusCode != 200 {
 			return nil, fmt.Errorf(
 				"gdrive error %d: failed to get folder contents with ID of %s, more info => %s",
-				constants.RESPONSE_ERROR,
+				errs.RESPONSE_ERROR,
 				folderId,
 				res.Status,
 			)
@@ -140,9 +147,9 @@ func (gdrive *GDrive) getFolderContentsWithApi(folderId, logPath string, config 
 // Returns the contents of the given GDrive folder
 func (gdrive *GDrive) GetFolderContents(folderId, logPath string, config *configs.Config) ([]*GdriveFileToDl, error) {
 	if gdrive.client != nil {
-		return gdrive.getFolderContentsWithClient(folderId, logPath, config)
+		return gdrive.getFolderContentsWithClient(folderId)
 	}
-	return gdrive.getFolderContentsWithApi(folderId, logPath, config)
+	return gdrive.getFolderContentsWithApi(folderId, config)
 }
 
 // Retrieves the content of a GDrive folder and its subfolders recursively using GDrive API v3
@@ -183,12 +190,17 @@ func (gdrive *GDrive) getFileDetailsWithAPI(gdriveInfo *GDriveToDl, config *conf
 			UserAgent: config.UserAgent,
 			Http2:     !HTTP3_SUPPORTED,
 			Http3:     HTTP3_SUPPORTED,
+			Context:   gdrive.ctx,
 		},
 	)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
+
 		return nil, fmt.Errorf(
-			"gdrive error %d: failed to get file details with ID of %s, more info => %v",
-			constants.CONNECTION_ERROR,
+			"gdrive error %d: failed to get file details with ID of %s, more info => %w",
+			errs.CONNECTION_ERROR,
 			gdriveInfo.Id,
 			err,
 		)
@@ -214,12 +226,12 @@ func (gdrive *GDrive) getFileDetailsWithAPI(gdriveInfo *GDriveToDl, config *conf
 }
 
 // Retrieves the file details of the given GDrive file using Google's GDrive package
-func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl, config *configs.Config) (*GdriveFileToDl, error) {
-	file, err := gdrive.client.Files.Get(gdriveInfo.Id).Fields(GDRIVE_FILE_FIELDS).Do()
+func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl) (*GdriveFileToDl, error) {
+	file, err := gdrive.client.Files.Get(gdriveInfo.Id).Fields(GDRIVE_FILE_FIELDS).Context(gdrive.ctx).Do()
 	if err != nil {
 		return nil, fmt.Errorf(
-			"gdrive error %d: failed to get file details with ID of %s, more info => %v",
-			constants.CONNECTION_ERROR,
+			"gdrive error %d: failed to get file details with ID of %s, more info => %w",
+			errs.CONNECTION_ERROR,
 			gdriveInfo.Id,
 			err,
 		)
@@ -237,7 +249,7 @@ func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl, config *c
 // Retrieves the file details of the given GDrive file using GDrive API v3
 func (gdrive *GDrive) GetFileDetails(gdriveInfo *GDriveToDl, config *configs.Config) (*GdriveFileToDl, error) {
 	if gdrive.client != nil {
-		return gdrive.getFileDetailsWithClient(gdriveInfo, config)
-	} 
+		return gdrive.getFileDetailsWithClient(gdriveInfo)
+	}
 	return gdrive.getFileDetailsWithAPI(gdriveInfo, config)
 }

@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,18 +11,20 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
 const LogSuffix = "\n\n"
+
 var (
-	MainLogger *Logger
-	logFolder = filepath.Join(iofuncs.APP_PATH, "logs")
+	MainLogger  *Logger
+	logFolder   = filepath.Join(iofuncs.APP_PATH, "logs")
 	logFilePath = filepath.Join(
 		logFolder,
 		fmt.Sprintf(
-			"cultured_downloader-logic_v%s_%s.log", 
-			constants.VERSION, 
+			"cultured_downloader-logic_v%s_%s.log",
+			constants.VERSION,
 			time.Now().Format("2006-01-02"),
 		),
 	)
@@ -34,14 +37,14 @@ func init() {
 	// will be opened througout the program's runtime
 	// hence, there is no need to call f.Close() at the end of this function
 	f, fileErr := os.OpenFile(
-		logFilePath, 
-		os.O_WRONLY|os.O_CREATE|os.O_APPEND, 
+		logFilePath,
+		os.O_WRONLY|os.O_CREATE|os.O_APPEND,
 		0666,
 	)
 	if fileErr != nil {
 		fileErr = fmt.Errorf(
-			"error opening log file: %v\nlog file path: %s", 
-			fileErr, 
+			"error opening log file: %w\nlog file path: %s",
+			fileErr,
 			logFilePath,
 		)
 		panic(fileErr)
@@ -75,7 +78,7 @@ func LogError(err error, exit bool, level int) {
 		return
 	}
 
-	MainLogger.LogBasedOnLvl(level, err.Error() + LogSuffix)
+	MainLogger.LogBasedOnLvl(level, err.Error()+LogSuffix)
 	if exit {
 		os.Exit(1)
 	}
@@ -87,7 +90,7 @@ func LogError(err error, exit bool, level int) {
 func LogErrors(exit bool, level int, errs ...error) bool {
 	var hasCanceled bool
 	for _, err := range errs {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			if !hasCanceled {
 				hasCanceled = true
 			}
@@ -101,18 +104,20 @@ func LogErrors(exit bool, level int, errs ...error) bool {
 // Uses the thread-safe LogError() function to log a channel of errors
 //
 // Also returns if any errors were due to context.Canceled which is caused by Ctrl + C.
-func LogChanErrors(exit bool, level int, errChan chan error) bool {
+func LogChanErrors(exit bool, level int, errChan chan error) (bool, []error) {
 	var hasCanceled bool
+	errSlice := make([]error, 0, len(errChan))
 	for err := range errChan {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			if !hasCanceled {
 				hasCanceled = true
 			}
 			continue
 		}
 		LogError(err, exit, level)
+		errSlice = append(errSlice, err)
 	}
-	return hasCanceled
+	return hasCanceled, errSlice
 }
 
 var logToPathMux sync.Mutex
@@ -127,8 +132,8 @@ func LogMessageToPath(message, filePath string, level int) {
 		logFileContents, err := os.ReadFile(filePath)
 		if err != nil {
 			err = fmt.Errorf(
-				"error %d: failed to read log file, more info => %v\nfile path: %s\noriginal message: %s",
-				constants.OS_ERROR,
+				"error %d: failed to read log file, more info => %w\nfile path: %s\noriginal message: %s",
+				errs.OS_ERROR,
 				err,
 				filePath,
 				message,
@@ -150,8 +155,8 @@ func LogMessageToPath(message, filePath string, level int) {
 	)
 	if err != nil {
 		err = fmt.Errorf(
-			"error %d: failed to open log file, more info => %v\nfile path: %s\noriginal message: %s",
-			constants.OS_ERROR,
+			"error %d: failed to open log file, more info => %w\nfile path: %s\noriginal message: %s",
+			errs.OS_ERROR,
 			err,
 			filePath,
 			message,

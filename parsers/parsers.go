@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
@@ -48,7 +49,7 @@ func GetSessionCookieInfo(site string) *cookieInfo {
 		panic(
 			fmt.Errorf(
 				"error %d, invalid site, %q in GetSessionCookieInfo",
-				constants.DEV_ERROR,
+				errs.DEV_ERROR,
 				site,
 			),
 		)
@@ -90,8 +91,8 @@ func readTxtCookieLine(line string, cookieArgs *cookieInfoArgs) (*http.Cookie, e
 		if err != nil {
 			// should never happen but just in case
 			return nil, fmt.Errorf(
-				"error %d: parsing cookie expiration time, %q, more info => %v",
-				constants.UNEXPECTED_ERROR,
+				"error %d: parsing cookie expiration time, %q, more info => %w",
+				errs.UNEXPECTED_ERROR,
 				expiresUnixStr,
 				err,
 			)
@@ -113,8 +114,8 @@ func ParseTxtCookieFile(f *os.File, filePath string, cookieArgs *cookieInfoArgs)
 				break
 			}
 			return nil, fmt.Errorf(
-				"error %d: reading cookie file at %s, more info => %v",
-				constants.OS_ERROR,
+				"error %d: reading cookie file at %s, more info => %w",
+				errs.OS_ERROR,
 				filePath,
 				err,
 			)
@@ -175,8 +176,8 @@ func ParseJsonCookieFile(f *os.File, filePath string, cookieArgs *cookieInfoArgs
 	var exportedCookies ExportedCookies
 	if err := json.NewDecoder(f).Decode(&exportedCookies); err != nil {
 		return nil, fmt.Errorf(
-			"error %d: failed to decode cookie JSON file at %s, more info => %v",
-			constants.JSON_ERROR,
+			"error %d: failed to decode cookie JSON file at %s, more info => %w",
+			errs.JSON_ERROR,
 			filePath,
 			err,
 		)
@@ -193,8 +194,8 @@ func ParseJsonCookie(cookieBytes []byte, cookieArgs *cookieInfoArgs) ([]*http.Co
 	var exportedCookies ExportedCookies
 	if err := json.Unmarshal(cookieBytes, &exportedCookies); err != nil {
 		return nil, fmt.Errorf(
-			"error %d: failed to decode cookie JSON, more info => %v",
-			constants.JSON_ERROR,
+			"error %d: failed to decode cookie JSON, more info => %w",
+			errs.JSON_ERROR,
 			err,
 		)
 	}

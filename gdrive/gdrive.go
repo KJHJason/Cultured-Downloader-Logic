@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -17,17 +18,17 @@ const (
 
 	// file fields to fetch from GDrive API:
 	// https://developers.google.com/drive/api/v3/reference/files
-	GDRIVE_FILE_FIELDS = "id,name,size,mimeType,md5Checksum"
+	GDRIVE_FILE_FIELDS   = "id,name,size,mimeType,md5Checksum"
 	GDRIVE_FOLDER_FIELDS = "nextPageToken,files(id,name,size,mimeType,md5Checksum)"
 )
 
 var (
-	API_KEY_REGEX       = regexp.MustCompile(fmt.Sprintf(`^%s$`, BASE_API_KEY_REGEX_STR))
+	API_KEY_REGEX = regexp.MustCompile(fmt.Sprintf(`^%s$`, BASE_API_KEY_REGEX_STR))
 	API_KEY_PARAM_REGEX = regexp.MustCompile(fmt.Sprintf(`key=%s`, BASE_API_KEY_REGEX_STR))
 )
 
 type GDrive struct {
-	Ctx                context.Context
+	ctx                context.Context
 	cancel             context.CancelFunc
 	apiKey             string         // Google Drive API key to use
 	client             *drive.Service // Google Drive service client (if using service account credentials)
@@ -37,40 +38,52 @@ type GDrive struct {
 	maxDownloadWorkers int            // max concurrent workers for downloading files
 }
 
-func NewGDrive(ctx context.Context, timeout, dlTimeout, maxDlWorkers int) *GDrive {
-	ctx, cancel := context.WithCancel(ctx)
-	return &GDrive{
-		Ctx:                ctx,
+// Returns a GDrive structure with the given API key and max download workers
+func GetNewGDrive(ctx context.Context, apiKey, userAgent string, jsonBytes []byte, maxDownloadWorkers int) (*GDrive, error) {
+	if len(jsonBytes) == 0 && apiKey != "" {
+		return nil, fmt.Errorf(
+			"gdrive error %d: Both Google Drive API key and service account credentials file cannot be used at the same time",
+			errs.DEV_ERROR,
+		)
+	} else if len(jsonBytes) == 0 && apiKey == "" {
+		return nil, fmt.Errorf(
+			"gdrive error %d: Google Drive API key or service account credentials file is required",
+			errs.DEV_ERROR,
+		)
+	}
+
+	gdriveCtx, cancel := context.WithCancel(ctx)
+	gdrive := &GDrive{
+		ctx:                gdriveCtx,
 		cancel:             cancel,
 		apiUrl:             "https://www.googleapis.com/drive/v3/files",
-		timeout:            timeout,
-		downloadTimeout:    dlTimeout,
-		maxDownloadWorkers: maxDlWorkers,
+		timeout:            15,
+		downloadTimeout:    900, // 15 minutes
+		maxDownloadWorkers: maxDownloadWorkers,
 	}
-}
+	if apiKey != "" {
+		gdrive.apiKey = apiKey
+		gdriveIsValid, err := gdrive.GDriveKeyIsValid(userAgent)
+		if err != nil {
+			return nil, err
+		} else if !gdriveIsValid {
+			return nil, fmt.Errorf(
+				"gdrive error %d: Google Drive API key is invalid",
+				errs.INPUT_ERROR,
+			)
+		}
+		return gdrive, nil
+	} 
 
-func (gdrive *GDrive) SetContext(ctx context.Context) {
-	gdrive.Ctx, gdrive.cancel = context.WithCancel(ctx)
-}
-
-func (gdrive *GDrive) SetApiKey(apiKey string) {
-	gdrive.apiKey = apiKey
-}
-
-func (gdrive *GDrive) SetClient(client *drive.Service) {
-	gdrive.client = client
-}
-
-func (gdrive *GDrive) SetTimeout(timeout int) {
-	gdrive.timeout = timeout
-}
-
-func (gdrive *GDrive) SetDownloadTimeout(downloadTimeout int) {
-	gdrive.downloadTimeout = downloadTimeout
-}
-
-func (gdrive *GDrive) SetMaxDownloadWorkers(maxDownloadWorkers int) {
-	gdrive.maxDownloadWorkers = maxDownloadWorkers
+	srv, err := drive.NewService(ctx, option.WithCredentialsJSON(jsonBytes))
+	if err != nil {
+		return nil, fmt.Errorf(
+			"unable to access Drive API due to %w",
+			err,
+		)
+	}
+	gdrive.client = srv
+	return gdrive, nil
 }
 
 // Checks if the given Google Drive API key is valid
@@ -96,8 +109,8 @@ func (gdrive *GDrive) GDriveKeyIsValid(userAgent string) (bool, error) {
 	)
 	if err != nil {
 		return false, fmt.Errorf(
-			"gdrive error %d: failed to check if Google Drive API key is valid, more info => %v",
-			constants.CONNECTION_ERROR,
+			"gdrive error %d: failed to check if Google Drive API key is valid, more info => %w",
+			errs.CONNECTION_ERROR,
 			err,
 		)
 	}

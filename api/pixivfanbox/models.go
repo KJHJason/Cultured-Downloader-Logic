@@ -1,6 +1,8 @@
 package pixivfanbox
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type CreatorPaginatedPostsJson struct {
 	Body []string `json:"body"`
