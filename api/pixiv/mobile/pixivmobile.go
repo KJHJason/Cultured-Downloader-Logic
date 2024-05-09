@@ -50,6 +50,7 @@ type PixivMobile struct {
 func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, cancelFunc context.CancelFunc) (*PixivMobile, error) {
 	pixivMobile := &PixivMobile{
 		ctx:          ctx,
+		cancel:       cancelFunc,
 		refreshToken: refreshToken,
 		apiTimeout:   timeout,
 	}
