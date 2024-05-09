@@ -179,8 +179,8 @@ var (
 
 	PIXIV_FANBOX_CREATOR_URL_REGEX1 = regexp.MustCompile(
 		fmt.Sprintf(
-			// ^https://(?P<id>[\w&.-]+)\.fanbox\.cc(?:/)?(?:posts)?(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?$
-			`^https://(?P<id>[\w&.-]+)\.fanbox\.cc(?:/)?(?:posts)?%s$`,
+			// ^https://(?P<id>[\w&.-]+)\.fanbox\.cc(?:/(?:posts)?)?(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?$
+			`^https://(?P<id>[\w&.-]+)\.fanbox\.cc(?:/(?:posts)?)?%s$`,
 			PAGE_NUM_WITH_INPUT_REGEX_STR,
 		),
 	)
