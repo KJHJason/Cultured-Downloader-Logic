@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	API_KEY_REGEX = regexp.MustCompile(fmt.Sprintf(`^%s$`, BASE_API_KEY_REGEX_STR))
+	API_KEY_REGEX       = regexp.MustCompile(fmt.Sprintf(`^%s$`, BASE_API_KEY_REGEX_STR))
 	API_KEY_PARAM_REGEX = regexp.MustCompile(fmt.Sprintf(`key=%s`, BASE_API_KEY_REGEX_STR))
 )
 
@@ -43,12 +43,12 @@ func GetNewGDrive(ctx context.Context, apiKey, userAgent string, jsonBytes []byt
 	if len(jsonBytes) == 0 && apiKey != "" {
 		return nil, fmt.Errorf(
 			"gdrive error %d: Both Google Drive API key and service account credentials file cannot be used at the same time",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	} else if len(jsonBytes) == 0 && apiKey == "" {
 		return nil, fmt.Errorf(
 			"gdrive error %d: Google Drive API key or service account credentials file is required",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	}
 
@@ -69,11 +69,11 @@ func GetNewGDrive(ctx context.Context, apiKey, userAgent string, jsonBytes []byt
 		} else if !gdriveIsValid {
 			return nil, fmt.Errorf(
 				"gdrive error %d: Google Drive API key is invalid",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 			)
 		}
 		return gdrive, nil
-	} 
+	}
 
 	srv, err := drive.NewService(ctx, option.WithCredentialsJSON(jsonBytes))
 	if err != nil {
@@ -110,7 +110,7 @@ func (gdrive *GDrive) GDriveKeyIsValid(userAgent string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf(
 			"gdrive error %d: failed to check if Google Drive API key is valid, more info => %w",
-			errs.CONNECTION_ERROR,
+			cdlerrors.CONNECTION_ERROR,
 			err,
 		)
 	}

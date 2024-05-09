@@ -10,7 +10,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
@@ -72,7 +72,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 		},
 	)
 	if err != nil || res.StatusCode != 200 {
-		errCode := errs.CONNECTION_ERROR
+		errCode := cdlerrors.CONNECTION_ERROR
 		if err == nil {
 			errCode = res.StatusCode
 		}
@@ -151,7 +151,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 			Cookies:        dlOptions.SessionCookies,
 			UseHttp3:       false,
 
-			SupportRange:    constants.FANTIA_RANGE_SUPPORTED,
+			SupportRange: constants.FANTIA_RANGE_SUPPORTED,
 			ProgressBarInfo: &progress.ProgressBarInfo{
 				MainProgressBar:      dlOptions.MainProgBar,
 				DownloadProgressBars: dlOptions.DownloadProgressBars,
@@ -206,7 +206,7 @@ func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
 	if err != nil {
 		err = fmt.Errorf(
 			"fantia error %d, failed to parse response body when getting posts for Fantia Fanclub %s, more info => %w",
-			errs.HTML_ERROR,
+			cdlerrors.HTML_ERROR,
 			creatorId,
 			err,
 		)
@@ -227,7 +227,7 @@ func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
 	if hasHtmlErr {
 		return nil, fmt.Errorf(
 			"fantia error %d, failed to get href attribute for Fantia Fanclub %s, please report this issue",
-			errs.HTML_ERROR,
+			cdlerrors.HTML_ERROR,
 			creatorId,
 		)
 	}
@@ -271,7 +271,7 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 			if err != context.Canceled {
 				err = fmt.Errorf(
 					"fantia error %d: failed to get creator's pages for %s, more info => %w",
-					errs.CONNECTION_ERROR,
+					cdlerrors.CONNECTION_ERROR,
 					url,
 					err,
 				)
@@ -305,7 +305,7 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 		panic(
 			fmt.Errorf(
 				"fantia error %d: creator IDs and page numbers slices are not the same length",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 			),
 		)
 	}

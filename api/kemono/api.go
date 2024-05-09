@@ -10,7 +10,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/PuerkitoBio/goquery"
@@ -36,7 +36,7 @@ func parseCreatorHtml(res *http.Response, url string) (string, error) {
 
 		err = fmt.Errorf(
 			"kemono error %d, failed to parse response body when getting creator name from Kemono at %s\nmore info => %w",
-			errs.HTML_ERROR,
+			cdlerrors.HTML_ERROR,
 			url,
 			err,
 		)
@@ -48,7 +48,7 @@ func parseCreatorHtml(res *http.Response, url string) (string, error) {
 	if creatorName == "" {
 		return "", fmt.Errorf(
 			"kemono error %d, failed to get creator name from Kemono at %s\nplease report this issue",
-			errs.HTML_ERROR,
+			cdlerrors.HTML_ERROR,
 			url,
 		)
 	}

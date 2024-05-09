@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
@@ -44,7 +44,7 @@ func (gdrive *GDrive) getFolderContentsWithClient(folderId string) ([]*GdriveFil
 		if err != nil {
 			return nil, fmt.Errorf(
 				"gdrive error %d: failed to get folder contents with ID of %s, more info => %w",
-				errs.CONNECTION_ERROR,
+				cdlerrors.CONNECTION_ERROR,
 				folderId,
 				err,
 			)
@@ -104,7 +104,7 @@ func (gdrive *GDrive) getFolderContentsWithApi(folderId string, config *configs.
 
 			return nil, fmt.Errorf(
 				"gdrive error %d: failed to get folder contents with ID of %s, more info => %w",
-				errs.CONNECTION_ERROR,
+				cdlerrors.CONNECTION_ERROR,
 				folderId,
 				err,
 			)
@@ -113,7 +113,7 @@ func (gdrive *GDrive) getFolderContentsWithApi(folderId string, config *configs.
 		if res.StatusCode != 200 {
 			return nil, fmt.Errorf(
 				"gdrive error %d: failed to get folder contents with ID of %s, more info => %s",
-				errs.RESPONSE_ERROR,
+				cdlerrors.RESPONSE_ERROR,
 				folderId,
 				res.Status,
 			)
@@ -200,7 +200,7 @@ func (gdrive *GDrive) getFileDetailsWithAPI(gdriveInfo *GDriveToDl, config *conf
 
 		return nil, fmt.Errorf(
 			"gdrive error %d: failed to get file details with ID of %s, more info => %w",
-			errs.CONNECTION_ERROR,
+			cdlerrors.CONNECTION_ERROR,
 			gdriveInfo.Id,
 			err,
 		)
@@ -231,7 +231,7 @@ func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl) (*GdriveF
 	if err != nil {
 		return nil, fmt.Errorf(
 			"gdrive error %d: failed to get file details with ID of %s, more info => %w",
-			errs.CONNECTION_ERROR,
+			cdlerrors.CONNECTION_ERROR,
 			gdriveInfo.Id,
 			err,
 		)

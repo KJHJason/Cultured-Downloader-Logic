@@ -5,21 +5,21 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 	"sync"
+	"time"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/chromedp/chromedp"
 )
 
 const (
 	captchaBtnSelector = `//input[@name='commit']`
-	timeout = 45
+	timeout            = 45
 )
 
 var (
@@ -28,10 +28,10 @@ var (
 )
 
 type CaptchaOptions interface {
-	GetConfigs()        *configs.Config
+	GetConfigs() *configs.Config
 	GetSessionCookies() []*http.Cookie
-	GetNotifier()       notify.Notifier
-	GetContext()        context.Context
+	GetNotifier() notify.Notifier
+	GetContext() context.Context
 }
 
 // Automatically try to solve the reCAPTCHA for Fantia.
@@ -54,7 +54,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		chromedp.WaitVisible(`//h3[@class='mb-15'][contains(text(), 'ファンティアでクリエイターを応援しよう！')]`, chromedp.BySearch),
 	}
 
-	allocCtx, cancel = context.WithTimeout(allocCtx, timeout * time.Second)
+	allocCtx, cancel = context.WithTimeout(allocCtx, timeout*time.Second)
 	if err := api.ExecuteChromedpActions(allocCtx, cancel, actions...); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return err
@@ -63,15 +63,15 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		var fmtErr error
 		if errors.Is(err, context.DeadlineExceeded) {
 			fmtErr = fmt.Errorf(
-				"fantia error %d: failed to solve reCAPTCHA for %s due to timeout, please visit %s with the SAME session cookies to solve it manually and try again", 
-				errs.CAPTCHA_ERROR,
+				"fantia error %d: failed to solve reCAPTCHA for %s due to timeout, please visit %s with the SAME session cookies to solve it manually and try again",
+				cdlerrors.CAPTCHA_ERROR,
 				readableSite,
 				constants.FANTIA_RECAPTCHA_URL,
 			)
 		} else {
 			fmtErr = fmt.Errorf(
 				"fantia error %d: failed to solve reCAPTCHA for %s, more info => %w",
-				errs.CAPTCHA_ERROR, 
+				cdlerrors.CAPTCHA_ERROR,
 				readableSite,
 				err,
 			)
@@ -88,19 +88,19 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 	captchaMu.Lock()
 	defer captchaMu.Unlock()
 
-	if solvedTime != nil && (time.Since(*solvedTime) < timeout * time.Second) {
+	if solvedTime != nil && (time.Since(*solvedTime) < timeout*time.Second) {
 		// if the reCAPTCHA was solved within the last few seconds,
 		// then skip solving it to avoid solving it multiple times
 		return nil
 	}
 
 	if len(captchaOptions.GetSessionCookies()) == 0 {
-		// Since reCAPTCHA is per session for Fantia, the program shall avoid 
+		// Since reCAPTCHA is per session for Fantia, the program shall avoid
 		// trying to solve it and alert the user to login or create a Fantia account.
 		// It is possible that the reCAPTCHA is per IP address for guests, but I'm not sure.
 		return fmt.Errorf(
 			"fantia error %d: reCAPTCHA detected but you are not logged in. Please login to Fantia and try again",
-			errs.CAPTCHA_ERROR,
+			cdlerrors.CAPTCHA_ERROR,
 		)
 	}
 	return autoSolveCaptcha(captchaOptions)

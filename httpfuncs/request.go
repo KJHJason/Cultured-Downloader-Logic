@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/quic-go/quic-go/http3"
 )
 
@@ -138,7 +138,7 @@ func CallRequest(reqArgs *RequestArgs) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf(
 			"error %d: unable to create a new request, more info => %w",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 			err,
 		)
 	}
@@ -160,7 +160,7 @@ func CheckInternetConnection() error {
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: unable to connect to the internet, more info => %w",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 			err,
 		)
 	}

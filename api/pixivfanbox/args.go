@@ -10,9 +10,9 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
@@ -40,7 +40,7 @@ func (pf *PixivFanboxDl) ValidateArgs() error {
 		if !creatorIdRegex.MatchString(creatorId) {
 			return fmt.Errorf(
 				"error %d: invalid Pixiv Fanbox creator ID %q, must be alphanumeric with underscores, dashes, or periods",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 				creatorId,
 			)
 		}
@@ -118,7 +118,7 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 	if pf.Notifier == nil {
 		return fmt.Errorf(
 			"pixiv fanbox error %d: Notifier cannot be nil",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	}
 
@@ -128,7 +128,7 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 		if !iofuncs.DirPathExists(pf.BaseDownloadDirPath) {
 			return fmt.Errorf(
 				"pixiv fanbox error %d, download path does not exist or is not a directory, please create the directory and try again",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 			)
 		}
 		pf.BaseDownloadDirPath = filepath.Join(pf.BaseDownloadDirPath, constants.PIXIV_FANBOX_TITLE)
@@ -150,7 +150,7 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 	if pf.MainProgBar == nil {
 		return fmt.Errorf(
 			"pixiv fanbox error %d, main progress bar is nil",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	}
 

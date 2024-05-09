@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 var (
@@ -20,7 +20,7 @@ func getAppPath() string {
 		panic(
 			fmt.Errorf(
 				"error %d, failed to get user's config directory: %w",
-				errs.OS_ERROR,
+				cdlerrors.OS_ERROR,
 				err,
 			),
 		)

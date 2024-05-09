@@ -8,8 +8,8 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
@@ -98,19 +98,19 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		} else {
 			p.SessionCookies = []*http.Cookie{cookie}
 		}
-	} 
+	}
 
 	if p.MainProgBar == nil {
 		return fmt.Errorf(
 			"pixiv web error %d, main progress bar is nil",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	}
 
 	if p.Notifier == nil {
 		return fmt.Errorf(
 			"pixiv web error %d: Notifier cannot be nil",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	}
 
@@ -121,7 +121,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		[]string{
 			fmt.Sprintf(
 				"pixiv web error %d: Sort order %s is not allowed",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 				p.SortOrder,
 			),
 		},
@@ -137,7 +137,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		[]string{
 			fmt.Sprintf(
 				"pixiv web error %d: Search order %s is not allowed",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 				p.SearchMode,
 			),
 		},
@@ -153,7 +153,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		[]string{
 			fmt.Sprintf(
 				"pixiv web error %d: Rating order %s is not allowed",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 				p.RatingMode,
 			),
 		},
@@ -169,7 +169,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		[]string{
 			fmt.Sprintf(
 				"pixiv web error %d: Artwork type %s is not allowed",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 				p.ArtworkType,
 			),
 		},

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
 	"path/filepath"
+	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -87,7 +87,7 @@ type FantiaDlOptions struct {
 	csrfMu    sync.Mutex
 	CsrfToken string
 
-	Notifier       notify.Notifier
+	Notifier notify.Notifier
 
 	// Progress indicators
 	MainProgBar          progress.ProgressBar
@@ -144,7 +144,7 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"fantia error %d, failed to get CSRF token from Fantia: %w",
-			errs.CONNECTION_ERROR,
+			cdlerrors.CONNECTION_ERROR,
 			err,
 		)
 	}
@@ -153,7 +153,7 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	if res.StatusCode != 200 {
 		return fmt.Errorf(
 			"fantia error %d, failed to get CSRF token from Fantia: %w",
-			errs.RESPONSE_ERROR,
+			cdlerrors.RESPONSE_ERROR,
 			err,
 		)
 	}
@@ -163,7 +163,7 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"fantia error %d, failed to parse response body when getting CSRF token from Fantia: %w",
-			errs.HTML_ERROR,
+			cdlerrors.HTML_ERROR,
 			err,
 		)
 	}
@@ -176,7 +176,7 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 		}
 		return fmt.Errorf(
 			"fantia error %d, failed to get CSRF Token from Fantia, please report this issue!\nHTML: %s",
-			errs.HTML_ERROR,
+			cdlerrors.HTML_ERROR,
 			docHtml,
 		)
 	} else {
@@ -196,7 +196,7 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 	if f.Notifier == nil {
 		return fmt.Errorf(
 			"fantia error %d, notifier is nil",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	}
 
@@ -206,7 +206,7 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		if !iofuncs.DirPathExists(f.BaseDownloadDirPath) {
 			return fmt.Errorf(
 				"fantia error %d, download path does not exist or is not a directory, please create the directory and try again",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 			)
 		}
 		f.BaseDownloadDirPath = filepath.Join(f.BaseDownloadDirPath, constants.FANTIA_TITLE)
@@ -215,7 +215,7 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 	if f.MainProgBar == nil {
 		return fmt.Errorf(
 			"fantia error %d, main progress bar is nil",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	}
 

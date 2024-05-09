@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 type ConfigFile struct {
@@ -50,7 +50,7 @@ func saveConfig(newDownloadPath, configFilePath string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: failed to marshal config file, more info => %w",
-			errs.JSON_ERROR,
+			cdlerrors.JSON_ERROR,
 			err,
 		)
 	}
@@ -59,7 +59,7 @@ func saveConfig(newDownloadPath, configFilePath string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: failed to write config file, more info => %w",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			err,
 		)
 	}
@@ -73,7 +73,7 @@ func overwriteConfig(newDownloadPath, configFilePath string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: failed to read config file, more info => %w",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			err,
 		)
 	}
@@ -83,7 +83,7 @@ func overwriteConfig(newDownloadPath, configFilePath string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: failed to unmarshal config file, more info => %w",
-			errs.JSON_ERROR,
+			cdlerrors.JSON_ERROR,
 			err,
 		)
 	}
@@ -98,7 +98,7 @@ func overwriteConfig(newDownloadPath, configFilePath string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: failed to marshal config file, more info => %w",
-			errs.JSON_ERROR,
+			cdlerrors.JSON_ERROR,
 			err,
 		)
 	}
@@ -107,7 +107,7 @@ func overwriteConfig(newDownloadPath, configFilePath string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: failed to write config file, more info => %w",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			err,
 		)
 	}
@@ -118,8 +118,8 @@ func overwriteConfig(newDownloadPath, configFilePath string) error {
 func SetDefaultDownloadPath(newDownloadPath string) error {
 	if !PathExists(newDownloadPath) {
 		return fmt.Errorf(
-			"error %d: download path does not exist, please create the directory and try again", 
-			errs.INPUT_ERROR,
+			"error %d: download path does not exist, please create the directory and try again",
+			cdlerrors.INPUT_ERROR,
 		)
 	}
 

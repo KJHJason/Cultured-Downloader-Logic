@@ -2,12 +2,12 @@ package logger
 
 import (
 	"fmt"
-	"log"
 	"io"
+	"log"
 	"os"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 const (
@@ -24,15 +24,16 @@ type Logger struct {
 }
 
 var loggerPrefix = fmt.Sprintf("Cultured Downloader Logic V%s ", constants.VERSION)
+
 func NewLogger(out io.Writer) *Logger {
 	if out == nil {
 		out = os.Stdout
 	}
 
 	return &Logger{
-		infoLogger:  log.New(out, loggerPrefix + "[INFO]: ", log.Ldate|log.Ltime),
-		errorLogger: log.New(out, loggerPrefix + "[ERROR]: ", log.Ldate|log.Ltime),
-		debugLogger: log.New(out, loggerPrefix + "[DEBUG]: ", log.Ldate|log.Ltime),
+		infoLogger:  log.New(out, loggerPrefix+"[INFO]: ", log.Ldate|log.Ltime),
+		errorLogger: log.New(out, loggerPrefix+"[ERROR]: ", log.Ldate|log.Ltime),
+		debugLogger: log.New(out, loggerPrefix+"[DEBUG]: ", log.Ldate|log.Ltime),
 	}
 }
 
@@ -44,9 +45,9 @@ func (l *Logger) SetOutput(w io.Writer) {
 
 // LogBasedOnLvlf logs a message based on the log level passed in
 //
-// You can use this function to log a message with a format string
+// # You can use this function to log a message with a format string
 //
-// However, please ensure that the 
+// However, please ensure that the
 // lvl passed in is valid (i.e. INFO, ERROR, or DEBUG), otherwise this function will panic
 func (l *Logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
 	switch lvl {
@@ -60,7 +61,7 @@ func (l *Logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
 		panic(
 			fmt.Sprintf(
 				"error %d: invalid log level %d passed to LogBasedOnLvl()",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 				lvl,
 			),
 		)
@@ -69,7 +70,7 @@ func (l *Logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
 
 // LogBasedOnLvl is a wrapper for LogBasedOnLvlf() that takes a string instead of a format string
 //
-// However, please ensure that the 
+// However, please ensure that the
 // lvl passed in is valid (i.e. INFO, ERROR, or DEBUG), otherwise this function will panic
 func (l *Logger) LogBasedOnLvl(lvl int, msg string) {
 	l.LogBasedOnLvlf(lvl, msg)

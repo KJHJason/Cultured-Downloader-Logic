@@ -15,7 +15,7 @@ import (
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/extractor"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -45,7 +45,7 @@ func ConvertUgoira(ugoiraInfo *Ugoira, imagesFolderPath string, ugoiraFfmpeg *Ug
 	if !api.SliceContains(UGOIRA_ACCEPTED_EXT, outputExt) {
 		return fmt.Errorf(
 			"pixiv error %d: Output extension %s is not allowed for ugoira conversion",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 			outputExt,
 		)
 	}
@@ -82,7 +82,7 @@ func ConvertUgoira(ugoiraInfo *Ugoira, imagesFolderPath string, ugoiraFfmpeg *Ug
 		}
 		return fmt.Errorf(
 			"pixiv error %d: failed to convert ugoira to %s, more info => %w",
-			errs.CMD_ERROR,
+			cdlerrors.CMD_ERROR,
 			ugoiraFfmpeg.outputPath,
 			err,
 		)
@@ -167,7 +167,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 			}
 			err := fmt.Errorf(
 				"pixiv error %d: failed to unzip file %s, more info => %w",
-				errs.OS_ERROR,
+				cdlerrors.OS_ERROR,
 				zipFilePath,
 				err,
 			)
@@ -209,12 +209,12 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 }
 
 type UgoiraArgs struct {
-	context       context.Context
-	cancel        context.CancelFunc
-	UseMobileApi  bool
-	ToDownload    []*Ugoira
-	Cookies       []*http.Cookie
-	MainProgBar   progress.ProgressBar
+	context      context.Context
+	cancel       context.CancelFunc
+	UseMobileApi bool
+	ToDownload   []*Ugoira
+	Cookies      []*http.Cookie
+	MainProgBar  progress.ProgressBar
 }
 
 func (u *UgoiraArgs) SetContext(ctx context.Context) {

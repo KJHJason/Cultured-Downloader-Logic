@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 type RequestArgs struct {
 	// Main Request Options
-	Method string
-	Url string
+	Method  string
+	Url     string
 	Timeout int
 
 	// Additional Request Options
@@ -28,7 +28,7 @@ type RequestArgs struct {
 	Http3 bool
 
 	// Check status will check the status code of the response for 200 OK.
-	// If the status code is not 200 OK, it will retry several times and 
+	// If the status code is not 200 OK, it will retry several times and
 	// if the status code is still not 200 OK, it will return an error.
 	// Otherwise, it will return the response regardless of the status code.
 	CheckStatus bool
@@ -66,7 +66,7 @@ func (args *RequestArgs) validateHttp3Arg() {
 		panic(
 			fmt.Errorf(
 				"error %d: http2 and http3 cannot be enabled at the same time",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 			),
 		)
 	}
@@ -116,7 +116,7 @@ func (args *RequestArgs) ValidateArgs() {
 		panic(
 			fmt.Errorf(
 				"error %d: method cannot be empty",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 			),
 		)
 	}
@@ -125,7 +125,7 @@ func (args *RequestArgs) ValidateArgs() {
 		panic(
 			fmt.Errorf(
 				"error %d: url cannot be empty",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 			),
 		)
 	}
@@ -134,7 +134,7 @@ func (args *RequestArgs) ValidateArgs() {
 		panic(
 			fmt.Errorf(
 				"error %d: timeout cannot be negative",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 			),
 		)
 	} else if args.Timeout == 0 {

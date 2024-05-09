@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
@@ -55,7 +55,7 @@ func writeDelays(ugoiraInfo *Ugoira, imagesFolderPath string) (string, []string,
 	if err != nil {
 		return "", nil, fmt.Errorf(
 			"pixiv error %d: failed to create delays.txt, more info => %w",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			err,
 		)
 	}
@@ -65,7 +65,7 @@ func writeDelays(ugoiraInfo *Ugoira, imagesFolderPath string) (string, []string,
 	if err != nil {
 		return "", nil, fmt.Errorf(
 			"pixiv error %d: failed to write delay string to delays.txt, more info => %w",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			err,
 		)
 	}
@@ -111,9 +111,9 @@ func getFlagsForWebmAndMp4(outputExt string, ugoiraQuality int) []string {
 
 	args = append(
 		args,
-		"-pix_fmt", "yuv420p",     // set the pixel format to yuv420p
-		"-c:v",     encoding,      // video codec
-		"-vsync",   "passthrough", // Prevents frame dropping
+		"-pix_fmt", "yuv420p", // set the pixel format to yuv420p
+		"-c:v", encoding, // video codec
+		"-vsync", "passthrough", // Prevents frame dropping
 	)
 	return args
 }
@@ -141,13 +141,13 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 	if err != nil {
 		return nil, fmt.Errorf(
 			"pixiv error %d: failed to generate palette for ugoira gif, more info => %w",
-			errs.CMD_ERROR,
+			cdlerrors.CMD_ERROR,
 			err,
 		)
 	}
 	return []string{
 		"-loop", "0", // loop the gif
-		"-i",    palettePath,
+		"-i", palettePath,
 		"-filter_complex", "paletteuse",
 	}, nil
 }
@@ -155,11 +155,11 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 func getFfmpegFlagsForUgoira(options *ffmpegOptions, imagesFolderPath string) ([]string, error) {
 	// FFmpeg flags: https://www.ffmpeg.org/ffmpeg.html
 	args := []string{
-		"-y",                                 // overwrite output file if it exists
-		"-an",                                // disable audio
-		"-f",    "concat",                    // input is a concat file
-		"-safe", "0",                         // allow absolute paths in the concat file
-		"-i",    options.concatDelayFilePath, // input file
+		"-y",           // overwrite output file if it exists
+		"-an",          // disable audio
+		"-f", "concat", // input is a concat file
+		"-safe", "0", // allow absolute paths in the concat file
+		"-i", options.concatDelayFilePath, // input file
 	}
 	switch options.outputExt {
 	case ".webm", ".mp4":
@@ -189,7 +189,7 @@ func getFfmpegFlagsForUgoira(options *ffmpegOptions, imagesFolderPath string) ([
 		panic(
 			fmt.Sprintf(
 				"pixiv error %d: Output extension %v is not allowed for ugoira conversion",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 				options.outputExt,
 			),
 		)

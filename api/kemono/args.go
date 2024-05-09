@@ -9,9 +9,9 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
@@ -92,7 +92,7 @@ func (k *KemonoDl) ValidateArgs() error {
 	if !valid {
 		return fmt.Errorf(
 			"kemono error %d: invalid creator URL found for kemono: %s",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 			outlier,
 		)
 	}
@@ -102,7 +102,7 @@ func (k *KemonoDl) ValidateArgs() error {
 		return fmt.Errorf(
 			fmt.Sprintf(
 				"kemono error %d: invalid post URL found for kemono: %s",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 				outlier,
 			),
 		)
@@ -151,7 +151,7 @@ type KemonoDlOptions struct {
 	SessionCookieId string
 	SessionCookies  []*http.Cookie
 
-	Notifier       notify.Notifier
+	Notifier notify.Notifier
 
 	// Progress indicators
 	MainProgBar          progress.ProgressBar
@@ -187,7 +187,7 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 	if k.Notifier == nil {
 		return fmt.Errorf(
 			"kemono error %d, notifier is nil",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	}
 
@@ -197,7 +197,7 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 		if !iofuncs.DirPathExists(k.BaseDownloadDirPath) {
 			return fmt.Errorf(
 				"kemono error %d, download path does not exist or is not a directory, please create the directory and try again",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 			)
 		}
 		k.BaseDownloadDirPath = filepath.Join(k.BaseDownloadDirPath, constants.KEMONO_TITLE)
@@ -206,7 +206,7 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 	if k.MainProgBar == nil {
 		return fmt.Errorf(
 			"kemono error %d, main progress bar is nil",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 	}
 
@@ -224,7 +224,7 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 	} else {
 		return fmt.Errorf(
 			"kemono error %d: session cookie is required",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 		)
 	}
 

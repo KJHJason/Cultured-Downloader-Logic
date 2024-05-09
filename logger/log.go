@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
@@ -133,7 +133,7 @@ func LogMessageToPath(message, filePath string, level int) {
 		if err != nil {
 			err = fmt.Errorf(
 				"error %d: failed to read log file, more info => %w\nfile path: %s\noriginal message: %s",
-				errs.OS_ERROR,
+				cdlerrors.OS_ERROR,
 				err,
 				filePath,
 				message,
@@ -156,7 +156,7 @@ func LogMessageToPath(message, filePath string, level int) {
 	if err != nil {
 		err = fmt.Errorf(
 			"error %d: failed to open log file, more info => %w\nfile path: %s\noriginal message: %s",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			err,
 			filePath,
 			message,

@@ -2,9 +2,9 @@ package httpfuncs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
-	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -19,7 +19,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
@@ -40,7 +40,7 @@ func getFullFilePath(res *http.Response, filePath string) (string, error) {
 		// should never happen but just in case
 		return "", fmt.Errorf(
 			"error %d: failed to unescape URL, more info => %w\nurl: %s",
-			errs.UNEXPECTED_ERROR,
+			cdlerrors.UNEXPECTED_ERROR,
 			err,
 			res.Request.URL.String(),
 		)
@@ -130,7 +130,7 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: failed to open/create file, more info => %w\nfile path: %s",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			err,
 			filePath,
 		)
@@ -182,7 +182,7 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 				logger.LogError(
 					fmt.Errorf(
 						"error %d: failed to remove file %s, more info => %w",
-						errs.OS_ERROR,
+						cdlerrors.OS_ERROR,
 						filePath,
 						fileErr,
 					),
@@ -251,7 +251,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		if err != context.Canceled {
 			err = fmt.Errorf(
 				"error %d: failed to download file, more info => %w\nurl: %s",
-				errs.DOWNLOAD_ERROR,
+				cdlerrors.DOWNLOAD_ERROR,
 				err,
 				reqArgs.Url,
 			)

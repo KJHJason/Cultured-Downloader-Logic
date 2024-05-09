@@ -1,14 +1,14 @@
 package fantia
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -79,8 +79,8 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 	if postJson.Redirect != "" {
 		if postJson.Redirect != "/recaptcha" {
 			return nil, nil, fmt.Errorf(
-				"fantia error %d: unknown redirect url, %q", 
-				errs.UNEXPECTED_ERROR, 
+				"fantia error %d: unknown redirect url, %q",
+				cdlerrors.UNEXPECTED_ERROR,
 				postJson.Redirect,
 			)
 		}
@@ -134,10 +134,10 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 }
 
 type processIllustArgs struct {
-	res          *http.Response
-	postId       string
-	postIdsLen   int
-	msgSuffix    string
+	res        *http.Response
+	postId     string
+	postIdsLen int
+	msgSuffix  string
 }
 
 // Process the JSON response to get the urls to download

@@ -9,7 +9,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
@@ -87,7 +87,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 				} else {
 					errChan <- fmt.Errorf(
 						"pixiv fanbox error %d: failed to get post details for %s, more info => %w",
-						errs.CONNECTION_ERROR,
+						cdlerrors.CONNECTION_ERROR,
 						url,
 						err,
 					)
@@ -95,7 +95,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 			} else if res.StatusCode != 200 {
 				errChan <- fmt.Errorf(
 					"pixiv fanbox error %d: failed to get post details for %s due to a %s response",
-					errs.CONNECTION_ERROR,
+					cdlerrors.CONNECTION_ERROR,
 					url,
 					res.Status,
 				)
@@ -118,7 +118,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 		var errCtxCancelled bool
 		if errCtxCancelled, errSlice = logger.LogChanErrors(false, logger.ERROR, errChan); errCtxCancelled {
 			hasCancelled = true
-		} 
+		}
 	}
 	if hasCancelled {
 		dlOptions.CancelCtx()
@@ -161,7 +161,7 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 			err = fmt.Errorf(
 				"%s %d: failed to get creator's posts for %s due to %v",
 				errPrefix,
-				errs.CONNECTION_ERROR,
+				cdlerrors.CONNECTION_ERROR,
 				creatorId,
 				err,
 			)
@@ -170,7 +170,7 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 			err = fmt.Errorf(
 				"%s %d: failed to get creator's posts for %s due to %s response",
 				errPrefix,
-				errs.RESPONSE_ERROR,
+				cdlerrors.RESPONSE_ERROR,
 				creatorId,
 				res.Status,
 			)
@@ -197,7 +197,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 		if errors.Is(err, context.Canceled) {
 			return nil, nil, true
 		}
-		return nil, []error{err}, false 
+		return nil, []error{err}, false
 	}
 
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
@@ -301,7 +301,7 @@ func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) []err
 		panic(
 			fmt.Errorf(
 				"pixiv fanbox error %d: length of creator IDs and page numbers are not equal",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 			),
 		)
 	}

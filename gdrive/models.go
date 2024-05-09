@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 type GDriveFile struct {
@@ -46,7 +46,7 @@ func (f GdriveFileToDl) GetIntSize() int64 {
 		panic(
 			fmt.Errorf(
 				"gdrive error %d: failed to convert the size of the file to int64, more info => %w",
-				errs.UNEXPECTED_ERROR,
+				cdlerrors.UNEXPECTED_ERROR,
 				err,
 			),
 		)

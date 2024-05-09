@@ -5,12 +5,12 @@ import (
 	"regexp"
 	"runtime"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 const (
 	DEBUG_MODE                     = false // Will save a copy of all JSON response from the API
-	DEFAULT_PERMS                  = 0755 // Owner: rwx, Group: rx, Others: rx
+	DEFAULT_PERMS                  = 0755  // Owner: rwx, Group: rx, Others: rx
 	VERSION                        = "1.1.0"
 	MAX_RETRY_DELAY                = 3
 	MIN_RETRY_DELAY                = 1
@@ -25,7 +25,7 @@ const (
 	PAGE_NUM_IDX_NAME             = "pageNum"
 	PAGE_NUM_WITH_INPUT_REGEX_STR = `(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?`
 
-	DOWNLOAD_TIMEOUT   = 25 * 60 // 25 minutes in seconds as downloads
+	DOWNLOAD_TIMEOUT = 25 * 60 // 25 minutes in seconds as downloads
 	// can take quite a while for large files (especially for Pixiv)
 	// However, the average max file size on these platforms is around 300MB.
 	// Note: Fantia do have a max file size per post of 3GB if one paid extra for it.
@@ -74,10 +74,10 @@ const (
 	ATTACHMENT_FOLDER = "attachments"
 	IMAGES_FOLDER     = "images"
 
-	KEMONO_EMBEDS_FOLDER   = "embeds"
-	KEMONO_CONTENT_FOLDER  = "post_content"
+	KEMONO_EMBEDS_FOLDER  = "embeds"
+	KEMONO_CONTENT_FOLDER = "post_content"
 
-	GDRIVE_URL 	         = "https://drive.google.com"
+	GDRIVE_URL           = "https://drive.google.com"
 	GDRIVE_FOLDER        = "gdrive"
 	GDRIVE_FILENAME      = "detected_gdrive_links.txt"
 	OTHER_LINKS_FILENAME = "detected_external_links.txt"
@@ -86,26 +86,26 @@ const (
 // Although the variables below are not
 // constants, they are not supposed to be changed
 var (
-	USER_AGENT string
+	USER_AGENT       string
 	GITHUB_VER_REGEX = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
 	PAGE_NUM_REGEX = regexp.MustCompile(
 		fmt.Sprintf(`^%s$`, PAGE_NUM_REGEX_STR),
 	)
-	NUMBER_REGEX             = regexp.MustCompile(`^\d+$`)
+	NUMBER_REGEX = regexp.MustCompile(`^\d+$`)
 
-	GDRIVE_URL_REGEX         = regexp.MustCompile(
+	GDRIVE_URL_REGEX = regexp.MustCompile(
 		`https://drive\.google\.com/(?P<type>file/d|drive/(u/\d+/)?folders)/(?P<id>[\w-]+)`,
 	)
 	GDRIVE_REGEX_ID_INDEX   = GDRIVE_URL_REGEX.SubexpIndex("id")
 	GDRIVE_REGEX_TYPE_INDEX = GDRIVE_URL_REGEX.SubexpIndex("type")
 
-	FANTIA_IMAGE_URL_REGEX  = regexp.MustCompile(
+	FANTIA_IMAGE_URL_REGEX = regexp.MustCompile(
 		`original_url\":\"(?P<url>/posts/\d+/album_image\?query=[\w%-]*)\"`,
 	)
 	FANTIA_REGEX_URL_INDEX = FANTIA_IMAGE_URL_REGEX.SubexpIndex("url")
 
-	// Since the URLs below will be redirected to Fantia's AWS S3 URL, 
+	// Since the URLs below will be redirected to Fantia's AWS S3 URL,
 	// we need to use HTTP/2 as it is not supported by HTTP/3 yet.
 	FANTIA_ALBUM_URL = regexp.MustCompile(
 		`^https://fantia.jp/posts/[\d]+/album_image`,
@@ -163,7 +163,7 @@ var (
 			PAGE_NUM_WITH_INPUT_REGEX_STR,
 		),
 	)
-	FANTIA_CREATOR_ID_IDX = FANTIA_CREATOR_URL_REGEX.SubexpIndex("id")
+	FANTIA_CREATOR_ID_IDX       = FANTIA_CREATOR_URL_REGEX.SubexpIndex("id")
 	FANTIA_CREATOR_PAGE_NUM_IDX = FANTIA_CREATOR_URL_REGEX.SubexpIndex(PAGE_NUM_IDX_NAME)
 
 	// For Pixiv Fanbox URL(s) input validations
@@ -184,7 +184,7 @@ var (
 			PAGE_NUM_WITH_INPUT_REGEX_STR,
 		),
 	)
-	PIXIV_FANBOX_CREATOR_ID_IDX1 = PIXIV_FANBOX_CREATOR_URL_REGEX1.SubexpIndex("id")
+	PIXIV_FANBOX_CREATOR_ID_IDX1       = PIXIV_FANBOX_CREATOR_URL_REGEX1.SubexpIndex("id")
 	PIXIV_FANBOX_CREATOR_PAGE_NUM_IDX1 = PIXIV_FANBOX_CREATOR_URL_REGEX1.SubexpIndex(PAGE_NUM_IDX_NAME)
 
 	PIXIV_FANBOX_CREATOR_URL_REGEX2 = regexp.MustCompile(
@@ -194,7 +194,7 @@ var (
 			PAGE_NUM_WITH_INPUT_REGEX_STR,
 		),
 	)
-	PIXIV_FANBOX_CREATOR_ID_IDX2 = PIXIV_FANBOX_CREATOR_URL_REGEX2.SubexpIndex("id")
+	PIXIV_FANBOX_CREATOR_ID_IDX2       = PIXIV_FANBOX_CREATOR_URL_REGEX2.SubexpIndex("id")
 	PIXIV_FANBOX_CREATOR_PAGE_NUM_IDX2 = PIXIV_FANBOX_CREATOR_URL_REGEX2.SubexpIndex(PAGE_NUM_IDX_NAME)
 
 	// For Pixiv URL(s) input validations
@@ -211,7 +211,7 @@ var (
 			PAGE_NUM_WITH_INPUT_REGEX_STR,
 		),
 	)
-	PIXIV_ARTIST_ID_IDX = PIXIV_ARTIST_URL_REGEX.SubexpIndex("id")
+	PIXIV_ARTIST_ID_IDX       = PIXIV_ARTIST_URL_REGEX.SubexpIndex("id")
 	PIXIV_ARTIST_PAGE_NUM_IDX = PIXIV_ARTIST_URL_REGEX.SubexpIndex(PAGE_NUM_IDX_NAME)
 )
 
@@ -226,7 +226,7 @@ func init() {
 		panic(
 			fmt.Errorf(
 				"error %d: Failed to get user agent OS as your OS, %q, is not supported",
-				errs.OS_ERROR,
+				cdlerrors.OS_ERROR,
 				runtime.GOOS,
 			),
 		)

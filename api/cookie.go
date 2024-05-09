@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
-	"github.com/KJHJason/Cultured-Downloader-Logic/parsers"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/parsers"
 )
 
 // Returns a cookie with given value and website to be used in requests
@@ -44,24 +44,24 @@ func getHeaders(website, userAgent string) map[string]string {
 
 	var referer, origin string
 	switch website {
-	case constants.PIXIV :
+	case constants.PIXIV:
 		referer = constants.PIXIV_URL
 		origin = constants.PIXIV_URL
-	case constants.PIXIV_FANBOX :
+	case constants.PIXIV_FANBOX:
 		referer = constants.PIXIV_FANBOX_URL
 		origin = constants.PIXIV_FANBOX_URL
-	case constants.FANTIA :
+	case constants.FANTIA:
 		referer = constants.FANTIA_URL
 		origin = constants.FANTIA_URL
-	case constants.KEMONO :
+	case constants.KEMONO:
 		referer = constants.KEMONO_URL
 		origin = constants.KEMONO_URL
-	default :
+	default:
 		// Shouldn't happen but could happen during development
 		panic(
 			fmt.Errorf(
 				"error %d, invalid website, %q, in getHeaders",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 				website,
 			),
 		)
@@ -91,7 +91,7 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 		panic(
 			fmt.Errorf(
 				"error %d, invalid website, %q, in VerifyCookie",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 				website,
 			),
 		)
@@ -138,7 +138,7 @@ func processCookieVerification(website string, err error) error {
 		)
 		return fmt.Errorf(
 			"error %d: could not verify %s cookie.\nPlease refer to the log file for more details",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 			GetReadableSiteStr(website),
 		)
 	}
@@ -157,7 +157,7 @@ func VerifyAndGetCookie(website, cookieValue, userAgent string) (*http.Cookie, e
 	if !cookieIsValid {
 		return nil, fmt.Errorf(
 			"error %d: %s cookie is invalid",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 			GetReadableSiteStr(website),
 		)
 	}
@@ -176,7 +176,7 @@ func VerifyCookies(website, userAgent string, cookies []*http.Cookie) error {
 		if !cookieIsValid {
 			return fmt.Errorf(
 				"error %d: %s cookie is invalid",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 				GetReadableSiteStr(website),
 			)
 		}
@@ -185,7 +185,7 @@ func VerifyCookies(website, userAgent string, cookies []*http.Cookie) error {
 
 	return fmt.Errorf(
 		"error %d: %s cookie not found",
-		errs.INPUT_ERROR,
+		cdlerrors.INPUT_ERROR,
 		GetReadableSiteStr(website),
 	)
 }

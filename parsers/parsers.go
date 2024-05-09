@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
@@ -49,7 +49,7 @@ func GetSessionCookieInfo(site string) *cookieInfo {
 		panic(
 			fmt.Errorf(
 				"error %d, invalid site, %q in GetSessionCookieInfo",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 				site,
 			),
 		)
@@ -57,6 +57,7 @@ func GetSessionCookieInfo(site string) *cookieInfo {
 }
 
 var errSkipLine = fmt.Errorf("skip line")
+
 func readTxtCookieLine(line string, cookieArgs *cookieInfoArgs) (*http.Cookie, error) {
 	line = strings.TrimSpace(line)
 	if line == "" || strings.HasPrefix(line, "#") {
@@ -92,7 +93,7 @@ func readTxtCookieLine(line string, cookieArgs *cookieInfoArgs) (*http.Cookie, e
 			// should never happen but just in case
 			return nil, fmt.Errorf(
 				"error %d: parsing cookie expiration time, %q, more info => %w",
-				errs.UNEXPECTED_ERROR,
+				cdlerrors.UNEXPECTED_ERROR,
 				expiresUnixStr,
 				err,
 			)
@@ -115,7 +116,7 @@ func ParseTxtCookieFile(f *os.File, filePath string, cookieArgs *cookieInfoArgs)
 			}
 			return nil, fmt.Errorf(
 				"error %d: reading cookie file at %s, more info => %w",
-				errs.OS_ERROR,
+				cdlerrors.OS_ERROR,
 				filePath,
 				err,
 			)
@@ -177,7 +178,7 @@ func ParseJsonCookieFile(f *os.File, filePath string, cookieArgs *cookieInfoArgs
 	if err := json.NewDecoder(f).Decode(&exportedCookies); err != nil {
 		return nil, fmt.Errorf(
 			"error %d: failed to decode cookie JSON file at %s, more info => %w",
-			errs.JSON_ERROR,
+			cdlerrors.JSON_ERROR,
 			filePath,
 			err,
 		)
@@ -195,7 +196,7 @@ func ParseJsonCookie(cookieBytes []byte, cookieArgs *cookieInfoArgs) ([]*http.Co
 	if err := json.Unmarshal(cookieBytes, &exportedCookies); err != nil {
 		return nil, fmt.Errorf(
 			"error %d: failed to decode cookie JSON, more info => %w",
-			errs.JSON_ERROR,
+			cdlerrors.JSON_ERROR,
 			err,
 		)
 	}

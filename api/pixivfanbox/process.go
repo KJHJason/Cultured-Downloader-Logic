@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -278,7 +278,7 @@ func processFanboxPostJson(res *http.Response, dlOptions *PixivFanboxDlOptions) 
 		jsonBytes, _ := json.MarshalIndent(post, "", "\t")
 		return nil, nil, fmt.Errorf(
 			"pixiv fanbox error %d: unknown post type, %q\nPixiv Fanbox post content:\n%s",
-			errs.JSON_ERROR,
+			cdlerrors.JSON_ERROR,
 			postType,
 			string(jsonBytes),
 		)

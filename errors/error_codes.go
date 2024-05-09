@@ -1,4 +1,4 @@
-package errs
+package cdlerrors
 
 const (
 	// Error codes

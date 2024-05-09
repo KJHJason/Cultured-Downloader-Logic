@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	errs "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
@@ -44,7 +44,7 @@ func (pixiv *PixivMobile) getUgoiraMetadata(illustId, dlFilePath string) (*ugoir
 		if !errors.Is(err, context.Canceled) {
 			err = fmt.Errorf(
 				"pixiv movile error %d: Failed to get ugoira metadata for %s",
-				errs.CONNECTION_ERROR,
+				cdlerrors.CONNECTION_ERROR,
 				illustId,
 			)
 		}
@@ -85,7 +85,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId, downloadPath string) ([]*
 		if err != context.Canceled {
 			err = fmt.Errorf(
 				"pixiv mobile error %d: failed to get artwork details for %s, more info => %v",
-				errs.CONNECTION_ERROR,
+				cdlerrors.CONNECTION_ERROR,
 				artworkId,
 				err,
 			)
@@ -190,7 +190,7 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 			}
 			err = fmt.Errorf(
 				"pixiv mobile error %d: failed to get artist posts for %s, more info => %v",
-				errs.CONNECTION_ERROR,
+				cdlerrors.CONNECTION_ERROR,
 				userId,
 				err,
 			)
@@ -362,7 +362,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName, downloadPath string, dlOptions
 
 			err = fmt.Errorf(
 				"pixiv mobile error %d: failed to search for %q, more info => %v",
-				errs.CONNECTION_ERROR,
+				cdlerrors.CONNECTION_ERROR,
 				tagName,
 				err,
 			)

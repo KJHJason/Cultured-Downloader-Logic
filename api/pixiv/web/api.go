@@ -9,10 +9,10 @@ import (
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	errs "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -23,7 +23,7 @@ func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*
 	if err != nil {
 		return nil, fmt.Errorf(
 			"pixiv web error %d: failed to get artwork details for ID %v from %s",
-			errs.CONNECTION_ERROR,
+			cdlerrors.CONNECTION_ERROR,
 			artworkId,
 			reqArgs.Url,
 		)
@@ -33,7 +33,7 @@ func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*
 		artworkDetailsRes.Body.Close()
 		return nil, fmt.Errorf(
 			"pixiv web error %d: failed to get details for artwork ID %s due to %s response from %s",
-			errs.RESPONSE_ERROR,
+			cdlerrors.RESPONSE_ERROR,
 			artworkId,
 			artworkDetailsRes.Status,
 			reqArgs.Url,
@@ -61,7 +61,7 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 	default:
 		return nil, fmt.Errorf(
 			"pixiv web error %d: unsupported artwork type %d for artwork ID %s",
-			errs.JSON_ERROR,
+			cdlerrors.JSON_ERROR,
 			artworkType,
 			artworkId,
 		)
@@ -72,7 +72,7 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 	if err != nil {
 		return nil, fmt.Errorf(
 			"pixiv web error %d: failed to get artwork URLs for ID %s from %s due to %v",
-			errs.CONNECTION_ERROR,
+			cdlerrors.CONNECTION_ERROR,
 			artworkId,
 			url,
 			err,
@@ -83,7 +83,7 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 		artworkUrlsRes.Body.Close()
 		return nil, fmt.Errorf(
 			"pixiv web error %d: failed to get artwork URLs for ID %s due to %s response from %s",
-			errs.RESPONSE_ERROR,
+			cdlerrors.RESPONSE_ERROR,
 			artworkId,
 			artworkUrlsRes.Status,
 			url,
@@ -236,7 +236,7 @@ func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions)
 		}
 		return nil, fmt.Errorf(
 			"pixiv web error %d: failed to get illustrator's posts with an ID of %s due to %v",
-			errs.CONNECTION_ERROR,
+			cdlerrors.CONNECTION_ERROR,
 			illustratorId,
 			err,
 		)
@@ -245,7 +245,7 @@ func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions)
 		res.Body.Close()
 		return nil, fmt.Errorf(
 			"pixiv web error %d: failed to get illustrator's posts with an ID of %s due to %s response",
-			errs.RESPONSE_ERROR,
+			cdlerrors.RESPONSE_ERROR,
 			illustratorId,
 			res.Status,
 		)
@@ -345,7 +345,7 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 			}
 			err = fmt.Errorf(
 				"pixiv web error %d: failed to get tag search results for %s due to %w",
-				errs.CONNECTION_ERROR,
+				cdlerrors.CONNECTION_ERROR,
 				tagName,
 				err,
 			)

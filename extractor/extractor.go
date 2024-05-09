@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	ctxio "github.com/jbenet/go-context/io"
 	"github.com/mholt/archiver/v4"
-	"github.com/jbenet/go-context/io"
 )
 
 type archiveExtractor struct {
@@ -68,7 +68,7 @@ func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveE
 		}
 		return fmt.Errorf(
 			"error %d: unable to extract zip file %s, more info => %w",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			src,
 			err,
 		)
@@ -82,7 +82,7 @@ func getExtractor(f *os.File, src string) (*archiveExtractor, error) {
 	if errors.Is(err, archiver.ErrNoMatch) {
 		return nil, fmt.Errorf(
 			"error %d: %s is not a valid zip file",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			src,
 		)
 	} else if err != nil {
@@ -101,7 +101,7 @@ func getExtractor(f *os.File, src string) (*archiveExtractor, error) {
 	if !ok {
 		return nil, fmt.Errorf(
 			"error %d: unable to extract zip file %s, more info => %w",
-			errs.UNEXPECTED_ERROR,
+			cdlerrors.UNEXPECTED_ERROR,
 			src,
 			err,
 		)
@@ -116,10 +116,10 @@ func getExtractor(f *os.File, src string) (*archiveExtractor, error) {
 func getErrIfNotIgnored(src string, ignoreIfMissing bool) error {
 	if ignoreIfMissing {
 		return nil
-	} 
+	}
 	return fmt.Errorf(
 		"error %d: %s does not exist",
-		errs.OS_ERROR,
+		cdlerrors.OS_ERROR,
 		src,
 	)
 }
@@ -136,7 +136,7 @@ func ExtractFiles(ctx context.Context, src, dest string, ignoreIfMissing bool) e
 	if err != nil {
 		return fmt.Errorf(
 			"error %d: unable to open zip file %s",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			src,
 		)
 	}
@@ -151,8 +151,8 @@ func ExtractFiles(ctx context.Context, src, dest string, ignoreIfMissing bool) e
 		defer extractor.readCloser.Close()
 	}
 	return extractFileLogic(
-		ctx, 
-		src, 
+		ctx,
+		src,
 		dest,
 		extractor,
 	)

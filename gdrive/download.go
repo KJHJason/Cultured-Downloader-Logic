@@ -17,7 +17,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -30,7 +30,7 @@ func md5HashFile(file *os.File) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf(
 			"gdrive error %d: failed to calculate file's md5 checksum, more info => %w",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			err,
 		)
 	}
@@ -47,7 +47,7 @@ func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, int64, e
 	if err != nil {
 		return false, 0, fmt.Errorf(
 			"gdrive error %d: failed to open file %q, more info => %w",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			filePath,
 			err,
 		)
@@ -58,7 +58,7 @@ func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, int64, e
 	if err != nil {
 		return false, 0, fmt.Errorf(
 			"gdrive error %d: failed to get file stat info of %q, more info => %w",
-			errs.OS_ERROR,
+			cdlerrors.OS_ERROR,
 			filePath,
 			err,
 		)
@@ -321,7 +321,7 @@ func GetFileIdAndTypeFromUrl(url string) (string, string) {
 	} else {
 		err := fmt.Errorf(
 			"gdrive error %d: could not determine file type from URL, %q",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 			url,
 		)
 		logger.LogError(err, false, logger.ERROR)
@@ -367,7 +367,7 @@ func (gdrive *GDrive) getGdriveFileInfo(gdriveId *GDriveToDl, config *configs.Co
 		return nil, &GdriveError{
 			Err: fmt.Errorf(
 				"gdrive error %d: unknown Google Drive URL type, %q",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 				gdriveId.Type,
 			),
 			FilePath: gdriveId.FilePath,

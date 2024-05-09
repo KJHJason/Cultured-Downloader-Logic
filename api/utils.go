@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
@@ -31,7 +31,7 @@ func GetReadableSiteStr(site string) string {
 		panic(
 			fmt.Errorf(
 				"error %d: invalid website, %q, in GetReadableSiteStr",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 				site,
 			),
 		)
@@ -73,7 +73,7 @@ func ValidatePageNumInput(baseSliceLen int, pageNums []string, errMsgs []string)
 		} else {
 			msgBody = fmt.Errorf(
 				"error %d: %d URLS provided, but %d page numbers provided\nPlease provide the same number of page numbers as the number of URLs",
-				errs.INPUT_ERROR,
+				cdlerrors.INPUT_ERROR,
 				baseSliceLen,
 				pageNumsLen,
 			)
@@ -85,7 +85,7 @@ func ValidatePageNumInput(baseSliceLen int, pageNums []string, errMsgs []string)
 	if !valid {
 		return fmt.Errorf(
 			"error %d: invalid page number format: %q\nPlease follow the format, \"1-10\", as an example.\nNote that \"0\" are not accepted! E.g. \"0-9\" is invalid",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 			outlier,
 		)
 	}
@@ -113,7 +113,7 @@ func GetMinMaxFromStr(numStr string) (int, int, bool, error) {
 		if err != nil {
 			return -1, -1, false, fmt.Errorf(
 				"error %d: failed to convert min page number, %q, to int",
-				errs.UNEXPECTED_ERROR,
+				cdlerrors.UNEXPECTED_ERROR,
 				nums[0],
 			)
 		}
@@ -122,7 +122,7 @@ func GetMinMaxFromStr(numStr string) (int, int, bool, error) {
 		if err != nil {
 			return -1, -1, false, fmt.Errorf(
 				"error %d: failed to convert max page number, %q, to int",
-				errs.UNEXPECTED_ERROR,
+				cdlerrors.UNEXPECTED_ERROR,
 				nums[1],
 			)
 		}
@@ -135,7 +135,7 @@ func GetMinMaxFromStr(numStr string) (int, int, bool, error) {
 		if err != nil {
 			return -1, -1, false, fmt.Errorf(
 				"error %d: failed to convert page number, %q, to int",
-				errs.UNEXPECTED_ERROR,
+				cdlerrors.UNEXPECTED_ERROR,
 				numStr,
 			)
 		}
@@ -200,7 +200,7 @@ func ValidateStrArgs(str string, slice, errMsgs []string) (string, error) {
 		msgBody = fmt.Errorf("input error, got: %s", str)
 	}
 	return "", fmt.Errorf(
-		"%v\nExpecting one of the following: %s", 
+		"%v\nExpecting one of the following: %s",
 		msgBody,
 		strings.TrimSpace(strings.Join(slice, ", ")),
 	)
@@ -222,7 +222,7 @@ func ValidateId(arg string) error {
 	if !constants.NUMBER_REGEX.MatchString(arg) {
 		return fmt.Errorf(
 			"error %d: invalid ID, %q, must be a number",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 			arg,
 		)
 	}

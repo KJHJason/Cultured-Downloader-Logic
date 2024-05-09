@@ -7,18 +7,18 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 var (
 	ErrProcessLatestVer = fmt.Errorf(
 		"github error %d: unable to process the latest version",
-		errs.DEV_ERROR,
+		cdlerrors.DEV_ERROR,
 	)
 	ErrProcessVer = fmt.Errorf(
 		"github error %d: unable to process the current version",
-		errs.DEV_ERROR,
+		cdlerrors.DEV_ERROR,
 	)
 )
 
@@ -73,7 +73,7 @@ func CheckVer(repo string, ver string, showProg bool, progBar progress.ProgressB
 	if !constants.GITHUB_VER_REGEX.MatchString(ver) {
 		return false, fmt.Errorf(
 			"github error %d: unable to process the current version, %q",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 			ver,
 		)
 	}
@@ -98,7 +98,7 @@ func CheckVer(repo string, ver string, showProg bool, progBar progress.ProgressB
 	if err != nil || res.StatusCode != 200 {
 		errMsg := fmt.Errorf(
 			"github error %d: unable to check for the latest version",
-			errs.CONNECTION_ERROR,
+			cdlerrors.CONNECTION_ERROR,
 		)
 		if err != nil {
 			errMsg = fmt.Errorf("%w, more info => %w", errMsg, err)
@@ -114,7 +114,7 @@ func CheckVer(repo string, ver string, showProg bool, progBar progress.ProgressB
 	if err := LoadJsonFromResponse(res, &apiRes); err != nil {
 		errMsg := fmt.Sprintf(
 			"github error %d: unable to marshal the response from the API into an interface",
-			errs.UNEXPECTED_ERROR,
+			cdlerrors.UNEXPECTED_ERROR,
 		)
 		if hasProgBar {
 			progBar.Stop(true)
@@ -126,7 +126,7 @@ func CheckVer(repo string, ver string, showProg bool, progBar progress.ProgressB
 	if err != nil {
 		errMsg := fmt.Sprintf(
 			"github error %d: unable to process the latest version",
-			errs.UNEXPECTED_ERROR,
+			cdlerrors.UNEXPECTED_ERROR,
 		)
 		if hasProgBar {
 			progBar.UpdateErrorMsg(errMsg)
@@ -139,7 +139,7 @@ func CheckVer(repo string, ver string, showProg bool, progBar progress.ProgressB
 	if err != nil {
 		errMsg := fmt.Sprintf(
 			"error %d: unable to process the program version",
-			errs.DEV_ERROR,
+			cdlerrors.DEV_ERROR,
 		)
 		if hasProgBar {
 			progBar.UpdateErrorMsg(errMsg)

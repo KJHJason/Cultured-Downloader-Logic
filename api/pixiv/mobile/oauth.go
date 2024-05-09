@@ -11,13 +11,13 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
 
 type OAuthTokenInfo struct {
-	AccessToken  string    // The access token that will be used to communicate with the Pixiv's Mobile API
-	ExpiresAt    time.Time // The time when the access token expires
+	AccessToken string    // The access token that will be used to communicate with the Pixiv's Mobile API
+	ExpiresAt   time.Time // The time when the access token expires
 }
 
 // Perform a S256 transformation method on a byte array
@@ -38,7 +38,7 @@ func GetOAuthURL() (url string, codeVerifier string) {
 		panic(
 			fmt.Sprintf(
 				"pixiv mobile error %d: failed to generate random bytes, more info => %v",
-				errs.DEV_ERROR,
+				cdlerrors.DEV_ERROR,
 				err,
 			),
 		)
@@ -60,7 +60,7 @@ func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 	if !pixivOauthCodeRegex.MatchString(code) {
 		return "", fmt.Errorf(
 			"pixiv mobile error %d: invalid code format, please check if the code is correct",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 		)
 	}
 
@@ -87,7 +87,7 @@ func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf(
 			"pixiv mobile error %d: failed to verify code, please ensure the code is correct and try again",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 		)
 	}
 
@@ -103,7 +103,7 @@ func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (
 	if !pixivOauthCodeRegex.MatchString(refreshToken) {
 		return OAuthTokenInfo{}, nil, fmt.Errorf(
 			"pixiv mobile error %d: invalid refresh token format, please check if the refresh token is correct",
-			errs.INPUT_ERROR,
+			cdlerrors.INPUT_ERROR,
 		)
 	}
 
@@ -123,7 +123,7 @@ func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (
 			"client_secret":  CLIENT_SECRET,
 			"grant_type":     "refresh_token",
 			"include_policy": "true",
-			"refresh_token":   refreshToken,
+			"refresh_token":  refreshToken,
 		},
 	)
 	if err != nil || res.StatusCode != 200 {
@@ -132,7 +132,7 @@ func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (
 			err = fmt.Errorf(
 				"pixiv mobile error %d: failed to refresh token due to %s response from Pixiv\n"+
 					"Please check your refresh token and try again or use the \"-pixiv_start_oauth\" flag to get a new refresh token",
-				errs.RESPONSE_ERROR,
+				cdlerrors.RESPONSE_ERROR,
 				res.Status,
 			)
 		} else {
@@ -143,7 +143,7 @@ func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (
 			err = fmt.Errorf(
 				"pixiv mobile error %d: failed to refresh token due to %v\n"+
 					"Please check your internet connection and try again",
-				errs.CONNECTION_ERROR,
+				cdlerrors.CONNECTION_ERROR,
 				err,
 			)
 		}
