@@ -208,7 +208,7 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 		artworksToDownload = append(artworksToDownload, artworks...)
 		ugoiraSlice = append(ugoiraSlice, ugoira...)
 
-		curOffset += 30
+		curOffset += constants.PIXIV_MOBILE_PER_PAGE
 		params["offset"] = strconv.Itoa(curOffset)
 		jsonNextUrl := resJson.NextUrl
 		if jsonNextUrl == nil || (offsetArg.hasMax && curOffset >= offsetArg.maxOffset) {
@@ -385,7 +385,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName, downloadPath string, dlOptions
 		artworksToDownload = append(artworksToDownload, artworks...)
 		ugoiraSlice = append(ugoiraSlice, ugoira...)
 
-		curOffset += 30
+		curOffset += constants.PIXIV_MOBILE_PER_PAGE
 		params["offset"] = strconv.Itoa(curOffset)
 		jsonNextUrl := resJson.NextUrl
 		if jsonNextUrl == nil || (offsetArg.hasMax && curOffset >= offsetArg.maxOffset) {

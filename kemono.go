@@ -1,12 +1,12 @@
 package cdlogic
 
 import (
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/kemono"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/kemono"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDlOptions) []error {
@@ -50,7 +50,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dl
 		}
 	}
 	if len(kemonoDl.CreatorsToDl) > 0 && dlOptions.CtxIsActive() {
-		creatorsToDl, gdriveLinksToDl, err := kemono.GetMultipleCreators(kemonoDl.CreatorsToDl, dlOptions,)
+		creatorsToDl, gdriveLinksToDl, err := kemono.GetMultipleCreators(kemonoDl.CreatorsToDl, dlOptions)
 		if err != nil {
 			errSlice = append(errSlice, err...)
 		} else {
@@ -66,10 +66,15 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dl
 			toDownload,
 			&httpfuncs.DlOptions{
 				Context:        dlOptions.GetContext(),
-				MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
+				MaxConcurrency: constants.KEMONO_MAX_CONCURRENT,
 				Cookies:        dlOptions.SessionCookies,
 				UseHttp3:       httpfuncs.IsHttp3Supported(constants.KEMONO, false),
+				SupportRange:   constants.KEMONO_RANGE_SUPPORTED,
 				RetryDelay:     &httpfuncs.RetryDelay{Min: 25, Max: 35},
+				ProgressBarInfo: &progress.ProgressBarInfo{
+					MainProgressBar:      dlOptions.MainProgBar,
+					DownloadProgressBars: dlOptions.DownloadProgressBars,
+				},
 			},
 			config,
 		)
@@ -83,8 +88,8 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dl
 	if dlOptions.GdriveClient != nil && len(gdriveLinks) > 0 && dlOptions.CtxIsActive() {
 		downloadedPosts = true
 		err := dlOptions.GdriveClient.DownloadGdriveUrls(
-			gdriveLinks, 
-			config, 
+			gdriveLinks,
+			config,
 			&progress.ProgressBarInfo{
 				MainProgressBar:      dlOptions.MainProgBar,
 				DownloadProgressBars: dlOptions.DownloadProgressBars,

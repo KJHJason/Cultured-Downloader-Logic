@@ -9,17 +9,15 @@ import (
 )
 
 const (
-	DEBUG_MODE                     = false // Will save a copy of all JSON response from the API
-	DEFAULT_PERMS                  = 0755  // Owner: rwx, Group: rx, Others: rx
-	VERSION                        = "1.1.0"
-	MAX_RETRY_DELAY                = 3
-	MIN_RETRY_DELAY                = 1
-	RETRY_COUNTER                  = 4
-	MAX_CONCURRENT_DOWNLOADS       = 4
-	PIXIV_MAX_CONCURRENT_DOWNLOADS = 2
-	MAX_API_CALLS                  = 10
-	CLI_REPO_URL                   = "https://api.github.com/repos/KJHJason/Cultured-Downloader-CLI/releases/latest"
-	LOGIC_REPO_URL                 = "https://api.github.com/repos/KJHJason/Cultured-Downloader-Logic/releases/latest"
+	DEBUG_MODE         = false // Will save a copy of all JSON response from the API
+	DEFAULT_PERMS      = 0755  // Owner: rwx, Group: rx, Others: rx
+	VERSION            = "1.1.0"
+	MAX_RETRY_DELAY    = 3
+	MIN_RETRY_DELAY    = 1
+	RETRY_COUNTER      = 4
+	MAIN_REPO_API_URL  = "https://api.github.com/repos/KJHJason/Cultured-Downloader/releases/latest"
+	CLI_REPO_API_URL   = "https://api.github.com/repos/KJHJason/Cultured-Downloader-CLI/releases/latest"
+	LOGIC_REPO_API_URL = "https://api.github.com/repos/KJHJason/Cultured-Downloader-Logic/releases/latest"
 
 	PAGE_NUM_REGEX_STR            = `[1-9]\d*(?:-[1-9]\d*)?`
 	PAGE_NUM_IDX_NAME             = "pageNum"
@@ -38,17 +36,17 @@ const (
 	FANTIA_MAX_CONCURRENT  = 5
 	FANTIA_POST_API_URL    = "https://fantia.jp/api/v1/posts/"
 
-	PIXIV                 = "pixiv"
-	PIXIV_MOBILE          = "pixiv_mobile"
-	PIXIV_TITLE           = "Pixiv"
-	PIXIV_PER_PAGE        = 60
-	PIXIV_MOBILE_PER_PAGE = 30
-	PIXIV_URL             = "https://www.pixiv.net"
-	PIXIV_TAG_URL         = "https://www.pixiv.net/tags/%s/artworks"
-	PIXIV_API_URL         = "https://www.pixiv.net/ajax"
-	PIXIV_MOBILE_URL      = "https://app-api.pixiv.net"
-	PIXIV_RANGE_SUPPORTED = true
-	PIXIV_MAX_CONCURRENT  = 3
+	PIXIV                          = "pixiv"
+	PIXIV_MOBILE                   = "pixiv_mobile"
+	PIXIV_TITLE                    = "Pixiv"
+	PIXIV_PER_PAGE                 = 60
+	PIXIV_MOBILE_PER_PAGE          = 30
+	PIXIV_URL                      = "https://www.pixiv.net"
+	PIXIV_API_URL                  = "https://www.pixiv.net/ajax"
+	PIXIV_MOBILE_URL               = "https://app-api.pixiv.net"
+	PIXIV_RANGE_SUPPORTED          = true
+	PIXIV_MAX_CONCURRENCY          = 1 // Not used rn as the Pixiv download is being done sequentially instead of concurrently
+	PIXIV_MAX_DOWNLOAD_CONCURRENCY = 2 // https://i.pixiv.net not using Cloudflare's proxy
 
 	PIXIV_FANBOX                 = "fanbox"
 	PIXIV_FANBOX_TITLE           = "Pixiv Fanbox"

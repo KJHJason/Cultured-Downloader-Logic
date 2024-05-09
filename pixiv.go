@@ -12,8 +12,8 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 func alertUser(artworksToDl []*httpfuncs.ToDownload, ugoiraToDl []*ugoira.Ugoira, notifier notify.Notifier) {
@@ -113,10 +113,11 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 			artworksToDl,
 			&httpfuncs.DlOptions{
 				Context:        pixivDlOptions.GetContext(),
-				MaxConcurrency: constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
+				MaxConcurrency: constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
 				Headers:        pixivcommon.GetPixivRequestHeaders(),
 				Cookies:        pixivDlOptions.SessionCookies,
 				UseHttp3:       false,
+				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
 				ProgressBarInfo: &progress.ProgressBarInfo{
 					MainProgressBar:      pixivDlOptions.MainProgBar,
 					DownloadProgressBars: pixivDlOptions.DownloadProgressBars,
@@ -241,10 +242,11 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 		cancelled, err := httpfuncs.DownloadUrls(
 			artworksToDl,
 			&httpfuncs.DlOptions{
-				Context:         pixivDlOptions.GetContext(),
-				MaxConcurrency:  constants.PIXIV_MAX_CONCURRENT_DOWNLOADS,
-				Headers:         pixivcommon.GetPixivRequestHeaders(),
-				UseHttp3:        false,
+				Context:        pixivDlOptions.GetContext(),
+				MaxConcurrency: constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
+				Headers:        pixivcommon.GetPixivRequestHeaders(),
+				UseHttp3:       false,
+				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
 				ProgressBarInfo: &progress.ProgressBarInfo{
 					MainProgressBar:      pixivDlOptions.MainProgBar,
 					DownloadProgressBars: pixivDlOptions.DownloadProgressBars,
