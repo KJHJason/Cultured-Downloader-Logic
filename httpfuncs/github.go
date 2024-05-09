@@ -69,7 +69,7 @@ func checkIfVerIsOutdated(curVer *versionInfo, latestVer *versionInfo) bool {
 
 // check for the latest version of the program
 func CheckVer(repo string, ver string, showProg bool, progBar progress.ProgressBar) (bool, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo)
+	url := fmt.Sprintf(constants.GITHUB_API_URL_FORMAT, repo)
 	if !constants.GITHUB_VER_REGEX.MatchString(ver) {
 		return false, fmt.Errorf(
 			"github error %d: unable to process the current version, %q",

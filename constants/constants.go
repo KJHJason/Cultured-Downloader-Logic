@@ -9,15 +9,16 @@ import (
 )
 
 const (
-	DEBUG_MODE         = false // Will save a copy of all JSON response from the API
-	DEFAULT_PERMS      = 0755  // Owner: rwx, Group: rx, Others: rx
-	VERSION            = "1.1.0"
-	MAX_RETRY_DELAY    = 3
-	MIN_RETRY_DELAY    = 1
-	RETRY_COUNTER      = 4
-	MAIN_REPO_API_URL  = "https://api.github.com/repos/KJHJason/Cultured-Downloader/releases/latest"
-	CLI_REPO_API_URL   = "https://api.github.com/repos/KJHJason/Cultured-Downloader-CLI/releases/latest"
-	LOGIC_REPO_API_URL = "https://api.github.com/repos/KJHJason/Cultured-Downloader-Logic/releases/latest"
+	DEBUG_MODE            = false // Will save a copy of all JSON response from the API
+	DEFAULT_PERMS         = 0755  // Owner: rwx, Group: rx, Others: rx
+	VERSION               = "1.1.0"
+	MAX_RETRY_DELAY       = 3
+	MIN_RETRY_DELAY       = 1
+	RETRY_COUNTER         = 4
+	GITHUB_API_URL_FORMAT = "https://api.github.com/repos/%s/releases/latest"
+	MAIN_REPO_NAME        = "KJHJason/Cultured-Downloader"
+	CLI_REPO_NAME         = "KJHJason/Cultured-Downloader-CLI"
+	LOGIC_REPO_NAME       = "KJHJason/Cultured-Downloader-Logic"
 
 	PAGE_NUM_REGEX_STR            = `[1-9]\d*(?:-[1-9]\d*)?`
 	PAGE_NUM_IDX_NAME             = "pageNum"
