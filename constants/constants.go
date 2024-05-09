@@ -139,7 +139,7 @@ var (
 
 	KEMONO_CREATOR_URL_REGEX = regexp.MustCompile(
 		fmt.Sprintf(
-			// ^https://kemono\.su/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)(?:/post/(?P<postId>\d+))?(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?$
+			// ^https://kemono\.su/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?$
 			`^%s%s$`,
 			KEMONO_BASE_REGEX_STR,
 			PAGE_NUM_WITH_INPUT_REGEX_STR,
