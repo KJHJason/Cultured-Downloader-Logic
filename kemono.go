@@ -18,12 +18,12 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dl
 	var errSlice []error
 	var toDownload, gdriveLinks []*httpfuncs.ToDownload
 	if kemonoDl.DlFav {
-		progress := dlOptions.MainProgBar
-		progress.SetToSpinner()
-		progress.UpdateBaseMsg("Getting favourites from Kemono...")
-		progress.UpdateSuccessMsg("Finished getting favourites from Kemono!")
-		progress.UpdateErrorMsg("Something went wrong while getting favourites from Kemono.\nPlease refer to the logs for more details.")
-		progress.Start()
+		prog := dlOptions.MainProgBar
+		prog.SetToSpinner()
+		prog.UpdateBaseMsg("Getting favourites from Kemono...")
+		prog.UpdateSuccessMsg("Finished getting favourites from Kemono!")
+		prog.UpdateErrorMsg("Something went wrong while getting favourites from Kemono.\nPlease refer to the logs for more details.")
+		prog.Start()
 		favToDl, favGdriveLinks, err := kemono.GetFavourites(dlOptions)
 		hasErr := (err != nil)
 		if hasErr {
@@ -36,8 +36,8 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dl
 			toDownload = favToDl
 			gdriveLinks = favGdriveLinks
 		}
-		progress.Stop(hasErr)
-		progress.SnapshotTask()
+		prog.Stop(hasErr)
+		prog.SnapshotTask()
 	}
 
 	if len(kemonoDl.PostsToDl) > 0 && dlOptions.CtxIsActive() {

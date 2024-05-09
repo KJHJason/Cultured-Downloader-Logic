@@ -118,34 +118,34 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	var errSlice []error
 	downloadInfoLen := len(ugoiraArgs.ToDownload)
 	baseMsg := "Converting Ugoira to %s [%d/" + fmt.Sprintf("%d]...", downloadInfoLen)
-	progress := ugoiraArgs.MainProgBar
-	progress.UpdateBaseMsg(baseMsg)
-	progress.UpdateSuccessMsg(
+	prog := ugoiraArgs.MainProgBar
+	prog.UpdateBaseMsg(baseMsg)
+	prog.UpdateSuccessMsg(
 		fmt.Sprintf(
 			"Finished converting %d Ugoira to %s!",
 			downloadInfoLen,
 			ugoiraOptions.OutputFormat,
 		),
 	)
-	progress.UpdateErrorMsg(
+	prog.UpdateErrorMsg(
 		fmt.Sprintf(
 			"Something went wrong while converting %d Ugoira to %s!\nPlease refer to the logs for more details.",
 			downloadInfoLen,
 			ugoiraOptions.OutputFormat,
 		),
 	)
-	progress.SetToProgressBar()
-	progress.UpdateMax(downloadInfoLen)
-	defer progress.SnapshotTask()
-	progress.Start()
+	prog.SetToProgressBar()
+	prog.UpdateMax(downloadInfoLen)
+	defer prog.SnapshotTask()
+	prog.Start()
 	for i, ugoira := range ugoiraArgs.ToDownload {
 		zipFilePath, outputPath := GetUgoiraFilePaths(ugoira.FilePath, ugoira.Url, ugoiraOptions.OutputFormat)
 		if iofuncs.PathExists(outputPath) {
-			progress.Increment()
+			prog.Increment()
 			continue
 		}
 		if !iofuncs.PathExists(zipFilePath) {
-			progress.Increment()
+			prog.Increment()
 			continue
 		}
 
@@ -156,7 +156,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 		err := extractor.ExtractFiles(ctx, zipFilePath, unzipFolderPath, true)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
-				progress.StopInterrupt(
+				prog.StopInterrupt(
 					fmt.Sprintf(
 						"Stopped converting ugoira to %s [%d/%d]!",
 						ugoiraOptions.OutputFormat,
@@ -172,7 +172,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 				err,
 			)
 			errSlice = append(errSlice, err)
-			progress.Increment()
+			prog.Increment()
 			continue
 		}
 
@@ -191,20 +191,20 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 		} else if ugoiraOptions.DeleteZip {
 			os.Remove(zipFilePath)
 		}
-		progress.Increment()
+		prog.Increment()
 	}
 
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
 		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
-			progress.StopInterrupt(
+			prog.StopInterrupt(
 				fmt.Sprintf("Stopped converting ugoira to %s!", ugoiraOptions.OutputFormat),
 			)
 			ugoiraArgs.cancel()
 		}
 	}
-	progress.Stop(hasErr)
+	prog.Stop(hasErr)
 	return errSlice
 }
 

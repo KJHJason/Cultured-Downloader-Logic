@@ -64,23 +64,23 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 	if tagNameLen > 0 && pixivDlOptions.CtxIsActive() {
 		// loop through each tag and page number
 		baseMsg := "Searching for artworks based on tag names on Pixiv [%d/" + fmt.Sprintf("%d]...", tagNameLen)
-		progress := pixivDlOptions.MainProgBar
-		progress.UpdateBaseMsg(baseMsg)
-		progress.UpdateSuccessMsg(
+		prog := pixivDlOptions.MainProgBar
+		prog.UpdateBaseMsg(baseMsg)
+		prog.UpdateSuccessMsg(
 			fmt.Sprintf(
 				"Finished searching for artworks based on %d tag names on Pixiv!",
 				tagNameLen,
 			),
 		)
-		progress.UpdateErrorMsg(
+		prog.UpdateErrorMsg(
 			fmt.Sprintf(
 				"Finished with some errors while searching for artworks based on %d tag names on Pixiv!\nPlease refer to the logs for more details...",
 				tagNameLen,
 			),
 		)
-		progress.SetToProgressBar()
-		progress.UpdateMax(tagNameLen)
-		progress.Start()
+		prog.SetToProgressBar()
+		prog.UpdateMax(tagNameLen)
+		prog.Start()
 		hasErr := false
 		for idx, tagName := range pixivDl.TagNames {
 			artworksSlice, ugoiraSlice, err, hasCancelled := pixivweb.TagSearch(
@@ -95,17 +95,17 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 				hasErr = true
 			}
 			if hasCancelled {
-				progress.StopInterrupt("Stopped searching for artworks based on tag names on Pixiv!")
-				progress.SnapshotTask()
+				prog.StopInterrupt("Stopped searching for artworks based on tag names on Pixiv!")
+				prog.SnapshotTask()
 				return errSlice
 			}
 
 			artworksToDl = append(artworksToDl, artworksSlice...)
 			ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
-			progress.Increment()
+			prog.Increment()
 		}
-		progress.Stop(hasErr)
-		progress.SnapshotTask()
+		prog.Stop(hasErr)
+		prog.SnapshotTask()
 	}
 
 	if len(artworksToDl) > 0 && pixivDlOptions.CtxIsActive() {
@@ -192,23 +192,23 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 	if tagNamesLen > 0 && pixivDlOptions.CtxIsActive() {
 		// loop through each tag and page number
 		baseMsg := "Searching for artworks based on tag names on Pixiv [%d/" + fmt.Sprintf("%d]...", tagNamesLen)
-		progress := pixivDlOptions.MainProgBar
-		progress.UpdateBaseMsg(baseMsg)
-		progress.UpdateSuccessMsg(
+		prog := pixivDlOptions.MainProgBar
+		prog.UpdateBaseMsg(baseMsg)
+		prog.UpdateSuccessMsg(
 			fmt.Sprintf(
 				"Finished searching for artworks based on %d tag names on Pixiv!",
 				tagNamesLen,
 			),
 		)
-		progress.UpdateErrorMsg(
+		prog.UpdateErrorMsg(
 			fmt.Sprintf(
 				"Finished with some errors while searching for artworks based on %d tag names on Pixiv!\nPlease refer to the logs for more details...",
 				tagNamesLen,
 			),
 		)
-		progress.SetToProgressBar()
-		progress.UpdateMax(tagNamesLen)
-		progress.Start()
+		prog.SetToProgressBar()
+		prog.UpdateMax(tagNamesLen)
+		prog.Start()
 		hasErr := false
 		for idx, tagName := range pixivDl.TagNames {
 			var artworksSlice []*httpfuncs.ToDownload
@@ -225,17 +225,17 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 				hasErr = true
 			}
 			if hasCancelled {
-				progress.StopInterrupt("Stopped searching for artworks based on tag names on Pixiv!")
-				progress.SnapshotTask()
+				prog.StopInterrupt("Stopped searching for artworks based on tag names on Pixiv!")
+				prog.SnapshotTask()
 				return errSlice
 			}
 
 			artworksToDl = append(artworksToDl, artworksSlice...)
 			ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
-			progress.Increment()
+			prog.Increment()
 		}
-		progress.Stop(hasErr)
-		progress.SnapshotTask()
+		prog.Stop(hasErr)
+		prog.SnapshotTask()
 	}
 
 	if len(artworksToDl) > 0 && pixivDlOptions.CtxIsActive() {

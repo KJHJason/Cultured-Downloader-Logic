@@ -99,7 +99,7 @@ var (
 	GDRIVE_REGEX_TYPE_INDEX = GDRIVE_URL_REGEX.SubexpIndex("type")
 
 	FANTIA_IMAGE_URL_REGEX = regexp.MustCompile(
-		`original_url\":\"(?P<url>/posts/\d+/album_image\?query=[\w%-]*)\"`,
+		`original_url":"(?P<url>/posts/\d+/album_image\?query=[\w%-]*)"`,
 	)
 	FANTIA_REGEX_URL_INDEX = FANTIA_IMAGE_URL_REGEX.SubexpIndex("url")
 
