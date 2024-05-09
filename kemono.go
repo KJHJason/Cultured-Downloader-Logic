@@ -2,14 +2,13 @@ package cdlogic
 
 import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/kemono"
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
-func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDlOptions) []error {
+func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDlOptions) []error {
 	defer dlOptions.CancelCtx()
 	if !dlOptions.DlAttachments && !dlOptions.DlGdrive {
 		return nil
@@ -76,7 +75,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dl
 					DownloadProgressBars: dlOptions.DownloadProgressBars,
 				},
 			},
-			config,
+			dlOptions.Configs,
 		)
 		if cancelled {
 			return nil
@@ -89,7 +88,7 @@ func KemonoDownloadProcess(config *configs.Config, kemonoDl *kemono.KemonoDl, dl
 		downloadedPosts = true
 		err := dlOptions.GdriveClient.DownloadGdriveUrls(
 			gdriveLinks,
-			config,
+			dlOptions.Configs,
 			&progress.ProgressBarInfo{
 				MainProgressBar:      dlOptions.MainProgBar,
 				DownloadProgressBars: dlOptions.DownloadProgressBars,
