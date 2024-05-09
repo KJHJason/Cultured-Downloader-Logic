@@ -141,7 +141,7 @@ func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (
 			}
 
 			err = fmt.Errorf(
-				"pixiv mobile error %d: failed to refresh token due to %v\n"+
+				"pixiv mobile error %d: failed to refresh token due to %w\n"+
 					"Please check your internet connection and try again",
 				cdlerrors.CONNECTION_ERROR,
 				err,

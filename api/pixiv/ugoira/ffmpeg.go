@@ -188,7 +188,7 @@ func getFfmpegFlagsForUgoira(options *ffmpegOptions, imagesFolderPath string) ([
 	default:
 		panic(
 			fmt.Sprintf(
-				"pixiv error %d: Output extension %v is not allowed for ugoira conversion",
+				"pixiv error %d: Output extension %s is not allowed for ugoira conversion",
 				cdlerrors.DEV_ERROR,
 				options.outputExt,
 			),

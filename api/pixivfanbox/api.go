@@ -159,7 +159,7 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 				return nil, err
 			}
 			err = fmt.Errorf(
-				"%s %d: failed to get creator's posts for %s due to %v",
+				"%s %d: failed to get creator's posts for %s due to %w",
 				errPrefix,
 				cdlerrors.CONNECTION_ERROR,
 				creatorId,
@@ -249,7 +249,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 				if err != context.Canceled {
 					logger.LogError(
 						fmt.Errorf(
-							"failed to get post for %s\n%v",
+							"failed to get post for %s\n%w",
 							reqUrl,
 							err,
 						),

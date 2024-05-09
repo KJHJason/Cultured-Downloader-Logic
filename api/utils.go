@@ -200,7 +200,7 @@ func ValidateStrArgs(str string, slice, errMsgs []string) (string, error) {
 		msgBody = fmt.Errorf("input error, got: %s", str)
 	}
 	return "", fmt.Errorf(
-		"%v\nExpecting one of the following: %s",
+		"%w\nExpecting one of the following: %s",
 		msgBody,
 		strings.TrimSpace(strings.Join(slice, ", ")),
 	)

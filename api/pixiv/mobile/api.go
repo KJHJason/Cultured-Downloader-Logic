@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
@@ -82,9 +82,9 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId, downloadPath string) ([]*
 		},
 	)
 	if err != nil {
-		if err != context.Canceled {
+		if !errors.Is(err, context.Canceled) {
 			err = fmt.Errorf(
-				"pixiv mobile error %d: failed to get artwork details for %s, more info => %v",
+				"pixiv mobile error %d: failed to get artwork details for %s, more info => %w",
 				cdlerrors.CONNECTION_ERROR,
 				artworkId,
 				err,
@@ -136,7 +136,9 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloa
 		if err != nil {
 			errSlice = append(errSlice, err)
 			if errors.Is(err, context.Canceled) {
-				break
+				pixiv.cancel()
+				progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv's Mobile API!")
+				return nil, nil, errSlice
 			}
 			progress.Increment()
 			continue
@@ -154,20 +156,15 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloa
 		progress.Increment()
 	}
 
-	hasErr := false
-	if len(errSlice) > 0 {
-		hasErr = true
-		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
-			pixiv.cancel()
-			progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv's Mobile API!")
-			return nil, nil, errSlice
-		}
+	hasErr := len(errSlice) > 0
+	if hasErr {
+		logger.LogErrors(false, logger.ERROR, errSlice...)
 	}
 	progress.Stop(hasErr)
 	return artworksToDownload, ugoiraSlice, errSlice
 }
 
-func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userId, downloadPath string, offsetArg *offsetArgs) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userId, downloadPath string, offsetArg *offsetArgs) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
 	var errSlice []error
 	var ugoiraSlice []*ugoira.Ugoira
 	var artworksToDownload []*httpfuncs.ToDownload
@@ -186,22 +183,22 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				errSlice = append(errSlice, err)
-				return nil, nil, errSlice
+				return nil, nil, errSlice, true
 			}
 			err = fmt.Errorf(
-				"pixiv mobile error %d: failed to get artist posts for %s, more info => %v",
+				"pixiv mobile error %d: failed to get artist posts for %s, more info => %w",
 				cdlerrors.CONNECTION_ERROR,
 				userId,
 				err,
 			)
 			errSlice = append(errSlice, err)
-			return nil, nil, errSlice
+			return nil, nil, errSlice, false
 		}
 
 		var resJson ArtworksJson
 		if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
 			errSlice = append(errSlice, err)
-			return nil, nil, errSlice
+			return nil, nil, errSlice, false
 		}
 
 		artworks, ugoira, errS := pixiv.processMultipleArtworkJson(&resJson, downloadPath)
@@ -221,7 +218,7 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 			pixiv.Sleep()
 		}
 	}
-	return artworksToDownload, ugoiraSlice, errSlice
+	return artworksToDownload, ugoiraSlice, errSlice, false
 }
 
 // Query Pixiv's API (mobile) to get all the posts JSON(s) of a user ID
@@ -247,23 +244,32 @@ func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, downloadPath, artworkT
 		maxOffset: maxOffset,
 		hasMax:    hasMax,
 	}
-	artworksToDl, ugoiraSlice, errSlice := pixiv.getArtistPostMainLogic(
+	artworksToDl, ugoiraSlice, errSlice, cancelled := pixiv.getArtistPostMainLogic(
 		params,
 		userId,
 		downloadPath,
 		offsetArgs,
 	)
+	if cancelled {
+		pixiv.cancel()
+		return nil, nil, errSlice
+	}
 
 	if params["type"] == "illust" && artworkType == "all" {
 		// if the user is downloading both
 		// illust and manga, loop again to get the manga
 		params["type"] = "manga"
-		artworksToDl2, ugoiraSlice2, errSlice2 := pixiv.getArtistPostMainLogic(
+		artworksToDl2, ugoiraSlice2, errSlice2, cancelled := pixiv.getArtistPostMainLogic(
 			params,
 			userId,
 			downloadPath,
 			offsetArgs,
 		)
+		if cancelled {
+			pixiv.cancel()
+			return nil, nil, errSlice
+		}
+
 		artworksToDl = append(artworksToDl, artworksToDl2...)
 		ugoiraSlice = append(ugoiraSlice, ugoiraSlice2...)
 		errSlice = append(errSlice, errSlice2...)
@@ -305,6 +311,12 @@ func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, do
 			artworkType,
 		)
 		if err != nil {
+			if hasCancelled := logger.LogErrors(false, logger.ERROR, err...); hasCancelled {
+				pixiv.cancel()
+				progress.StopInterrupt("Stopped getting artwork details from artists(s) on Pixiv!")
+				return nil, nil, errSlice
+			}
+
 			errSlice = append(errSlice, err...)
 			progress.Increment()
 			continue
@@ -318,16 +330,7 @@ func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, do
 		progress.Increment()
 	}
 
-	hasErr := false
-	if len(errSlice) > 0 {
-		hasErr = true
-		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
-			pixiv.cancel()
-			progress.StopInterrupt("Stopped getting artwork details from artists(s) on Pixiv!")
-			return nil, nil, errSlice
-		}
-	}
-	progress.Stop(hasErr)
+	progress.Stop(len(errSlice) > 0)
 	return artworksToDownload, ugoiraSlice, errSlice
 }
 
@@ -356,12 +359,13 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName, downloadPath string, dlOptions
 		)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
+				pixiv.cancel()
 				errSlice = append(errSlice, err)
 				return nil, nil, errSlice
 			}
 
 			err = fmt.Errorf(
-				"pixiv mobile error %d: failed to search for %q, more info => %v",
+				"pixiv mobile error %d: failed to search for %q, more info => %w",
 				cdlerrors.CONNECTION_ERROR,
 				tagName,
 				err,

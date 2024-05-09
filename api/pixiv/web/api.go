@@ -21,8 +21,12 @@ import (
 func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*ArtworkDetails, error) {
 	artworkDetailsRes, err := httpfuncs.CallRequest(reqArgs)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
+
 		return nil, fmt.Errorf(
-			"pixiv web error %d: failed to get artwork details for ID %v from %s",
+			"pixiv web error %d: failed to get artwork details for ID %s from %s",
 			cdlerrors.CONNECTION_ERROR,
 			artworkId,
 			reqArgs.Url,
@@ -43,7 +47,7 @@ func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*
 	var artworkDetailsJsonRes ArtworkDetails
 	if err := httpfuncs.LoadJsonFromResponse(artworkDetailsRes, &artworkDetailsJsonRes); err != nil {
 		return nil, fmt.Errorf(
-			"%v\ndetails: failed to read response body for Pixiv artwork ID %s",
+			"%w\ndetails: failed to read response body for Pixiv artwork ID %s",
 			err,
 			artworkId,
 		)
@@ -70,8 +74,12 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 	reqArgs.Url = url
 	artworkUrlsRes, err := httpfuncs.CallRequest(reqArgs)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
+
 		return nil, fmt.Errorf(
-			"pixiv web error %d: failed to get artwork URLs for ID %s from %s due to %v",
+			"pixiv web error %d: failed to get artwork URLs for ID %s from %s due to %w",
 			cdlerrors.CONNECTION_ERROR,
 			artworkId,
 			url,
@@ -116,6 +124,9 @@ func getArtworkDetails(artworkId, downloadPath string, dlOptions *PixivWebDlOpti
 	}
 	artworkDetailsJsonRes, err := getArtworkDetailsLogic(artworkId, reqArgs)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			dlOptions.CancelCtx()
+		}
 		return nil, nil, err
 	}
 
@@ -132,6 +143,9 @@ func getArtworkDetails(artworkId, downloadPath string, dlOptions *PixivWebDlOpti
 	artworkType := artworkJsonBody.IllustType
 	artworkUrlsRes, err := getArtworkUrlsToDlLogic(artworkType, artworkId, reqArgs)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			dlOptions.CancelCtx()
+		}
 		return nil, nil, err
 	}
 
@@ -181,6 +195,12 @@ func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptio
 			dlOptions,
 		)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				dlOptions.CancelCtx()
+				progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv!")
+				return nil, nil, errSlice
+			}
+
 			errSlice = append(errSlice, err)
 			progress.Increment()
 			continue
@@ -235,7 +255,7 @@ func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions)
 			return nil, err
 		}
 		return nil, fmt.Errorf(
-			"pixiv web error %d: failed to get illustrator's posts with an ID of %s due to %v",
+			"pixiv web error %d: failed to get illustrator's posts with an ID of %s due to %w",
 			cdlerrors.CONNECTION_ERROR,
 			illustratorId,
 			err,

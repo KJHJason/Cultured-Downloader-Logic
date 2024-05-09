@@ -22,5 +22,5 @@ const (
 //
 // More info: https://github.com/Nandaka/PixivUtil2/issues/477
 func pixivSleep() {
-	time.Sleep(httpfuncs.GetRandomTime(0.5, 1.0))
+	time.Sleep(httpfuncs.GetRandomTime(1.5, 3))
 }

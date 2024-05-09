@@ -53,7 +53,7 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 			return nil, nil
 		}
 		err = fmt.Errorf(
-			"error getting creator name for %q (%s)... falling back to creator ID! (Details below)\n%v",
+			"error getting creator name for %q (%s)... falling back to creator ID! (Details below)\n%w",
 			resJson.User,
 			resJson.Service,
 			err,
