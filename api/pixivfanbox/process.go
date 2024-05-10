@@ -137,7 +137,7 @@ func processFanboxFilePost(postBody json.RawMessage, postFolderPath string, dlOp
 		dlOptions.DlGdrive,
 		dlOptions.Configs.LogUrls,
 	)
-	if detectedGdriveLinks != nil {
+	if len(detectedGdriveLinks) > 0 {
 		gdriveLinks = append(gdriveLinks, detectedGdriveLinks...)
 	}
 
@@ -183,7 +183,7 @@ func processFanboxImagePost(postBody json.RawMessage, postFolderPath string, dlO
 		dlOptions.DlGdrive,
 		dlOptions.Configs.LogUrls,
 	)
-	if detectedGdriveLinks != nil {
+	if len(detectedGdriveLinks) > 0 {
 		gdriveLinks = append(gdriveLinks, detectedGdriveLinks...)
 	}
 
