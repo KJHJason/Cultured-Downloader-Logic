@@ -30,34 +30,6 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 
-	if len(pixivDl.ArtistIds) > 0 {
-		artworkIdsSlice, err := pixivweb.GetMultipleArtistsPosts(
-			pixivDl.ArtistIds,
-			pixivDl.ArtistPageNums,
-			pixivDlOptions,
-		)
-		if len(err) > 0 {
-			errSlice = append(errSlice, err...)
-		} else {
-			pixivDl.ArtworkIds = append(pixivDl.ArtworkIds, artworkIdsSlice...)
-			pixivDl.ArtworkIds = api.RemoveSliceDuplicates(pixivDl.ArtworkIds)
-		}
-	}
-
-	if len(pixivDl.ArtworkIds) > 0 && pixivDlOptions.CtxIsActive() {
-		artworkSlice, ugoiraSlice, err := pixivweb.GetMultipleArtworkDetails(
-			pixivDl.ArtworkIds,
-			pixivDlOptions,
-			true,
-		)
-		if len(err) > 0 {
-			errSlice = append(errSlice, err...)
-		} else {
-			artworksToDl = append(artworksToDl, artworkSlice...)
-			ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
-		}
-	}
-
 	tagNameLen := len(pixivDl.TagNames)
 	if tagNameLen > 0 && pixivDlOptions.CtxIsActive() {
 		// loop through each tag and page number
@@ -81,7 +53,7 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 		prog.Start()
 		hasErr := false
 		for idx, tagName := range pixivDl.TagNames {
-			artworksSlice, ugoiraSlice, err, hasCancelled := pixivweb.TagSearch(
+			artworkIds, err, hasCancelled := pixivweb.TagSearch(
 				tagName,
 				pixivDl.TagNamesPageNums[idx],
 				pixivDlOptions,
@@ -97,12 +69,38 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 				return errSlice
 			}
 
-			artworksToDl = append(artworksToDl, artworksSlice...)
-			ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
+			pixivDl.ArtworkIds = append(pixivDl.ArtworkIds, artworkIds...)
 			prog.Increment()
 		}
 		prog.Stop(hasErr)
 		prog.SnapshotTask()
+	}
+
+	if len(pixivDl.ArtistIds) > 0 {
+		artworkIdsSlice, err := pixivweb.GetMultipleArtistsPosts(
+			pixivDl.ArtistIds,
+			pixivDl.ArtistPageNums,
+			pixivDlOptions,
+		)
+		if len(err) > 0 {
+			errSlice = append(errSlice, err...)
+		} else {
+			pixivDl.ArtworkIds = append(pixivDl.ArtworkIds, artworkIdsSlice...)
+		}
+	}
+
+	if len(pixivDl.ArtworkIds) > 0 && pixivDlOptions.CtxIsActive() {
+		pixivDl.ArtworkIds = api.RemoveSliceDuplicates(pixivDl.ArtworkIds)
+		artworkSlice, ugoiraSlice, err := pixivweb.GetMultipleArtworkDetails(
+			pixivDl.ArtworkIds,
+			pixivDlOptions,
+		)
+		if len(err) > 0 {
+			errSlice = append(errSlice, err...)
+		} else {
+			artworksToDl = append(artworksToDl, artworkSlice...)
+			ugoiraToDl = append(ugoiraToDl, ugoiraSlice...)
+		}
 	}
 
 	if len(artworksToDl) > 0 && pixivDlOptions.CtxIsActive() {

@@ -162,7 +162,7 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 
 // Retrieves multiple artwork details based on the given slice of artwork IDs
 // and returns a map to use for downloading and a slice of Ugoira structures
-func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions, setProgBar bool) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	var errSlice []error
 	var ugoiraDetails []*ugoira.Ugoira
 	var artworkDetails []*httpfuncs.ToDownload
@@ -170,27 +170,25 @@ func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions
 	lastArtworkId := artworkIds[artworkIdsLen-1]
 
 	var progress progress.ProgressBar
-	if setProgBar {
-		baseMsg := "Getting and processing artwork details from Pixiv [%d/" + fmt.Sprintf("%d]...", artworkIdsLen)
-		progress = dlOptions.MainProgBar
-		progress.UpdateBaseMsg(baseMsg)
-		progress.UpdateSuccessMsg(
-			fmt.Sprintf(
-				"Finished getting and processing %d artwork details from Pixiv!",
-				artworkIdsLen,
-			),
-		)
-		progress.UpdateErrorMsg(
-			fmt.Sprintf(
-				"Something went wrong while getting and processing %d artwork details from Pixiv!\nPlease refer to the logs for more details.",
-				artworkIdsLen,
-			),
-		)
-		progress.SetToProgressBar()
-		progress.UpdateMax(artworkIdsLen)
-		progress.Start()
-		defer progress.SnapshotTask()
-	}
+	baseMsg := "Getting and processing artwork details from Pixiv [%d/" + fmt.Sprintf("%d]...", artworkIdsLen)
+	progress = dlOptions.MainProgBar
+	progress.UpdateBaseMsg(baseMsg)
+	progress.UpdateSuccessMsg(
+		fmt.Sprintf(
+			"Finished getting and processing %d artwork details from Pixiv!",
+			artworkIdsLen,
+		),
+	)
+	progress.UpdateErrorMsg(
+		fmt.Sprintf(
+			"Something went wrong while getting and processing %d artwork details from Pixiv!\nPlease refer to the logs for more details.",
+			artworkIdsLen,
+		),
+	)
+	progress.SetToProgressBar()
+	progress.UpdateMax(artworkIdsLen)
+	progress.Start()
+	defer progress.SnapshotTask()
 	for _, artworkId := range artworkIds {
 		artworksToDl, ugoiraInfo, err := getArtworkDetails(
 			artworkId,
@@ -199,16 +197,12 @@ func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				dlOptions.CancelCtx()
-				if setProgBar {
-					progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv!")
-				}
+				progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv!")
 				return nil, nil, errSlice
 			}
 
 			errSlice = append(errSlice, err)
-			if setProgBar {
-				progress.Increment()
-			}
+			progress.Increment()
 			continue
 		}
 
@@ -218,9 +212,7 @@ func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions
 			artworkDetails = append(artworkDetails, artworksToDl...)
 		}
 
-		if setProgBar {
-			progress.Increment()
-		}
+		progress.Increment()
 		if artworkId != lastArtworkId {
 			pixivSleep()
 		}
@@ -231,16 +223,12 @@ func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions
 		hasErr = true
 		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
 			dlOptions.CancelCtx()
-			if setProgBar {
-				progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv!")
-			}
+			progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv!")
 			return nil, nil, errSlice
 		}
 	}
 
-	if setProgBar {
-		progress.Stop(hasErr)
-	}
+	progress.Stop(hasErr)
 	return artworkDetails, ugoiraDetails, errSlice
 }
 
@@ -299,18 +287,18 @@ func GetMultipleArtistsPosts(illustratorIds, pageNums []string, dlOptions *Pixiv
 	illustratorIdsLen := len(illustratorIds)
 	lastIllustratorIdx := illustratorIdsLen - 1
 
-	baseMsg := "Getting artwork details from illustrator(s) on Pixiv [%d/" + fmt.Sprintf("%d]...", illustratorIdsLen)
+	baseMsg := "Getting artwork details from artist(s) on Pixiv [%d/" + fmt.Sprintf("%d]...", illustratorIdsLen)
 	progress := dlOptions.MainProgBar
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
-			"Finished getting artwork details from %d illustrator(s) on Pixiv!",
+			"Finished getting artwork details from %d artist(s) on Pixiv!",
 			illustratorIdsLen,
 		),
 	)
 	progress.UpdateErrorMsg(
 		fmt.Sprintf(
-			"Something went wrong while getting artwork details from %d illustrator(s) on Pixiv!\nPlease refer to the logs for more details.",
+			"Something went wrong while getting artwork details from %d artist(s) on Pixiv!\nPlease refer to the logs for more details.",
 			illustratorIdsLen,
 		),
 	)
@@ -341,7 +329,7 @@ func GetMultipleArtistsPosts(illustratorIds, pageNums []string, dlOptions *Pixiv
 		hasErr = true
 		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
 			dlOptions.CancelCtx()
-			progress.StopInterrupt("Stopped getting artwork details from illustrator(s) on Pixiv!")
+			progress.StopInterrupt("Stopped getting artwork details from artist(s) on Pixiv!")
 			return nil, errSlice
 		}
 	}
@@ -407,11 +395,11 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 // Query Pixiv's API and search for posts based on the supplied tag name
 // which will return a map and a slice of Ugoira structures for downloads
 // Returns the map, the slice, a boolean indicating if there was an error, and a boolean indicating if the user cancelled the operation
-func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
+func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]string, []error, bool) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		logger.LogError(err, false, logger.ERROR)
-		return nil, nil, []error{err}, false
+		return nil, []error{err}, false
 	}
 
 	url := fmt.Sprintf("%s/search/artworks/%s", constants.PIXIV_API_URL, tagName)
@@ -463,11 +451,9 @@ func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]*httpfu
 	if len(errSlice) > 0 {
 		if cancelled := logger.LogErrors(false, logger.ERROR, errSlice...); cancelled {
 			dlOptions.CancelCtx()
-			return nil, nil, errSlice, true
+			return nil, errSlice, true
 		}
 	}
 
-	artworkSlice, ugoiraSlice, newErrSlice := GetMultipleArtworkDetails(artworkIds, dlOptions, false)
-	errSlice = append(errSlice, newErrSlice...)
-	return artworkSlice, ugoiraSlice, errSlice, false
+	return artworkIds, errSlice, false
 }
