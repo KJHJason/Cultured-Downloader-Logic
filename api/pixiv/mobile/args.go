@@ -13,30 +13,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
-var (
-	ACCEPTED_SORT_ORDER = []string{
-		"date", "date_d",
-		"popular", "popular_d",
-		"popular_male", "popular_male_d",
-		"popular_female", "popular_female_d",
-	}
-	ACCEPTED_SEARCH_MODE = []string{
-		"s_tag",
-		"s_tag_full",
-		"s_tc",
-	}
-	ACCEPTED_RATING_MODE = []string{
-		"safe",
-		"r18",
-		"all",
-	}
-	ACCEPTED_ARTWORK_TYPE = []string{
-		"illust_and_ugoira",
-		"manga",
-		"all",
-	}
-)
-
 // PixivToDl is the struct that contains the arguments of Pixiv download options.
 type PixivMobileDlOptions struct {
 	ctx    context.Context
@@ -115,7 +91,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 	p.SortOrder = strings.ToLower(p.SortOrder)
 	_, err := api.ValidateStrArgs(
 		p.SortOrder,
-		ACCEPTED_SORT_ORDER,
+		constants.ACCEPTED_SORT_ORDER,
 		[]string{
 			fmt.Sprintf(
 				"pixiv mobile error %d: Sort order %s is not allowed",
@@ -131,7 +107,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 	p.SearchMode = strings.ToLower(p.SearchMode)
 	_, err = api.ValidateStrArgs(
 		p.SearchMode,
-		ACCEPTED_SEARCH_MODE,
+		constants.ACCEPTED_SEARCH_MODE,
 		[]string{
 			fmt.Sprintf(
 				"pixiv mobile error %d: Search order %s is not allowed",
@@ -147,7 +123,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 	p.RatingMode = strings.ToLower(p.RatingMode)
 	_, err = api.ValidateStrArgs(
 		p.RatingMode,
-		ACCEPTED_RATING_MODE,
+		constants.ACCEPTED_RATING_MODE,
 		[]string{
 			fmt.Sprintf(
 				"pixiv mobile error %d: Rating order %s is not allowed",
@@ -163,7 +139,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 	p.ArtworkType = strings.ToLower(p.ArtworkType)
 	_, err = api.ValidateStrArgs(
 		p.ArtworkType,
-		ACCEPTED_ARTWORK_TYPE,
+		constants.ACCEPTED_ARTWORK_TYPE,
 		[]string{
 			fmt.Sprintf(
 				"pixiv mobile error %d: Artwork type %s is not allowed",
