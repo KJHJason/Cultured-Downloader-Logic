@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"regexp"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
@@ -12,7 +11,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
@@ -129,16 +127,10 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 		)
 	}
 
-	if pf.BaseDownloadDirPath == "" {
-		pf.BaseDownloadDirPath = filepath.Join(iofuncs.DOWNLOAD_PATH, constants.PIXIV_FANBOX_TITLE)
+	if dlDirPath, err := api.ValidateDlDirPath(pf.BaseDownloadDirPath, constants.PIXIV_FANBOX_TITLE); err != nil {
+		return err
 	} else {
-		if !iofuncs.DirPathExists(pf.BaseDownloadDirPath) {
-			return fmt.Errorf(
-				"pixiv fanbox error %d, download path does not exist or is not a directory, please create the directory and try again",
-				cdlerrors.INPUT_ERROR,
-			)
-		}
-		pf.BaseDownloadDirPath = filepath.Join(pf.BaseDownloadDirPath, constants.PIXIV_FANBOX_TITLE)
+		pf.BaseDownloadDirPath = dlDirPath
 	}
 
 	if len(pf.SessionCookies) > 0 {

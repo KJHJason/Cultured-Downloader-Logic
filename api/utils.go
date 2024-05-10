@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -36,6 +37,24 @@ func GetReadableSiteStr(site string) string {
 			),
 		)
 	}
+}
+
+func ValidateDlDirPath(dlDirPath, targetDirName string) (validatedDirPath string, err error) {
+	if dlDirPath == "" {
+		return filepath.Join(iofuncs.DOWNLOAD_PATH, targetDirName), nil
+	}
+
+	if !iofuncs.DirPathExists(dlDirPath) {
+		return "", fmt.Errorf(
+			"error %d, download path does not exist or is not a directory, please create the directory and try again",
+			cdlerrors.INPUT_ERROR,
+		)
+	}
+
+	if filepath.Base(dlDirPath) != targetDirName {
+		return filepath.Join(dlDirPath, targetDirName), nil
+	}
+	return dlDirPath, nil
 }
 
 // Convert the page number to the offset as one page might have x posts.

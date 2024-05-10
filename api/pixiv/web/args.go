@@ -3,9 +3,7 @@ package pixivweb
 import (
 	"context"
 	"fmt"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
@@ -104,16 +102,10 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		}
 	}
 
-	if p.BaseDownloadDirPath == "" {
-		p.BaseDownloadDirPath = filepath.Join(iofuncs.DOWNLOAD_PATH, constants.PIXIV_TITLE)
+	if dlDirPath, err := api.ValidateDlDirPath(p.BaseDownloadDirPath, constants.PIXIV_TITLE); err != nil {
+		return err
 	} else {
-		if !iofuncs.DirPathExists(p.BaseDownloadDirPath) {
-			return fmt.Errorf(
-				"pixiv error %d, download path does not exist or is not a directory, please create the directory and try again",
-				cdlerrors.INPUT_ERROR,
-			)
-		}
-		p.BaseDownloadDirPath = filepath.Join(p.BaseDownloadDirPath, constants.PIXIV_TITLE)
+		p.BaseDownloadDirPath = dlDirPath
 	}
 
 	if p.MainProgBar == nil {

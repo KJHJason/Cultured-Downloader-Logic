@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
@@ -13,7 +12,6 @@ import (
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/PuerkitoBio/goquery"
@@ -200,16 +198,10 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		)
 	}
 
-	if f.BaseDownloadDirPath == "" {
-		f.BaseDownloadDirPath = filepath.Join(iofuncs.DOWNLOAD_PATH, constants.FANTIA_TITLE)
+	if dlDirPath, err := api.ValidateDlDirPath(f.BaseDownloadDirPath, constants.FANTIA_TITLE); err != nil {
+		return err
 	} else {
-		if !iofuncs.DirPathExists(f.BaseDownloadDirPath) {
-			return fmt.Errorf(
-				"fantia error %d, download path does not exist or is not a directory, please create the directory and try again",
-				cdlerrors.INPUT_ERROR,
-			)
-		}
-		f.BaseDownloadDirPath = filepath.Join(f.BaseDownloadDirPath, constants.FANTIA_TITLE)
+		f.BaseDownloadDirPath = dlDirPath
 	}
 
 	if f.MainProgBar == nil {

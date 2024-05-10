@@ -3,17 +3,14 @@ package kemono
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"path/filepath"
-
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"net/http"
 )
 
 type KemonoDl struct {
@@ -194,16 +191,10 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 		)
 	}
 
-	if k.BaseDownloadDirPath == "" {
-		k.BaseDownloadDirPath = filepath.Join(iofuncs.DOWNLOAD_PATH, constants.KEMONO_TITLE)
+	if dlDirPath, err := api.ValidateDlDirPath(k.BaseDownloadDirPath, constants.KEMONO_TITLE); err != nil {
+		return err
 	} else {
-		if !iofuncs.DirPathExists(k.BaseDownloadDirPath) {
-			return fmt.Errorf(
-				"kemono error %d, download path does not exist or is not a directory, please create the directory and try again",
-				cdlerrors.INPUT_ERROR,
-			)
-		}
-		k.BaseDownloadDirPath = filepath.Join(k.BaseDownloadDirPath, constants.KEMONO_TITLE)
+		k.BaseDownloadDirPath = dlDirPath
 	}
 
 	if k.MainProgBar == nil {

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
-	"path/filepath"
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
@@ -101,16 +99,10 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 		)
 	}
 
-	if p.BaseDownloadDirPath == "" {
-		p.BaseDownloadDirPath = filepath.Join(iofuncs.DOWNLOAD_PATH, constants.PIXIV_MOBILE_TITLE)
+	if dlDirPath, err := api.ValidateDlDirPath(p.BaseDownloadDirPath, constants.PIXIV_MOBILE_TITLE); err != nil {
+		return err
 	} else {
-		if !iofuncs.DirPathExists(p.BaseDownloadDirPath) {
-			return fmt.Errorf(
-				"pixiv mobile error %d, download path does not exist or is not a directory, please create the directory and try again",
-				cdlerrors.INPUT_ERROR,
-			)
-		}
-		p.BaseDownloadDirPath = filepath.Join(p.BaseDownloadDirPath, constants.PIXIV_MOBILE_TITLE)
+		p.BaseDownloadDirPath = dlDirPath
 	}
 
 	if p.Notifier == nil {
