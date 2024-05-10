@@ -30,9 +30,9 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 
-	if len(pixivDl.ArtworkIds) > 0 {
+	if len(pixivDl.ArtistIds) > 0 {
 		artworkIdsSlice, err := pixivweb.GetMultipleArtistsPosts(
-			pixivDl.ArtworkIds,
+			pixivDl.ArtistIds,
 			pixivDl.ArtistPageNums,
 			pixivDlOptions,
 		)
@@ -48,6 +48,7 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 		artworkSlice, ugoiraSlice, err := pixivweb.GetMultipleArtworkDetails(
 			pixivDl.ArtworkIds,
 			pixivDlOptions,
+			true,
 		)
 		if len(err) > 0 {
 			errSlice = append(errSlice, err...)
@@ -156,9 +157,9 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 
-	if len(pixivDl.ArtworkIds) > 0 {
+	if len(pixivDl.ArtistIds) > 0 {
 		artworkSlice, ugoiraSlice, err := pixivDlOptions.MobileClient.GetMultipleArtistsPosts(
-			pixivDl.ArtworkIds,
+			pixivDl.ArtistIds,
 			pixivDl.ArtistPageNums,
 			pixivDlOptions.ArtworkType,
 		)

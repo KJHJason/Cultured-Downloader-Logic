@@ -73,9 +73,11 @@ func AddParams(params map[string]string, req *http.Request) {
 
 // send the request to the target URL and retries if the request was not successful
 func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error) {
+	reqArgs.EditMu.Lock()
 	AddCookies(reqArgs.Url, reqArgs.Cookies, req)
 	AddHeaders(reqArgs.Headers, reqArgs.UserAgent, req)
 	AddParams(reqArgs.Params, req)
+	reqArgs.EditMu.Unlock()
 
 	var err error
 	var res *http.Response
@@ -169,6 +171,7 @@ func CheckInternetConnection() error {
 
 // Sends a request with the given data
 func CallRequestWithData(reqArgs *RequestArgs, data map[string]string) (*http.Response, error) {
+	reqArgs.EditMu.Lock()
 	reqArgs.ValidateArgs()
 	form := url.Values{}
 	for key, value := range data {
@@ -177,6 +180,7 @@ func CallRequestWithData(reqArgs *RequestArgs, data map[string]string) (*http.Re
 	if len(data) > 0 {
 		reqArgs.Headers["Content-Type"] = "application/x-www-form-urlencoded"
 	}
+	reqArgs.EditMu.Unlock()
 
 	req, err := http.NewRequestWithContext(
 		reqArgs.Context,

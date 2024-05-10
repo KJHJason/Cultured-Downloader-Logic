@@ -82,7 +82,6 @@ func ConvertPageNumToOffset(minPageNum, maxPageNum, perPage int) (int, int) {
 // check page nums if they are in the correct format.
 //
 // E.g. "1-10" is valid, but "0-9" is not valid because "0" is not accepted
-// If the page nums are not in the correct format, os.Exit(1) is called
 func ValidatePageNumInput(baseSliceLen int, pageNums []string, errMsgs []string) error {
 	pageNumsLen := len(pageNums)
 	if baseSliceLen != pageNumsLen {
@@ -100,7 +99,7 @@ func ValidatePageNumInput(baseSliceLen int, pageNums []string, errMsgs []string)
 		return msgBody
 	}
 
-	valid, outlier := SliceMatchesRegex(constants.PAGE_NUM_REGEX, pageNums)
+	valid, outlier := SliceMatchesRegex(constants.PAGE_NUM_REGEX, pageNums, false)
 	if !valid {
 		return fmt.Errorf(
 			"error %d: invalid page number format: %q\nPlease follow the format, \"1-10\", as an example.\nNote that \"0\" are not accepted! E.g. \"0-9\" is invalid",
@@ -254,10 +253,14 @@ func CombineStringsWithNewline(strs ...string) string {
 }
 
 // Checks if the slice of string all matches the given regex pattern
+// If strict is true, then all string must match the regex pattern. Otherwise, empty strings are allowed.
 //
 // Returns true if all matches, false otherwise with the outlier string
-func SliceMatchesRegex(regex *regexp.Regexp, slice []string) (bool, string) {
+func SliceMatchesRegex(regex *regexp.Regexp, slice []string, strict bool) (bool, string) {
 	for _, str := range slice {
+		if str == "" && !strict {
+			continue
+		}
 		if !regex.MatchString(str) {
 			return false, str
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
@@ -17,6 +18,7 @@ type RequestArgs struct {
 	Timeout int
 
 	// Additional Request Options
+	EditMu             sync.Mutex
 	Headers            map[string]string
 	Params             map[string]string
 	Cookies            []*http.Cookie

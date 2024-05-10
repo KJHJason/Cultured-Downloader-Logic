@@ -86,7 +86,7 @@ func (k *KemonoDl) RemoveDuplicates() {
 }
 
 func (k *KemonoDl) ValidateArgs() error {
-	valid, outlier := api.SliceMatchesRegex(constants.KEMONO_CREATOR_URL_REGEX, k.CreatorUrls)
+	valid, outlier := api.SliceMatchesRegex(constants.KEMONO_CREATOR_URL_REGEX, k.CreatorUrls, true)
 	if !valid {
 		return fmt.Errorf(
 			"kemono error %d: invalid creator URL found for kemono: %s",
@@ -95,7 +95,7 @@ func (k *KemonoDl) ValidateArgs() error {
 		)
 	}
 
-	valid, outlier = api.SliceMatchesRegex(constants.KEMONO_POST_URL_REGEX, k.PostUrls)
+	valid, outlier = api.SliceMatchesRegex(constants.KEMONO_POST_URL_REGEX, k.PostUrls, true)
 	if !valid {
 		return fmt.Errorf(
 			fmt.Sprintf(

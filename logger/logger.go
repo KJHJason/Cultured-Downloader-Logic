@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
@@ -18,29 +17,36 @@ const (
 )
 
 type Logger struct {
-	infoLogger  *log.Logger
-	errorLogger *log.Logger
-	debugLogger *log.Logger
+	traceLogger   *log.Logger
+	debugLogger   *log.Logger
+	infoLogger    *log.Logger
+	warningLogger *log.Logger
+	errorLogger   *log.Logger
+	fatalLogger   *log.Logger
 }
 
-var loggerPrefix = fmt.Sprintf("Cultured Downloader Logic V%s ", constants.VERSION)
-
-func NewLogger(out io.Writer) *Logger {
+func NewLogger(out io.Writer) Logger {
 	if out == nil {
 		out = os.Stdout
 	}
 
-	return &Logger{
-		infoLogger:  log.New(out, loggerPrefix+"[INFO]: ", log.Ldate|log.Ltime),
-		errorLogger: log.New(out, loggerPrefix+"[ERROR]: ", log.Ldate|log.Ltime),
-		debugLogger: log.New(out, loggerPrefix+"[DEBUG]: ", log.Ldate|log.Ltime),
+	return Logger{
+		traceLogger:   log.New(out, "[TRACE]: ", log.Ldate|log.Ltime),
+		debugLogger:   log.New(out, "[DEBUG]: ", log.Ldate|log.Ltime),
+		infoLogger:    log.New(out, "[INFO]: ", log.Ldate|log.Ltime),
+		warningLogger: log.New(out, "[WARNING]: ", log.Ldate|log.Ltime),
+		errorLogger:   log.New(out, "[ERROR]: ", log.Ldate|log.Ltime),
+		fatalLogger:   log.New(out, "[FATAL]: ", log.Ldate|log.Ltime),
 	}
 }
 
-func (l *Logger) SetOutput(w io.Writer) {
-	l.infoLogger.SetOutput(w)
-	l.errorLogger.SetOutput(w)
+func (l Logger) SetOutput(w io.Writer) {
+	l.traceLogger.SetOutput(w)
 	l.debugLogger.SetOutput(w)
+	l.infoLogger.SetOutput(w)
+	l.warningLogger.SetOutput(w)
+	l.errorLogger.SetOutput(w)
+	l.fatalLogger.SetOutput(w)
 }
 
 // LogBasedOnLvlf logs a message based on the log level passed in
@@ -49,7 +55,7 @@ func (l *Logger) SetOutput(w io.Writer) {
 //
 // However, please ensure that the
 // lvl passed in is valid (i.e. INFO, ERROR, or DEBUG), otherwise this function will panic
-func (l *Logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
+func (l Logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
 	switch lvl {
 	case INFO:
 		l.Infof(format, args...)
@@ -72,30 +78,63 @@ func (l *Logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
 //
 // However, please ensure that the
 // lvl passed in is valid (i.e. INFO, ERROR, or DEBUG), otherwise this function will panic
-func (l *Logger) LogBasedOnLvl(lvl int, msg string) {
+func (l Logger) LogBasedOnLvl(lvl int, msg string) {
 	l.LogBasedOnLvlf(lvl, msg)
 }
 
-func (l *Logger) Debug(args ...any) {
-	l.debugLogger.Println(args...)
+var printLogger = log.New(os.Stdout, "[PRINT]: ", log.Ldate|log.Ltime)
+func (l Logger) Print(message string) {
+	printLogger.Println(message)
 }
 
-func (l *Logger) Debugf(format string, args ...any) {
+func (l Logger) Printf(format string, args ...any) {
+	printLogger.Printf(format, args...)
+}
+
+func (l Logger) Trace(message string) {
+	l.traceLogger.Println(message)
+}
+
+func (l Logger) Tracef(format string, args ...any) {
+	l.traceLogger.Printf(format, args...)
+}
+
+func (l Logger) Debug(message string) {
+	l.debugLogger.Println(message)
+}
+
+func (l Logger) Debugf(format string, args ...any) {
 	l.debugLogger.Printf(format, args...)
 }
 
-func (l *Logger) Info(args ...any) {
-	l.infoLogger.Println(args...)
+func (l Logger) Info(message string) {
+	l.infoLogger.Println(message)
 }
 
-func (l *Logger) Infof(format string, args ...any) {
+func (l Logger) Infof(format string, args ...any) {
 	l.infoLogger.Printf(format, args...)
 }
 
-func (l *Logger) Error(args ...any) {
-	l.errorLogger.Println(args...)
+func (l Logger) Warning(message string) {
+	l.warningLogger.Println(message)
 }
 
-func (l *Logger) Errorf(format string, args ...any) {
+func (l Logger) Warningf(format string, args ...any) {
+	l.warningLogger.Printf(format, args...)
+}
+
+func (l Logger) Error(message string) {
+	l.errorLogger.Println(message)
+}
+
+func (l Logger) Errorf(format string, args ...any) {
 	l.errorLogger.Printf(format, args...)
+}
+
+func (l Logger) Fatal(message string) {
+	l.fatalLogger.Fatal(message)
+}
+
+func (l Logger) Fatalf(format string, args ...any) {
+	l.fatalLogger.Fatalf(format, args...)
 }

@@ -18,7 +18,7 @@ import (
 const LogSuffix = "\n\n"
 
 var (
-	MainLogger  *Logger
+	MainLogger  Logger
 	logFolder   = filepath.Join(iofuncs.APP_PATH, "logs")
 	logFilePath = filepath.Join(
 		logFolder,
