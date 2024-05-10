@@ -1,17 +1,14 @@
 package pixivmobile
 
 import (
-	"strconv"
-	"path/filepath"
-
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"strconv"
 )
 
 // Process the artwork JSON and returns a slice of map that contains the urls of the images and the file path
-func (pixiv *PixivMobile) processArtworkJson(artworkJson *IllustJson, downloadPath string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
+func (pixiv *PixivMobile) processArtworkJson(artworkJson *IllustJson) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
 	if artworkJson == nil {
 		return nil, nil, nil
 	}
@@ -21,7 +18,7 @@ func (pixiv *PixivMobile) processArtworkJson(artworkJson *IllustJson, downloadPa
 	artworkType := artworkJson.Type
 	artistName := artworkJson.User.Name
 	artworkFolderPath := iofuncs.GetPostFolder(
-		filepath.Join(downloadPath, constants.PIXIV_TITLE), artistName, artworkId, artworkTitle,
+		pixiv.baseDownloadDirPath, artistName, artworkId, artworkTitle,
 	)
 
 	if artworkType == "ugoira" {
@@ -53,7 +50,7 @@ func (pixiv *PixivMobile) processArtworkJson(artworkJson *IllustJson, downloadPa
 
 // The same as the processArtworkJson function but for mutliple JSONs at once
 // (Those with the "illusts" key which holds a slice of maps containing the artwork JSON)
-func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *ArtworksJson, downloadPath string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *ArtworksJson) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	if resJson == nil {
 		return nil, nil, nil
 	}
@@ -67,13 +64,13 @@ func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *ArtworksJson, down
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 	for _, artwork := range artworksMaps {
-		artworks, ugoira, err := pixiv.processArtworkJson(artwork, downloadPath)
+		artworks, ugoiraVal, err := pixiv.processArtworkJson(artwork)
 		if err != nil {
 			errSlice = append(errSlice, err)
 			continue
 		}
-		if ugoira != nil {
-			ugoiraToDl = append(ugoiraToDl, ugoira)
+		if ugoiraVal != nil {
+			ugoiraToDl = append(ugoiraToDl, ugoiraVal)
 			continue
 		}
 		artworksToDl = append(artworksToDl, artworks...)

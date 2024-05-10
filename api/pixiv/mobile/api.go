@@ -70,7 +70,7 @@ func (pixiv *PixivMobile) getUgoiraMetadata(illustId, dlFilePath string) (*ugoir
 }
 
 // Query Pixiv's API (mobile) to get the JSON of an artwork ID
-func (pixiv *PixivMobile) getArtworkDetails(artworkId, downloadPath string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
+func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
 	params := map[string]string{"illust_id": artworkId}
 
 	res, err := pixiv.SendRequest(
@@ -98,14 +98,11 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId, downloadPath string) ([]*
 		return nil, nil, err
 	}
 
-	artworkDetails, ugoiraToDl, err := pixiv.processArtworkJson(
-		artworkJson.Illust,
-		downloadPath,
-	)
+	artworkDetails, ugoiraToDl, err := pixiv.processArtworkJson(artworkJson.Illust)
 	return artworkDetails, ugoiraToDl, err
 }
 
-func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloadPath string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	var artworksToDownload []*httpfuncs.ToDownload
 	var ugoiraSlice []*ugoira.Ugoira
 	artworkIdsLen := len(artworkIds)
@@ -132,7 +129,7 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloa
 	defer progress.SnapshotTask()
 	progress.Start()
 	for idx, artworkId := range artworkIds {
-		artworkDetails, ugoiraInfo, err := pixiv.getArtworkDetails(artworkId, downloadPath)
+		artworkDetails, ugoiraInfo, err := pixiv.getArtworkDetails(artworkId)
 		if err != nil {
 			errSlice = append(errSlice, err)
 			if errors.Is(err, context.Canceled) {
@@ -164,7 +161,7 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string, downloa
 	return artworksToDownload, ugoiraSlice, errSlice
 }
 
-func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userId, downloadPath string, offsetArg *offsetArgs) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
+func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userId string, offsetArg *offsetArgs) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
 	var errSlice []error
 	var ugoiraSlice []*ugoira.Ugoira
 	var artworksToDownload []*httpfuncs.ToDownload
@@ -201,7 +198,7 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 			return nil, nil, errSlice, false
 		}
 
-		artworks, ugoiraS, errS := pixiv.processMultipleArtworkJson(&resJson, downloadPath)
+		artworks, ugoiraS, errS := pixiv.processMultipleArtworkJson(&resJson)
 		if len(errS) > 0 {
 			errSlice = append(errSlice, errS...)
 		}
@@ -222,7 +219,7 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 }
 
 // Query Pixiv's API (mobile) to get all the posts JSON(s) of a user ID
-func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, downloadPath, artworkType string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, artworkType string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, nil, []error{err}
@@ -247,7 +244,6 @@ func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, downloadPath, artworkT
 	artworksToDl, ugoiraSlice, errSlice, cancelled := pixiv.getArtistPostMainLogic(
 		params,
 		userId,
-		downloadPath,
 		offsetArgs,
 	)
 	if cancelled {
@@ -262,7 +258,6 @@ func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, downloadPath, artworkT
 		artworksToDl2, ugoiraSlice2, errSlice2, cancelled := pixiv.getArtistPostMainLogic(
 			params,
 			userId,
-			downloadPath,
 			offsetArgs,
 		)
 		if cancelled {
@@ -277,7 +272,7 @@ func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, downloadPath, artworkT
 	return artworksToDl, ugoiraSlice, errSlice
 }
 
-func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, downloadPath, artworkType string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, artworkType string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	userIdsLen := len(userIds)
 	lastIdx := userIdsLen - 1
 
@@ -307,7 +302,6 @@ func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, do
 		artworkDetails, ugoiraInfo, err := pixiv.getArtistPosts(
 			userId,
 			pageNums[idx],
-			downloadPath,
 			artworkType,
 		)
 		if err != nil {
@@ -334,7 +328,7 @@ func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, do
 	return artworksToDownload, ugoiraSlice, errSlice
 }
 
-func (pixiv *PixivMobile) tagSearchLogic(tagName, downloadPath string, dlOptions *PixivMobileDlOptions, offsetArg *offsetArgs) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func (pixiv *PixivMobile) tagSearchLogic(tagName string, dlOptions *PixivMobileDlOptions, offsetArg *offsetArgs) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	var errSlice []error
 	var ugoiraSlice []*ugoira.Ugoira
 	var artworksToDownload []*httpfuncs.ToDownload
@@ -380,7 +374,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName, downloadPath string, dlOptions
 			continue
 		}
 
-		artworks, ugoiraS, errS := pixiv.processMultipleArtworkJson(&resJson, downloadPath)
+		artworks, ugoiraS, errS := pixiv.processMultipleArtworkJson(&resJson)
 		errSlice = append(errSlice, errS...)
 		artworksToDownload = append(artworksToDownload, artworks...)
 		ugoiraSlice = append(ugoiraSlice, ugoiraS...)
@@ -400,7 +394,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName, downloadPath string, dlOptions
 
 // Query Pixiv's API (mobile) to get the JSON of a search query
 // Returns the ToDownload slice, Ugoira slice, boolean indicating if there was an error, and boolean indicating if the context was cancelled
-func (pixiv *PixivMobile) TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivMobileDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
+func (pixiv *PixivMobile) TagSearch(tagName, pageNum string, dlOptions *PixivMobileDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		logger.LogError(err, false, logger.ERROR)
@@ -410,7 +404,6 @@ func (pixiv *PixivMobile) TagSearch(tagName, downloadPath, pageNum string, dlOpt
 
 	artworksToDl, ugoiraSlice, errSlice := pixiv.tagSearchLogic(
 		tagName,
-		downloadPath,
 		dlOptions,
 		&offsetArgs{
 			minOffset: minOffset,

@@ -11,7 +11,6 @@ import (
 	pixivweb "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/web"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
@@ -31,11 +30,10 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 
-	if len(pixivDl.IllustratorIds) > 0 {
+	if len(pixivDl.ArtworkIds) > 0 {
 		artworkIdsSlice, err := pixivweb.GetMultipleArtistsPosts(
-			pixivDl.IllustratorIds,
-			pixivDl.IllustratorPageNums,
-			iofuncs.DOWNLOAD_PATH,
+			pixivDl.ArtworkIds,
+			pixivDl.ArtistPageNums,
 			pixivDlOptions,
 		)
 		if len(err) > 0 {
@@ -49,7 +47,6 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 	if len(pixivDl.ArtworkIds) > 0 && pixivDlOptions.CtxIsActive() {
 		artworkSlice, ugoiraSlice, err := pixivweb.GetMultipleArtworkDetails(
 			pixivDl.ArtworkIds,
-			iofuncs.DOWNLOAD_PATH,
 			pixivDlOptions,
 		)
 		if len(err) > 0 {
@@ -85,7 +82,6 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 		for idx, tagName := range pixivDl.TagNames {
 			artworksSlice, ugoiraSlice, err, hasCancelled := pixivweb.TagSearch(
 				tagName,
-				iofuncs.DOWNLOAD_PATH,
 				pixivDl.TagNamesPageNums[idx],
 				pixivDlOptions,
 			)
@@ -160,11 +156,10 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 
-	if len(pixivDl.IllustratorIds) > 0 {
+	if len(pixivDl.ArtworkIds) > 0 {
 		artworkSlice, ugoiraSlice, err := pixivDlOptions.MobileClient.GetMultipleArtistsPosts(
-			pixivDl.IllustratorIds,
-			pixivDl.IllustratorPageNums,
-			iofuncs.DOWNLOAD_PATH,
+			pixivDl.ArtworkIds,
+			pixivDl.ArtistPageNums,
 			pixivDlOptions.ArtworkType,
 		)
 		if len(err) > 0 {
@@ -176,10 +171,7 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 	}
 
 	if len(pixivDl.ArtworkIds) > 0 && pixivDlOptions.CtxIsActive() {
-		artworkSlice, ugoiraSlice, err := pixivDlOptions.MobileClient.GetMultipleArtworkDetails(
-			pixivDl.ArtworkIds,
-			iofuncs.DOWNLOAD_PATH,
-		)
+		artworkSlice, ugoiraSlice, err := pixivDlOptions.MobileClient.GetMultipleArtworkDetails(pixivDl.ArtworkIds)
 		if len(err) > 0 {
 			errSlice = append(errSlice, err...)
 		} else {
@@ -215,7 +207,6 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 			var ugoiraSlice []*ugoira.Ugoira
 			artworksSlice, ugoiraSlice, err, hasCancelled := pixivDlOptions.MobileClient.TagSearch(
 				tagName,
-				iofuncs.DOWNLOAD_PATH,
 				pixivDl.TagNamesPageNums[idx],
 				pixivDlOptions,
 			)

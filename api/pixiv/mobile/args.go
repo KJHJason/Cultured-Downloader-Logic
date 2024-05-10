@@ -3,6 +3,9 @@ package pixivmobile
 import (
 	"context"
 	"fmt"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"path/filepath"
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
@@ -40,6 +43,8 @@ var (
 type PixivMobileDlOptions struct {
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	BaseDownloadDirPath string
 
 	// Sort order of the results. Can be "date_desc" or "date_asc".
 	SortOrder    string
@@ -84,7 +89,7 @@ func (p *PixivMobileDlOptions) CtxIsActive() bool {
 // ValidateArgs validates the arguments of the Pixiv download options.
 //
 // Should be called after initialising the struct.
-func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
+func (p *PixivMobileDlOptions) ValidateArgs() error {
 	if p.GetContext() == nil {
 		p.SetContext(context.Background())
 	}
@@ -94,6 +99,18 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 			"pixiv mobile error %d: main progress bar is empty",
 			cdlerrors.DEV_ERROR,
 		)
+	}
+
+	if p.BaseDownloadDirPath == "" {
+		p.BaseDownloadDirPath = filepath.Join(iofuncs.DOWNLOAD_PATH, constants.PIXIV_MOBILE_TITLE)
+	} else {
+		if !iofuncs.DirPathExists(p.BaseDownloadDirPath) {
+			return fmt.Errorf(
+				"pixiv mobile error %d, download path does not exist or is not a directory, please create the directory and try again",
+				cdlerrors.INPUT_ERROR,
+			)
+		}
+		p.BaseDownloadDirPath = filepath.Join(p.BaseDownloadDirPath, constants.PIXIV_MOBILE_TITLE)
 	}
 
 	if p.Notifier == nil {
@@ -172,6 +189,7 @@ func (p *PixivMobileDlOptions) ValidateArgs(userAgent string) error {
 		if err != nil {
 			return err
 		}
+		p.MobileClient.SetBaseDlDirPath(p.BaseDownloadDirPath)
 
 		// The web API value is the opposite of the mobile API;
 		// Movile API:

@@ -3,7 +3,9 @@ package pixivweb
 import (
 	"context"
 	"fmt"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
@@ -42,6 +44,8 @@ var (
 type PixivWebDlOptions struct {
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	BaseDownloadDirPath string
 
 	// Sort order of the results. Can be "date_desc" or "date_asc".
 	SortOrder    string
@@ -98,6 +102,18 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		} else {
 			p.SessionCookies = []*http.Cookie{cookie}
 		}
+	}
+
+	if p.BaseDownloadDirPath == "" {
+		p.BaseDownloadDirPath = filepath.Join(iofuncs.DOWNLOAD_PATH, constants.PIXIV_TITLE)
+	} else {
+		if !iofuncs.DirPathExists(p.BaseDownloadDirPath) {
+			return fmt.Errorf(
+				"pixiv error %d, download path does not exist or is not a directory, please create the directory and try again",
+				cdlerrors.INPUT_ERROR,
+			)
+		}
+		p.BaseDownloadDirPath = filepath.Join(p.BaseDownloadDirPath, constants.PIXIV_TITLE)
 	}
 
 	if p.MainProgBar == nil {

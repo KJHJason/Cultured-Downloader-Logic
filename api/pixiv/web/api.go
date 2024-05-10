@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -102,7 +101,7 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 
 // Retrieves details of an artwork ID and returns
 // the folder path to download the artwork to, the JSON response, and the artwork type
-func getArtworkDetails(artworkId, downloadPath string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
+func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
 	if artworkId == "" {
 		return nil, nil, nil
 	}
@@ -134,7 +133,7 @@ func getArtworkDetails(artworkId, downloadPath string, dlOptions *PixivWebDlOpti
 	illustratorName := artworkJsonBody.UserName
 	artworkName := artworkJsonBody.Title
 	artworkPostDir := iofuncs.GetPostFolder(
-		filepath.Join(downloadPath, constants.PIXIV_TITLE),
+		dlOptions.BaseDownloadDirPath,
 		illustratorName,
 		artworkId,
 		artworkName,
@@ -162,7 +161,7 @@ func getArtworkDetails(artworkId, downloadPath string, dlOptions *PixivWebDlOpti
 
 // Retrieves multiple artwork details based on the given slice of artwork IDs
 // and returns a map to use for downloading and a slice of Ugoira structures
-func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	var errSlice []error
 	var ugoiraDetails []*ugoira.Ugoira
 	var artworkDetails []*httpfuncs.ToDownload
@@ -191,7 +190,6 @@ func GetMultipleArtworkDetails(artworkIds []string, downloadPath string, dlOptio
 	for _, artworkId := range artworkIds {
 		artworksToDl, ugoiraInfo, err := getArtworkDetails(
 			artworkId,
-			downloadPath,
 			dlOptions,
 		)
 		if err != nil {
@@ -280,7 +278,7 @@ func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions)
 }
 
 // Get posts from multiple illustrators and returns a slice of artwork IDs
-func GetMultipleArtistsPosts(illustratorIds, pageNums []string, downloadPath string, dlOptions *PixivWebDlOptions) ([]string, []error) {
+func GetMultipleArtistsPosts(illustratorIds, pageNums []string, dlOptions *PixivWebDlOptions) ([]string, []error) {
 	var errSlice []error
 	var artworkIdsSlice []string
 	illustratorIdsLen := len(illustratorIds)
@@ -394,7 +392,7 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 // Query Pixiv's API and search for posts based on the supplied tag name
 // which will return a map and a slice of Ugoira structures for downloads
 // Returns the map, the slice, a boolean indicating if there was an error, and a boolean indicating if the user cancelled the operation
-func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
+func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		logger.LogError(err, false, logger.ERROR)
@@ -454,11 +452,7 @@ func TagSearch(tagName, downloadPath, pageNum string, dlOptions *PixivWebDlOptio
 		}
 	}
 
-	artworkSlice, ugoiraSlice, newErrSlice := GetMultipleArtworkDetails(
-		artworkIds,
-		downloadPath,
-		dlOptions,
-	)
+	artworkSlice, ugoiraSlice, newErrSlice := GetMultipleArtworkDetails(artworkIds, dlOptions)
 	errSlice = append(errSlice, newErrSlice...)
 	return artworkSlice, ugoiraSlice, errSlice, false
 }

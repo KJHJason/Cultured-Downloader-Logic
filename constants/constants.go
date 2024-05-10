@@ -40,6 +40,7 @@ const (
 	PIXIV                          = "pixiv"
 	PIXIV_MOBILE                   = "pixiv_mobile"
 	PIXIV_TITLE                    = "Pixiv"
+	PIXIV_MOBILE_TITLE             = "Pixiv (Mobile)"
 	PIXIV_PER_PAGE                 = 60
 	PIXIV_MOBILE_PER_PAGE          = 30
 	PIXIV_URL                      = "https://www.pixiv.net"

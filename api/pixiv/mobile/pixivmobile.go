@@ -32,6 +32,8 @@ type PixivMobile struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	baseDownloadDirPath string
+
 	// API information and its endpoints
 	refreshToken string
 
@@ -61,6 +63,10 @@ func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, cance
 		}
 	}
 	return pixivMobile, nil
+}
+
+func (pixiv *PixivMobile) SetBaseDlDirPath(dlDirPath string) {
+	pixiv.baseDownloadDirPath = dlDirPath
 }
 
 // This is due to Pixiv's strict rate limiting.
