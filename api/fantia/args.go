@@ -45,7 +45,7 @@ func (f *FantiaDl) ValidateArgs() error {
 
 	f.PostIds = api.RemoveSliceDuplicates(f.PostIds)
 	if len(f.FanclubPageNums) > 0 {
-		err := api.ValidatePageNumInput(
+		err = api.ValidatePageNumInput(
 			len(f.FanclubIds),
 			f.FanclubPageNums,
 			[]string{

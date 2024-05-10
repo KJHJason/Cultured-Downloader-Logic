@@ -112,13 +112,16 @@ func (k *KemonoDl) ValidateArgs() error {
 		if len(k.CreatorPageNums) == 0 {
 			k.CreatorPageNums = make([]string, len(k.CreatorUrls))
 		} else {
-			api.ValidatePageNumInput(
+			err := api.ValidatePageNumInput(
 				len(k.CreatorUrls),
 				k.CreatorPageNums,
 				[]string{
 					"Number of creator URL(s) and page numbers must be equal.",
 				},
 			)
+			if err != nil {
+				return err
+			}
 		}
 		creatorsToDl := ProcessCreatorUrls(k.CreatorUrls, k.CreatorPageNums)
 		k.CreatorsToDl = append(k.CreatorsToDl, creatorsToDl...)

@@ -33,7 +33,11 @@ var creatorIdRegex = regexp.MustCompile(`^[\w.-]+$`)
 //
 // Should be called after initialising the struct.
 func (pf *PixivFanboxDl) ValidateArgs() error {
-	api.ValidateIds(pf.PostIds)
+	err := api.ValidateIds(pf.PostIds)
+	if err != nil {
+		return err
+	}
+
 	pf.PostIds = api.RemoveSliceDuplicates(pf.PostIds)
 
 	for _, creatorId := range pf.CreatorIds {
@@ -47,13 +51,16 @@ func (pf *PixivFanboxDl) ValidateArgs() error {
 	}
 
 	if len(pf.CreatorPageNums) > 0 {
-		api.ValidatePageNumInput(
+		err = api.ValidatePageNumInput(
 			len(pf.CreatorIds),
 			pf.CreatorPageNums,
 			[]string{
 				"Number of Pixiv Fanbox Creator ID(s) and page numbers must be equal.",
 			},
 		)
+		if err != nil {
+			return err
+		}
 	} else {
 		pf.CreatorPageNums = make([]string, len(pf.CreatorIds))
 	}
@@ -98,7 +105,7 @@ func (pf *PixivFanboxDlOptions) SetContext(ctx context.Context) {
 	pf.ctx, pf.cancel = context.WithCancel(ctx)
 }
 
-// Cancel releases the resources used and cancels the context of the PixivFanboxDlOptions struct.
+// CancelCtx releases the resources used and cancels the context of the PixivFanboxDlOptions struct.
 func (pf *PixivFanboxDlOptions) CancelCtx() {
 	pf.cancel()
 }
