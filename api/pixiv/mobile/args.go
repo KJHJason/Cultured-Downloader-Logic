@@ -160,7 +160,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 		p.MobileClient.SetBaseDlDirPath(p.BaseDownloadDirPath)
 
 		// The web API value is the opposite of the mobile API;
-		// Movile API:
+		// Mobile API:
 		// - 0: Filter AI works
 		// - 1: Display AI works
 		// Web API:
