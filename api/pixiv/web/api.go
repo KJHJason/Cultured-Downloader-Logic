@@ -418,7 +418,7 @@ func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]*httpfu
 		"type": dlOptions.ArtworkType,
 
 		// 0: display AI works, 1: hide AI works
-		"ai_type": strconv.Itoa(dlOptions.SearchAiType),
+		"ai_type": strconv.Itoa(dlOptions.SearchAiMode),
 	}
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV, true)

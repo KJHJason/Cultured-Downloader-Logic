@@ -338,7 +338,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName string, dlOptions *PixivMobileD
 		"sort":           dlOptions.SortOrder,
 		"filter":         "for_ios",
 		"offset":         strconv.Itoa(offsetArg.minOffset),
-		"search_ai_type": strconv.Itoa(dlOptions.SearchAiType),
+		"search_ai_type": strconv.Itoa(dlOptions.SearchAiMode),
 	}
 	curOffset := offsetArg.minOffset
 	nextUrl := ILLUST_SEARCH_URL

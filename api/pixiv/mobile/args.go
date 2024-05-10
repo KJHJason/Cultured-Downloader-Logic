@@ -23,7 +23,7 @@ type PixivMobileDlOptions struct {
 	// Sort order of the results. Can be "date_desc" or "date_asc".
 	SortOrder    string
 	SearchMode   string
-	SearchAiType int // 0: filter AI works, 1: Display AI works
+	SearchAiMode int // 0: filter AI works, 1: Display AI works
 	RatingMode   string
 	ArtworkType  string
 
@@ -167,12 +167,12 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 		// - 0: Display AI works
 		// - 1: Filter AI works
 		// Hence, we will have to invert the value.
-		if p.SearchAiType == 1 {
-			p.SearchAiType = 0
-		} else if p.SearchAiType == 0 {
-			p.SearchAiType = 1
+		if p.SearchAiMode == 1 {
+			p.SearchAiMode = 0
+		} else if p.SearchAiMode == 0 {
+			p.SearchAiMode = 1
 		} else { // invalid value
-			p.SearchAiType = 0 // default to filter AI works
+			p.SearchAiMode = 0 // default to filter AI works
 		}
 
 		// Now that we have the client,

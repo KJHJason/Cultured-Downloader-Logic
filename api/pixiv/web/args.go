@@ -24,7 +24,7 @@ type PixivWebDlOptions struct {
 	// Sort order of the results. Can be "date_desc" or "date_asc".
 	SortOrder    string
 	SearchMode   string
-	SearchAiType int // 1: filter AI works, 0: Display AI works
+	SearchAiMode int // 1: filter AI works, 0: Display AI works
 	RatingMode   string
 	ArtworkType  string
 
@@ -96,6 +96,13 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 			"pixiv web error %d: Notifier cannot be nil",
 			cdlerrors.DEV_ERROR,
 		)
+	}
+
+	// Web API:
+	// - 0: Display AI works
+	// - 1: Filter AI works
+	if p.SearchAiMode != 0 && p.SearchAiMode != 1 {
+		p.SearchAiMode = 1 // Default to filter AI works
 	}
 
 	p.SortOrder = strings.ToLower(p.SortOrder)
