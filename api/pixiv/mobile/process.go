@@ -1,10 +1,11 @@
 package pixivmobile
 
 import (
+	"strconv"
+
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
-	"strconv"
 )
 
 // Process the artwork JSON and returns a slice of map that contains the urls of the images and the file path

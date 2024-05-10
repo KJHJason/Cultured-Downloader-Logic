@@ -3,6 +3,8 @@ package kemono
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -10,7 +12,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
-	"net/http"
 )
 
 type KemonoDl struct {
