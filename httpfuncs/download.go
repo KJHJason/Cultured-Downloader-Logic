@@ -112,9 +112,9 @@ func writeDlDetailsToProgBar(dlProgBar *progress.DownloadProgressBar, startTime 
 		estimatedTime = -1 // -1 indicates that the ETA is unknown
 	} else {
 		estimatedTime = float64(expectedFileSize-writtenBytes) / downloadSpeed
-		(*dlProgBar).UpdatePercentage(int(float64(writtenBytes) / float64(expectedFileSize) * 100))
+		(*dlProgBar).UpdatePercentage(min(int(float64(writtenBytes) / float64(expectedFileSize) * 100), 100))
 	}
-	(*dlProgBar).UpdateDownloadETA(estimatedTime)
+	(*dlProgBar).UpdateDownloadETA(min(estimatedTime, 0))
 	// fmt.Printf("\rDownload speed: %.2f MB/s | ETA: %.2f seconds", downloadSpeed/1024/1024, estimatedTime)
 }
 
@@ -293,6 +293,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 			ErrMsg:     "Failed to download file!",
 			SuccessMsg: "Finished downloading file!",
 		})
+		dlProgBar.UpdateTotalBytes(fileReqContentLength)
 		dlProgBar.UpdateFilename(filepath.Base(filePath))
 		dlOptions.ProgressBarInfo.AppendDlProgBar(dlProgBar)
 	}

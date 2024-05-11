@@ -95,6 +95,7 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 
 	queue <- struct{}{}
 
+	fileSize := fileInfo.GetIntSize()
 	var dlProgBar *progress.DownloadProgressBar
 	if progBarInfo.DownloadProgressBars != nil {
 		dlProgBar = progress.NewDlProgressBar(ctx, progress.Messages{
@@ -102,6 +103,7 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 			ErrMsg:     "Failed to download GDrive file!",
 			SuccessMsg: "Finished downloading GDrive file!",
 		})
+		(*dlProgBar).UpdateTotalBytes(fileSize)
 		(*dlProgBar).UpdateFilename(filepath.Base(filePath))
 		progBarInfo.AppendDlProgBar(dlProgBar)
 	}
@@ -154,7 +156,7 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 	dlPartialInfo := httpfuncs.PartialDlInfo{
 		DownloadPartial:  true,
 		DownloadedBytes:  writtenBytes,
-		ExpectedFileSize: fileInfo.GetIntSize(),
+		ExpectedFileSize: fileSize,
 	}
 	return httpfuncs.DlToFile(res, dlReqInfo, filePath, dlPartialInfo, dlProgBar)
 }
