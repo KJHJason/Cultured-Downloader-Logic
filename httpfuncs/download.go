@@ -114,7 +114,7 @@ func writeDlDetailsToProgBar(dlProgBar *progress.DownloadProgressBar, startTime 
 		estimatedTime = float64(expectedFileSize-writtenBytes) / downloadSpeed
 		(*dlProgBar).UpdatePercentage(min(int(float64(writtenBytes) / float64(expectedFileSize) * 100), 100))
 	}
-	(*dlProgBar).UpdateDownloadETA(min(estimatedTime, 0))
+	(*dlProgBar).UpdateDownloadETA(max(estimatedTime, 0))
 	// fmt.Printf("\rDownload speed: %.2f MB/s | ETA: %.2f seconds", downloadSpeed/1024/1024, estimatedTime)
 }
 
