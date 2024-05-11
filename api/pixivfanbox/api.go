@@ -153,14 +153,13 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 		},
 	)
 	if err != nil || res.StatusCode != 200 {
-		const errPrefix = "pixiv fanbox error"
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return nil, err
 			}
 			err = fmt.Errorf(
 				"%s %d: failed to get creator's posts for %s due to %w",
-				errPrefix,
+				"pixiv fanbox error",
 				cdlerrors.CONNECTION_ERROR,
 				creatorId,
 				err,
@@ -169,7 +168,7 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 			res.Body.Close()
 			err = fmt.Errorf(
 				"%s %d: failed to get creator's posts for %s due to %s response",
-				errPrefix,
+				"pixiv fanbox error",
 				cdlerrors.RESPONSE_ERROR,
 				creatorId,
 				res.Status,

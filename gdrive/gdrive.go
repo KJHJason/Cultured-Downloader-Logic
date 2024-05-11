@@ -3,28 +3,12 @@ package gdrive
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
-)
-
-const (
-	HTTP3_SUPPORTED        = true
-	GDRIVE_ERROR_FILENAME  = "gdrive_download.log"
-	BASE_API_KEY_REGEX_STR = `AIza[\w-]{35}`
-
-	// file fields to fetch from GDrive API:
-	// https://developers.google.com/drive/api/v3/reference/files
-	GDRIVE_FILE_FIELDS   = "id,name,size,mimeType,md5Checksum"
-	GDRIVE_FOLDER_FIELDS = "nextPageToken,files(id,name,size,mimeType,md5Checksum)"
-)
-
-var (
-	API_KEY_REGEX       = regexp.MustCompile(fmt.Sprintf(`^%s$`, BASE_API_KEY_REGEX_STR))
-	API_KEY_PARAM_REGEX = regexp.MustCompile(fmt.Sprintf(`key=%s`, BASE_API_KEY_REGEX_STR))
 )
 
 type GDrive struct {
@@ -90,7 +74,7 @@ func GetNewGDrive(ctx context.Context, apiKey, userAgent string, jsonBytes []byt
 //
 // Will return true if the given Google Drive API key is valid
 func (gdrive *GDrive) GDriveKeyIsValid(userAgent string) (bool, error) {
-	match := API_KEY_REGEX.MatchString(gdrive.apiKey)
+	match := constants.GDRIVE_API_KEY_REGEX.MatchString(gdrive.apiKey)
 	if !match {
 		return false, nil
 	}
@@ -103,8 +87,8 @@ func (gdrive *GDrive) GDriveKeyIsValid(userAgent string) (bool, error) {
 			Timeout:   gdrive.timeout,
 			Params:    params,
 			UserAgent: userAgent,
-			Http2:     !HTTP3_SUPPORTED,
-			Http3:     HTTP3_SUPPORTED,
+			Http2:     !constants.GDRIVE_HTTP3_SUPPORTED,
+			Http3:     constants.GDRIVE_HTTP3_SUPPORTED,
 		},
 	)
 	if err != nil {

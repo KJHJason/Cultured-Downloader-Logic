@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
@@ -16,15 +15,10 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
-var (
-	imgSrcTagRegex    = regexp.MustCompile(`(?i)<img[^>]+src=(?:\\)?"(?P<imgSrc>[^">]+)(?:\\)?"[^>]*>`)
-	imgSrcTagRegexIdx = imgSrcTagRegex.SubexpIndex("imgSrc")
-)
-
 func getInlineImages(content, postFolderPath string) []*httpfuncs.ToDownload {
 	var toDownload []*httpfuncs.ToDownload
-	for _, match := range imgSrcTagRegex.FindAllStringSubmatch(content, -1) {
-		imgSrc := match[imgSrcTagRegexIdx]
+	for _, match := range constants.KEMONO_IMG_SRC_TAG_REGEX.FindAllStringSubmatch(content, -1) {
+		imgSrc := match[constants.KEMONO_IMG_SRC_TAG_REGEX_IDX]
 		if imgSrc == "" {
 			continue
 		}

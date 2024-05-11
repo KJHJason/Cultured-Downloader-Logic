@@ -28,12 +28,12 @@ type offsetArgs struct {
 func (pixiv *PixivMobile) getUgoiraMetadata(illustId, dlFilePath string) (*ugoira.Ugoira, error) {
 	params := map[string]string{"illust_id": illustId}
 	additionalHeaders := pixiv.getHeaders(
-		map[string]string{"Referer": BASE_URL},
+		map[string]string{"Referer": constants.PIXIV_MOBILE_BASE_URL},
 	)
 
 	res, err := pixiv.SendRequest(
 		&httpfuncs.RequestArgs{
-			Url:         UGOIRA_URL,
+			Url:         constants.PIXIV_MOBILE_UGOIRA_URL,
 			CheckStatus: true,
 			Headers:     additionalHeaders,
 			Params:      params,
@@ -76,7 +76,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 	res, err := pixiv.SendRequest(
 		&httpfuncs.RequestArgs{
 			Context:     pixiv.ctx,
-			Url:         ARTWORK_URL,
+			Url:         constants.PIXIV_MOBILE_ARTWORK_URL,
 			Params:      params,
 			CheckStatus: true,
 		},
@@ -165,7 +165,7 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 	var errSlice []error
 	var ugoiraSlice []*ugoira.Ugoira
 	var artworksToDownload []*httpfuncs.ToDownload
-	nextUrl := ARTIST_POSTS_URL
+	nextUrl := constants.PIXIV_MOBILE_ARTIST_POSTS_URL
 
 	curOffset := offsetArg.minOffset
 	for nextUrl != "" {
@@ -341,7 +341,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName string, dlOptions *PixivMobileD
 		"search_ai_type": strconv.Itoa(dlOptions.SearchAiMode),
 	}
 	curOffset := offsetArg.minOffset
-	nextUrl := ILLUST_SEARCH_URL
+	nextUrl := constants.PIXIV_MOBILE_ILLUST_SEARCH_URL
 	for nextUrl != "" {
 		res, err := pixiv.SendRequest(
 			&httpfuncs.RequestArgs{

@@ -12,21 +12,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
-const (
-	BASE_URL       = constants.PIXIV_MOBILE_URL
-	CLIENT_ID      = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
-	CLIENT_SECRET  = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
-	USER_AGENT     = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)"
-	AUTH_TOKEN_URL = "https://oauth.secure.pixiv.net/auth/token"
-	LOGIN_URL      = BASE_URL + "/web/v1/login"
-	REDIRECT_URL   = BASE_URL + "/web/v1/users/auth/pixiv/callback"
-
-	UGOIRA_URL        = BASE_URL + "/v1/ugoira/metadata"
-	ARTWORK_URL       = BASE_URL + "/v1/illust/detail"
-	ARTIST_POSTS_URL  = BASE_URL + "/v1/user/illusts"
-	ILLUST_SEARCH_URL = BASE_URL + "/v1/search/illust"
-)
-
 type PixivMobile struct {
 	user   *UserDetails
 	ctx    context.Context
@@ -88,7 +73,7 @@ func (pixiv *PixivMobile) getHeaders(additional map[string]string) map[string]st
 	}
 
 	baseHeaders := map[string]string{
-		"User-Agent":     USER_AGENT,
+		"User-Agent":     constants.PIXIV_MOBILE_USER_AGENT,
 		"App-OS":         "ios",
 		"App-OS-Version": "14.6",
 		"Authorization":  "Bearer " + pixiv.accessTokenMap.AccessToken,

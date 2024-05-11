@@ -17,11 +17,6 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-const (
-	captchaBtnSelector = `//input[@name='commit']`
-	timeout            = 45
-)
-
 var (
 	captchaMu  sync.Mutex
 	solvedTime *time.Time
@@ -49,12 +44,12 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 	actions := []chromedp.Action{
 		api.SetChromedpAllocCookies(captchaOptions.GetSessionCookies()),
 		chromedp.Navigate(constants.FANTIA_RECAPTCHA_URL),
-		chromedp.WaitVisible(captchaBtnSelector, chromedp.BySearch),
-		chromedp.Click(captchaBtnSelector, chromedp.BySearch),
+		chromedp.WaitVisible(constants.FANTIA_CAPTCHA_BTN_SELECTOR, chromedp.BySearch),
+		chromedp.Click(constants.FANTIA_CAPTCHA_BTN_SELECTOR, chromedp.BySearch),
 		chromedp.WaitVisible(`//h3[@class='mb-15'][contains(text(), 'ファンティアでクリエイターを応援しよう！')]`, chromedp.BySearch),
 	}
 
-	allocCtx, cancel = context.WithTimeout(allocCtx, timeout*time.Second)
+	allocCtx, cancel = context.WithTimeout(allocCtx, constants.FANTIA_CAPTCHA_TIMEOUT*time.Second)
 	if err := api.ExecuteChromedpActions(allocCtx, cancel, actions...); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return err
@@ -88,7 +83,7 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 	captchaMu.Lock()
 	defer captchaMu.Unlock()
 
-	if solvedTime != nil && (time.Since(*solvedTime) < timeout*time.Second) {
+	if solvedTime != nil && (time.Since(*solvedTime) < constants.FANTIA_CAPTCHA_TIMEOUT*time.Second) {
 		// if the reCAPTCHA was solved within the last few seconds,
 		// then skip solving it to avoid solving it multiple times
 		return nil

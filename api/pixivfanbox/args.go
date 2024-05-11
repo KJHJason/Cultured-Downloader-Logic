@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"regexp"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
@@ -23,8 +22,6 @@ type PixivFanboxDl struct {
 	PostIds []string
 }
 
-var creatorIdRegex = regexp.MustCompile(`^[\w.-]+$`)
-
 // ValidateArgs validates the IDs of the Pixiv Fanbox creators and posts to download.
 //
 // It also validates the page numbers of the creators to download.
@@ -39,7 +36,7 @@ func (pf *PixivFanboxDl) ValidateArgs() error {
 	pf.PostIds = api.RemoveSliceDuplicates(pf.PostIds)
 
 	for _, creatorId := range pf.CreatorIds {
-		if !creatorIdRegex.MatchString(creatorId) {
+		if !constants.PIXIV_FANBOX_CREATOR_ID_REGEX.MatchString(creatorId) {
 			return fmt.Errorf(
 				"error %d: invalid Pixiv Fanbox creator ID %q, must be alphanumeric with underscores, dashes, or periods",
 				cdlerrors.INPUT_ERROR,

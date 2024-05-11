@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"regexp"
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -25,8 +24,6 @@ func S256(bytes []byte) string {
 	hash := sha256.Sum256(bytes)
 	return base64.RawURLEncoding.EncodeToString(hash[:])
 }
-
-var pixivOauthCodeRegex = regexp.MustCompile(`^[\w-]{43}$`)
 
 // Start the OAuth flow to get the refresh token
 func GetOAuthURL() (url string, codeVerifier string) {
@@ -51,13 +48,13 @@ func GetOAuthURL() (url string, codeVerifier string) {
 		"code_challenge_method": "S256",
 		"client":                "pixiv-android",
 	}
-	return LOGIN_URL + "?" + httpfuncs.ParamsToString(loginParams), codeVerifier
+	return constants.PIXIV_MOBILE_LOGIN_URL + "?" + httpfuncs.ParamsToString(loginParams), codeVerifier
 }
 
 func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_MOBILE, true)
 
-	if !pixivOauthCodeRegex.MatchString(code) {
+	if !constants.PIXIV_OAUTH_CODE_REGEX.MatchString(code) {
 		return "", fmt.Errorf(
 			"pixiv mobile error %d: invalid code format, please check if the code is correct",
 			cdlerrors.INPUT_ERROR,
@@ -66,7 +63,7 @@ func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 
 	res, err := httpfuncs.CallRequestWithData(
 		&httpfuncs.RequestArgs{
-			Url:         AUTH_TOKEN_URL,
+			Url:         constants.PIXIV_MOBILE_AUTH_TOKEN_URL,
 			Method:      "POST",
 			Timeout:     timeout,
 			CheckStatus: true,
@@ -75,13 +72,13 @@ func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 			Http3:       useHttp3,
 		},
 		map[string]string{
-			"client_id":      CLIENT_ID,
-			"client_secret":  CLIENT_SECRET,
+			"client_id":      constants.PIXIV_MOBILE_CLIENT_ID,
+			"client_secret":  constants.PIXIV_MOBILE_CLIENT_SECRET,
 			"code":           code,
 			"code_verifier":  codeVerifier,
 			"grant_type":     "authorization_code",
 			"include_policy": "true",
-			"redirect_uri":   REDIRECT_URL,
+			"redirect_uri":   constants.PIXIV_MOBILE_REDIRECT_URL,
 		},
 	)
 	if err != nil {
@@ -100,7 +97,7 @@ func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 
 // Refresh the access token
 func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (OAuthTokenInfo, *UserDetails, error) {
-	if !pixivOauthCodeRegex.MatchString(refreshToken) {
+	if !constants.PIXIV_OAUTH_CODE_REGEX.MatchString(refreshToken) {
 		return OAuthTokenInfo{}, nil, fmt.Errorf(
 			"pixiv mobile error %d: invalid refresh token format, please check if the refresh token is correct",
 			cdlerrors.INPUT_ERROR,
@@ -110,17 +107,17 @@ func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_MOBILE, true)
 	res, err := httpfuncs.CallRequestWithData(
 		&httpfuncs.RequestArgs{
-			Url:       AUTH_TOKEN_URL,
+			Url:       constants.PIXIV_MOBILE_AUTH_TOKEN_URL,
 			Method:    "POST",
 			Timeout:   timeout,
-			UserAgent: USER_AGENT,
+			UserAgent: constants.PIXIV_MOBILE_USER_AGENT,
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			Context:   ctx,
 		},
 		map[string]string{
-			"client_id":      CLIENT_ID,
-			"client_secret":  CLIENT_SECRET,
+			"client_id":      constants.PIXIV_MOBILE_CLIENT_ID,
+			"client_secret":  constants.PIXIV_MOBILE_CLIENT_SECRET,
 			"grant_type":     "refresh_token",
 			"include_policy": "true",
 			"refresh_token":  refreshToken,

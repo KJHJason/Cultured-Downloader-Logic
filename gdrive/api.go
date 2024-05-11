@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
@@ -15,7 +16,7 @@ import (
 // censor the key=... part of the URL to <REDACTED>.
 // This is to prevent the API key from being leaked in the logs.
 func censorApiKeyFromStr(str string) string {
-	return API_KEY_PARAM_REGEX.ReplaceAllString(str, "key=<REDACTED>")
+	return constants.GDRIVE_API_KEY_PARAM_REGEX.ReplaceAllString(str, "key=<REDACTED>")
 }
 
 // Gets the error message for a failed GDrive API call
@@ -36,7 +37,7 @@ func (gdrive *GDrive) getFolderContentsWithClient(folderId string) ([]*GdriveFil
 	var pageToken string
 	var gdriveFiles []*GdriveFileToDl
 	for {
-		action := gdrive.client.Files.List().Q(fmt.Sprintf("'%s' in parents", folderId)).Fields(GDRIVE_FOLDER_FIELDS)
+		action := gdrive.client.Files.List().Q(fmt.Sprintf("'%s' in parents", folderId)).Fields(constants.GDRIVE_FOLDER_FIELDS)
 		if pageToken != "" {
 			action = action.PageToken(pageToken)
 		}
@@ -75,7 +76,7 @@ func (gdrive *GDrive) getFolderContentsWithApi(folderId string, config *configs.
 	params := map[string]string{
 		"key":    gdrive.apiKey,
 		"q":      fmt.Sprintf("'%s' in parents", folderId),
-		"fields": GDRIVE_FOLDER_FIELDS,
+		"fields": constants.GDRIVE_FOLDER_FIELDS,
 	}
 	var files []*GdriveFileToDl
 	pageToken := ""
@@ -92,8 +93,8 @@ func (gdrive *GDrive) getFolderContentsWithApi(folderId string, config *configs.
 				Timeout:   gdrive.timeout,
 				Params:    params,
 				UserAgent: config.UserAgent,
-				Http2:     !HTTP3_SUPPORTED,
-				Http3:     HTTP3_SUPPORTED,
+				Http2:     !constants.GDRIVE_HTTP3_SUPPORTED,
+				Http3:     constants.GDRIVE_HTTP3_SUPPORTED,
 				Context:   gdrive.ctx,
 			},
 		)
@@ -178,7 +179,7 @@ func (gdrive *GDrive) GetNestedFolderContents(folderId, logPath string, config *
 func (gdrive *GDrive) getFileDetailsWithAPI(gdriveInfo *GDriveToDl, config *configs.Config) (*GdriveFileToDl, error) {
 	params := map[string]string{
 		"key":    gdrive.apiKey,
-		"fields": GDRIVE_FILE_FIELDS,
+		"fields": constants.GDRIVE_FILE_FIELDS,
 	}
 	url := fmt.Sprintf("%s/%s", gdrive.apiUrl, gdriveInfo.Id)
 	res, err := httpfuncs.CallRequest(
@@ -188,8 +189,8 @@ func (gdrive *GDrive) getFileDetailsWithAPI(gdriveInfo *GDriveToDl, config *conf
 			Timeout:   gdrive.timeout,
 			Params:    params,
 			UserAgent: config.UserAgent,
-			Http2:     !HTTP3_SUPPORTED,
-			Http3:     HTTP3_SUPPORTED,
+			Http2:     !constants.GDRIVE_HTTP3_SUPPORTED,
+			Http3:     constants.GDRIVE_HTTP3_SUPPORTED,
 			Context:   gdrive.ctx,
 		},
 	)
@@ -227,7 +228,7 @@ func (gdrive *GDrive) getFileDetailsWithAPI(gdriveInfo *GDriveToDl, config *conf
 
 // Retrieves the file details of the given GDrive file using Google's GDrive package
 func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl) (*GdriveFileToDl, error) {
-	file, err := gdrive.client.Files.Get(gdriveInfo.Id).Fields(GDRIVE_FILE_FIELDS).Context(gdrive.ctx).Do()
+	file, err := gdrive.client.Files.Get(gdriveInfo.Id).Fields(constants.GDRIVE_FILE_FIELDS).Context(gdrive.ctx).Do()
 	if err != nil {
 		return nil, fmt.Errorf(
 			"gdrive error %d: failed to get file details with ID of %s, more info => %w",

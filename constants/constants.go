@@ -29,13 +29,15 @@ const (
 	// However, the average max file size on these platforms is around 300MB.
 	// Note: Fantia do have a max file size per post of 3GB if one paid extra for it.
 
-	FANTIA                 = "fantia"
-	FANTIA_TITLE           = "Fantia"
-	FANTIA_URL             = "https://fantia.jp"
-	FANTIA_RECAPTCHA_URL   = "https://fantia.jp/recaptcha"
-	FANTIA_RANGE_SUPPORTED = true
-	FANTIA_MAX_CONCURRENT  = 5
-	FANTIA_POST_API_URL    = "https://fantia.jp/api/v1/posts/"
+	FANTIA                      = "fantia"
+	FANTIA_TITLE                = "Fantia"
+	FANTIA_URL                  = "https://fantia.jp"
+	FANTIA_RECAPTCHA_URL        = "https://fantia.jp/recaptcha"
+	FANTIA_RANGE_SUPPORTED      = true
+	FANTIA_MAX_CONCURRENT       = 5
+	FANTIA_POST_API_URL         = "https://fantia.jp/api/v1/posts/"
+	FANTIA_CAPTCHA_BTN_SELECTOR = `//input[@name='commit']`
+	FANTIA_CAPTCHA_TIMEOUT      = 45
 
 	PIXIV                          = "pixiv"
 	PIXIV_MOBILE                   = "pixiv_mobile"
@@ -50,12 +52,26 @@ const (
 	PIXIV_MAX_CONCURRENCY          = 1 // Not used rn as the Pixiv download is being done sequentially instead of concurrently
 	PIXIV_MAX_DOWNLOAD_CONCURRENCY = 2 // https://i.pixiv.net not using Cloudflare's proxy
 
-	PIXIV_FANBOX                 = "fanbox"
-	PIXIV_FANBOX_TITLE           = "Pixiv Fanbox"
-	PIXIV_FANBOX_URL             = "https://www.fanbox.cc"
-	PIXIV_FANBOX_API_URL         = "https://api.fanbox.cc"
-	PIXIV_FANBOX_RANGE_SUPPORTED = false
-	PIXIV_FANBOX_MAX_CONCURRENT  = 2 // Pixiv Fanbox throttles the download speed
+	PIXIV_MOBILE_BASE_URL       = PIXIV_MOBILE_URL
+	PIXIV_MOBILE_CLIENT_ID      = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
+	PIXIV_MOBILE_CLIENT_SECRET  = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
+	PIXIV_MOBILE_USER_AGENT     = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)"
+	PIXIV_MOBILE_AUTH_TOKEN_URL = "https://oauth.secure.pixiv.net/auth/token"
+	PIXIV_MOBILE_LOGIN_URL      = PIXIV_MOBILE_BASE_URL + "/web/v1/login"
+	PIXIV_MOBILE_REDIRECT_URL   = PIXIV_MOBILE_BASE_URL + "/web/v1/users/auth/pixiv/callback"
+
+	PIXIV_MOBILE_UGOIRA_URL        = PIXIV_MOBILE_BASE_URL + "/v1/ugoira/metadata"
+	PIXIV_MOBILE_ARTWORK_URL       = PIXIV_MOBILE_BASE_URL + "/v1/illust/detail"
+	PIXIV_MOBILE_ARTIST_POSTS_URL  = PIXIV_MOBILE_BASE_URL + "/v1/user/illusts"
+	PIXIV_MOBILE_ILLUST_SEARCH_URL = PIXIV_MOBILE_BASE_URL + "/v1/search/illust"
+
+	PIXIV_FANBOX                      = "fanbox"
+	PIXIV_FANBOX_TITLE                = "Pixiv Fanbox"
+	PIXIV_FANBOX_CREATOR_ID_REGEX_STR = `[\w&.-]+`
+	PIXIV_FANBOX_URL                  = "https://www.fanbox.cc"
+	PIXIV_FANBOX_API_URL              = "https://api.fanbox.cc"
+	PIXIV_FANBOX_RANGE_SUPPORTED      = false
+	PIXIV_FANBOX_MAX_CONCURRENT       = 2 // Pixiv Fanbox throttles the download speed
 
 	KEMONO                       = "kemono"
 	KEMONO_TITLE                 = "Kemono"
@@ -77,15 +93,25 @@ const (
 	KEMONO_EMBEDS_FOLDER  = "embeds"
 	KEMONO_CONTENT_FOLDER = "post_content"
 
-	GDRIVE_URL           = "https://drive.google.com"
-	GDRIVE_FOLDER        = "gdrive"
-	GDRIVE_FILENAME      = "detected_gdrive_links.txt"
+	GDRIVE_URL                    = "https://drive.google.com"
+	GDRIVE_FOLDER                 = "gdrive"
+	GDRIVE_FILENAME               = "detected_gdrive_links.txt"
+	GDRIVE_HTTP3_SUPPORTED        = true
+	GDRIVE_ERROR_FILENAME         = "gdrive_download.log"
+	GDRIVE_BASE_API_KEY_REGEX_STR = `AIza[\w-]{35}`
+
+	// file fields to fetch from GDrive API:
+	// https://developers.google.com/drive/api/v3/reference/files
+	GDRIVE_FILE_FIELDS   = "id,name,size,mimeType,md5Checksum"
+	GDRIVE_FOLDER_FIELDS = "nextPageToken,files(id,name,size,mimeType,md5Checksum)"
+
 	OTHER_LINKS_FILENAME = "detected_external_links.txt"
 )
 
 // Although the variables below are not
 // constants, they are not supposed to be changed
 var (
+	// General
 	USER_AGENT       string
 	GITHUB_VER_REGEX = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
@@ -94,12 +120,21 @@ var (
 	)
 	NUMBER_REGEX = regexp.MustCompile(`^\d+$`)
 
+	// For GDrive
 	GDRIVE_URL_REGEX = regexp.MustCompile(
 		`https://drive\.google\.com/(?P<type>file/d|drive/(u/\d+/)?folders)/(?P<id>[\w-]+)`,
 	)
 	GDRIVE_REGEX_ID_INDEX   = GDRIVE_URL_REGEX.SubexpIndex("id")
 	GDRIVE_REGEX_TYPE_INDEX = GDRIVE_URL_REGEX.SubexpIndex("type")
 
+	GDRIVE_API_KEY_REGEX       = regexp.MustCompile(
+		fmt.Sprintf(`^%s$`, GDRIVE_BASE_API_KEY_REGEX_STR),
+	)
+	GDRIVE_API_KEY_PARAM_REGEX = regexp.MustCompile(
+		fmt.Sprintf(`key=%s`, GDRIVE_BASE_API_KEY_REGEX_STR),
+	)
+
+	// For Fantia
 	FANTIA_IMAGE_URL_REGEX = regexp.MustCompile(
 		`original_url":"(?P<url>/posts/\d+/album_image\?query=[\w%-]*)"`,
 	)
@@ -149,7 +184,11 @@ var (
 	PASSWORD_TEXTS              = []string{"パス", "Pass", "pass", "密码"}
 	EXTERNAL_DOWNLOAD_PLATFORMS = []string{"mega", "gigafile", "dropbox", "mediafire"}
 
-	// For Kemono URL(s) input validations
+	// For Kemono
+	KEMONO_IMG_SRC_TAG_REGEX     = regexp.MustCompile(`(?i)<img[^>]+src=(?:\\)?"(?P<imgSrc>[^">]+)(?:\\)?"[^>]*>`)
+	KEMONO_IMG_SRC_TAG_REGEX_IDX = KEMONO_IMG_SRC_TAG_REGEX.SubexpIndex("imgSrc")
+
+	// For Kemono input validations
 	KEMONO_POST_URL_REGEX = regexp.MustCompile(
 		fmt.Sprintf(
 			`^%s%s$`,
@@ -173,7 +212,7 @@ var (
 	KEMONO_CREATOR_URL_REGEX_CREATOR_ID_IDX = KEMONO_CREATOR_URL_REGEX.SubexpIndex(KEMONO_CREATOR_ID_GROUP_NAME)
 	KEMONO_CREATOR_URL_REGEX_PAGE_NUM_IDX   = KEMONO_CREATOR_URL_REGEX.SubexpIndex(PAGE_NUM_IDX_NAME)
 
-	// For Fantia URL(s) input validations
+	// For Fantia input validations
 	FANTIA_POST_URL_REGEX = regexp.MustCompile(
 		`^https://fantia.jp/posts/(?P<id>\d+)$`,
 	)
@@ -189,21 +228,32 @@ var (
 	FANTIA_CREATOR_ID_IDX       = FANTIA_CREATOR_URL_REGEX.SubexpIndex("id")
 	FANTIA_CREATOR_PAGE_NUM_IDX = FANTIA_CREATOR_URL_REGEX.SubexpIndex(PAGE_NUM_IDX_NAME)
 
-	// For Pixiv Fanbox URL(s) input validations
+	// For Pixiv Fanbox input validations
+	PIXIV_FANBOX_CREATOR_ID_REGEX = regexp.MustCompile(
+		fmt.Sprintf(`^%s$`, PIXIV_FANBOX_CREATOR_ID_REGEX_STR),
+	)
+
 	PIXIV_FANBOX_POST_URL_REGEX1 = regexp.MustCompile(
-		`^https://www\.fanbox\.cc/@[\w&.-]+/posts/(?P<id>\d+)$`,
+		fmt.Sprintf(
+			`^https://www\.fanbox\.cc/@%s/posts/(?P<id>\d+)$`,
+			PIXIV_FANBOX_CREATOR_ID_REGEX_STR,
+		),
 	)
 	PIXIV_FANBOX_POST_ID_IDX1 = PIXIV_FANBOX_POST_URL_REGEX1.SubexpIndex("id")
 
 	PIXIV_FANBOX_POST_URL_REGEX2 = regexp.MustCompile(
-		`^https://[\w&.-]+\.fanbox\.cc/posts/(?P<id>\d+)$`,
+		fmt.Sprintf(
+			`^https://%s\.fanbox\.cc/posts/(?P<id>\d+)$`,
+			PIXIV_FANBOX_CREATOR_ID_REGEX_STR,
+		),
 	)
 	PIXIV_FANBOX_POST_ID_IDX2 = PIXIV_FANBOX_POST_URL_REGEX2.SubexpIndex("id")
 
 	PIXIV_FANBOX_CREATOR_URL_REGEX1 = regexp.MustCompile(
 		fmt.Sprintf(
 			// ^https://(?P<id>[\w&.-]+)\.fanbox\.cc(?:/(?:posts)?)?(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?$
-			`^https://(?P<id>[\w&.-]+)\.fanbox\.cc(?:/(?:posts)?)?%s$`,
+			`^https://(?P<id>%s)\.fanbox\.cc(?:/(?:posts)?)?%s$`,
+			PIXIV_FANBOX_CREATOR_ID_REGEX_STR,
 			PAGE_NUM_WITH_INPUT_REGEX_STR,
 		),
 	)
@@ -213,14 +263,15 @@ var (
 	PIXIV_FANBOX_CREATOR_URL_REGEX2 = regexp.MustCompile(
 		fmt.Sprintf(
 			// ^https://www\.fanbox\.cc/@(?P<id>[\w&.-]+)(?:/posts)?(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?$
-			`^https://www\.fanbox\.cc/@(?P<id>[\w&.-]+)(?:/posts)?%s$`,
+			`^https://www\.fanbox\.cc/@(?P<id>%s)(?:/posts)?%s$`,
+			PIXIV_FANBOX_CREATOR_ID_REGEX_STR,
 			PAGE_NUM_WITH_INPUT_REGEX_STR,
 		),
 	)
 	PIXIV_FANBOX_CREATOR_ID_IDX2       = PIXIV_FANBOX_CREATOR_URL_REGEX2.SubexpIndex("id")
 	PIXIV_FANBOX_CREATOR_PAGE_NUM_IDX2 = PIXIV_FANBOX_CREATOR_URL_REGEX2.SubexpIndex(PAGE_NUM_IDX_NAME)
 
-	// For Pixiv URL(s) input validations
+	// For Pixiv input validations
 	// can be illust or manga
 	PIXIV_ARTWORK_URL_REGEX = regexp.MustCompile(
 		`^https://www\.pixiv\.net/(?:en/)?artworks/(?P<id>\d+)$`,
@@ -236,6 +287,8 @@ var (
 	)
 	PIXIV_ARTIST_ID_IDX       = PIXIV_ARTIST_URL_REGEX.SubexpIndex("id")
 	PIXIV_ARTIST_PAGE_NUM_IDX = PIXIV_ARTIST_URL_REGEX.SubexpIndex(PAGE_NUM_IDX_NAME)
+
+	PIXIV_OAUTH_CODE_REGEX = regexp.MustCompile(`^[\w-]{43}$`)
 )
 
 func init() {

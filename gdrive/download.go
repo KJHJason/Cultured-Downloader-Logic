@@ -133,8 +133,8 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 				Params:    params,
 				Context:   ctx,
 				UserAgent: config.UserAgent,
-				Http2:     !HTTP3_SUPPORTED,
-				Http3:     HTTP3_SUPPORTED,
+				Http2:     !constants.GDRIVE_HTTP3_SUPPORTED,
+				Http3:     constants.GDRIVE_HTTP3_SUPPORTED,
 				Headers:   headers,
 			},
 		)
@@ -286,7 +286,7 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, config *con
 					Err: err,
 					FilePath: filepath.Join(
 						file.FilePath,
-						GDRIVE_ERROR_FILENAME,
+						constants.GDRIVE_ERROR_FILENAME,
 					),
 				}
 			}
