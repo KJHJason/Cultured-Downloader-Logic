@@ -11,7 +11,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/quic-go/quic-go v0.43.1
-	google.golang.org/api v0.179.0
+	google.golang.org/api v0.180.0
 )
 
 require (
