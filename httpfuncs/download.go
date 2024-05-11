@@ -149,6 +149,13 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 	if hasDlProgBar {
 		// Measure download speed and ETA
 		startTime := time.Now()
+
+		// if the file has been partially downloaded
+		if writtenBytes > 0 {
+			expectedFileSize -= writtenBytes
+			writtenBytes = 0
+		}
+
 		go func() {
 			for {
 				select {
@@ -278,10 +285,12 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 	if dlOptions.SupportRange {
 		if downloadedBytes > 0 && downloadedBytes < fileReqContentLength {
 			downloadPartial = true
+			reqArgs.EditMu.Lock()
 			if reqArgs.Headers == nil {
 				reqArgs.Headers = make(map[string]string)
 			}
 			reqArgs.Headers["Range"] = fmt.Sprintf("bytes=%d-", downloadedBytes)
+			reqArgs.EditMu.Unlock()
 		}
 	}
 
