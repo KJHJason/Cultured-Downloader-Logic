@@ -70,6 +70,10 @@ func GetNewGDrive(ctx context.Context, apiKey, userAgent string, jsonBytes []byt
 	return gdrive, nil
 }
 
+func (gdrive *GDrive) Release() {
+	gdrive.cancel()
+}
+
 // Checks if the given Google Drive API key is valid
 //
 // Will return true if the given Google Drive API key is valid
