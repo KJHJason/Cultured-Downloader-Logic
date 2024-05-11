@@ -229,7 +229,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		&RequestArgs{
 			Url:         reqArgs.Url,
 			Method:      "HEAD",
-			Timeout:     15,
+			Timeout:     dlOptions.HeadReqTimeout,
 			Cookies:     reqArgs.Cookies,
 			Headers:     reqArgs.Headers,
 			UserAgent:   reqArgs.UserAgent,

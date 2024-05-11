@@ -2,6 +2,7 @@ package parsers
 
 import (
 	"bufio"
+	"errors"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -56,23 +57,21 @@ func GetSessionCookieInfo(site string) *cookieInfo {
 	}
 }
 
-var errSkipLine = fmt.Errorf("skip line")
-
 func readTxtCookieLine(line string, cookieArgs *cookieInfoArgs) (*http.Cookie, error) {
 	line = strings.TrimSpace(line)
 	if line == "" || strings.HasPrefix(line, "#") {
-		return nil, errSkipLine // skip empty lines and comments
+		return nil, cdlerrors.ErrSkipLine // skip empty lines and comments
 	}
 
 	// split the line
 	cookieInfos := strings.Split(line, "\t")
 	if len(cookieInfos) < 7 {
-		return nil, errSkipLine // too few values will be ignored
+		return nil, cdlerrors.ErrSkipLine // too few values will be ignored
 	}
 
 	cookieName := cookieInfos[5]
 	if cookieName != cookieArgs.name {
-		return nil, errSkipLine // not the session cookie
+		return nil, cdlerrors.ErrSkipLine // not the session cookie
 	}
 
 	// parse the values
@@ -111,7 +110,7 @@ func ParseTxtCookieFile(f *os.File, filePath string, cookieArgs *cookieInfoArgs)
 	for {
 		lineBytes, err := iofuncs.ReadLine(reader)
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, fmt.Errorf(
@@ -123,7 +122,7 @@ func ParseTxtCookieFile(f *os.File, filePath string, cookieArgs *cookieInfoArgs)
 		}
 
 		cookie, err := readTxtCookieLine(string(lineBytes), cookieArgs)
-		if err == errSkipLine {
+		if errors.Is(err, cdlerrors.ErrSkipLine) {
 			continue
 		} else if err != nil {
 			return nil, err
@@ -137,7 +136,7 @@ func ParseTxtCookie(txtContent string, cookieArgs *cookieInfoArgs) ([]*http.Cook
 	var cookies []*http.Cookie
 	for _, line := range strings.Split(txtContent, "\n") {
 		cookie, err := readTxtCookieLine(line, cookieArgs)
-		if err == errSkipLine {
+		if errors.Is(err, cdlerrors.ErrSkipLine) {
 			continue
 		} else if err != nil {
 			return nil, err

@@ -112,6 +112,7 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 				Headers:        pixivcommon.GetPixivRequestHeaders(),
 				Cookies:        pixivDlOptions.SessionCookies,
 				UseHttp3:       false,
+				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
 				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
 				ProgressBarInfo: &progress.ProgressBarInfo{
 					MainProgressBar:      pixivDlOptions.MainProgBar,
@@ -236,6 +237,7 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 				MaxConcurrency: constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
 				Headers:        pixivcommon.GetPixivRequestHeaders(),
 				UseHttp3:       false,
+				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
 				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
 				ProgressBarInfo: &progress.ProgressBarInfo{
 					MainProgressBar:      pixivDlOptions.MainProgBar,

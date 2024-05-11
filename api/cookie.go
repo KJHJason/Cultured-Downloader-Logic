@@ -75,6 +75,8 @@ func getHeaders(website, userAgent string) map[string]string {
 // Verifies the given cookie by making a request to the website
 // and returns true if the cookie is valid
 func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) {
+	timeout := constants.DEFAULT_HEAD_REQ_TIMEOUT
+
 	// sends a request to the website to verify the cookie
 	var websiteUrl string
 	switch website {
@@ -86,6 +88,7 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 		websiteUrl = constants.PIXIV_URL + "/dashboard"
 	case constants.KEMONO:
 		websiteUrl = constants.KEMONO_URL + "/favorites"
+		timeout = constants.KEMONO_HEAD_REQ_TIMEOUT
 	default:
 		// Shouldn't happen but could happen during development
 		panic(
@@ -112,6 +115,7 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 			Http3:       useHttp3,
 			Http2:       !useHttp3,
 			Headers:     getHeaders(website, userAgent),
+			Timeout:     timeout,
 		},
 	)
 	if err != nil {

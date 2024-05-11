@@ -255,6 +255,7 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 			Context:         ugoiraArgs.context,
 			MaxConcurrency:  constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
 			SupportRange:    constants.PIXIV_RANGE_SUPPORTED,
+			HeadReqTimeout:  constants.DEFAULT_HEAD_REQ_TIMEOUT,
 			Headers:         headers,
 			Cookies:         ugoiraArgs.Cookies,
 			UseHttp3:        useHttp3,

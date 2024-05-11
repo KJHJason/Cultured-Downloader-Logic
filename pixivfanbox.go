@@ -43,6 +43,7 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 				Headers:        pixivfanbox.GetPixivFanboxHeaders(),
 				Cookies:        pixivFanboxDlOptions.SessionCookies,
 				UseHttp3:       false,
+				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
 				SupportRange:   constants.PIXIV_FANBOX_RANGE_SUPPORTED,
 				ProgressBarInfo: &progress.ProgressBarInfo{
 					MainProgressBar:      pixivFanboxDlOptions.MainProgBar,

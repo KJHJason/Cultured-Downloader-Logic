@@ -64,8 +64,6 @@ func dlAttachmentsFromPost(content *FantiaContent, postFolderPath string) []*htt
 	return urlsSlice
 }
 
-var errRecaptcha = fmt.Errorf("recaptcha detected for the current session")
-
 // Process the JSON response from Fantia's API and
 // returns a slice of urls and a slice of gdrive urls to download from
 func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
@@ -84,7 +82,7 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 				postJson.Redirect,
 			)
 		}
-		return nil, nil, errRecaptcha
+		return nil, nil, cdlerrors.ErrRecaptcha
 	}
 
 	post := postJson.Post
@@ -173,8 +171,8 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 		dlOptions,
 	)
 	if err != nil {
-		if errors.Is(err, errRecaptcha) {
-			progress.UpdateErrorMsg("reCAPTCHA detected for the current session...")
+		if errors.Is(err, cdlerrors.ErrRecaptcha) {
+			progress.UpdateErrorMsg(constants.ERR_RECAPTCHA_STR)
 		}
 		progress.Stop(true)
 		return nil, nil, err

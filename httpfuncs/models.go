@@ -42,6 +42,10 @@ type DlOptions struct {
 	// Otherwise, HTTP/2 will be used by default
 	UseHttp3 bool
 
+	// Since a HEAD request is sent to determine the expected 
+	// file size (if known), HeadReqTimeout is the timeout for the HEAD request
+	HeadReqTimeout int
+
 	// RetryDelay is the delay between retries
 	RetryDelay *RetryDelay
 

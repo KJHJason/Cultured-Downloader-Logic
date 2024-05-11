@@ -13,9 +13,9 @@ import (
 
 type RequestArgs struct {
 	// Main Request Options
-	Method  string
-	Url     string
-	Timeout int
+	Method      string
+	Url         string
+	Timeout     int
 
 	// Additional Request Options
 	EditMu             sync.Mutex
@@ -99,7 +99,7 @@ func (args *RequestArgs) getDefaultArgs() {
 	}
 
 	if args.UserAgent == "" {
-		args.UserAgent = constants.USER_AGENT
+		args.UserAgent = DEFAULT_USER_AGENT
 	}
 
 	if args.Context == nil {

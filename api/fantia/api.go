@@ -128,7 +128,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		},
 		dlOptions,
 	)
-	if err == errRecaptcha {
+	if errors.Is(err, cdlerrors.ErrRecaptcha) {
 		err = SolveCaptcha(dlOptions)
 		if err != nil {
 			// stop the download if the captcha auto-solving fails
@@ -150,7 +150,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 			Headers:        nil,
 			Cookies:        dlOptions.SessionCookies,
 			UseHttp3:       false,
-
+			HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
 			SupportRange: constants.FANTIA_RANGE_SUPPORTED,
 			ProgressBarInfo: &progress.ProgressBarInfo{
 				MainProgressBar:      dlOptions.MainProgBar,

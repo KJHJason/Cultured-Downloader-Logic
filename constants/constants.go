@@ -3,9 +3,6 @@ package constants
 import (
 	"fmt"
 	"regexp"
-	"runtime"
-
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 const (
@@ -20,10 +17,13 @@ const (
 	CLI_REPO_NAME         = "KJHJason/Cultured-Downloader-CLI"
 	LOGIC_REPO_NAME       = "KJHJason/Cultured-Downloader-Logic"
 
+	ERR_RECAPTCHA_STR = "recaptcha detected for the current session"
+
 	PAGE_NUM_REGEX_STR            = `[1-9]\d*(?:-[1-9]\d*)?`
 	PAGE_NUM_IDX_NAME             = "pageNum"
 	PAGE_NUM_WITH_INPUT_REGEX_STR = `(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?`
 
+	DEFAULT_HEAD_REQ_TIMEOUT = 15 // in seconds
 	DOWNLOAD_TIMEOUT = 25 * 60 // 25 minutes in seconds as downloads
 	// can take quite a while for large files (especially for Pixiv)
 	// However, the average max file size on these platforms is around 300MB.
@@ -79,6 +79,7 @@ const (
 	KEMONO_URL                   = "https://kemono.su"
 	KEMONO_API_URL               = "https://kemono.su/api/v1"
 	KEMONO_RANGE_SUPPORTED       = true
+	KEMONO_HEAD_REQ_TIMEOUT      = 60 // to avoid the common issue of context deadline exceeded (Client.Timeout exceeded while awaiting headers) as the default 15s is too short
 	KEMONO_BASE_REGEX_STR        = `https://kemono\.su/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)`
 	KEMONO_POST_SUFFIX_REGEX_STR = `/post/(?P<postId>\d+)`
 	KEMONO_SERVICE_GROUP_NAME    = "service"
@@ -112,7 +113,6 @@ const (
 // constants, they are not supposed to be changed
 var (
 	// General
-	USER_AGENT       string
 	GITHUB_VER_REGEX = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
 	PAGE_NUM_REGEX = regexp.MustCompile(
@@ -290,22 +290,3 @@ var (
 
 	PIXIV_OAUTH_CODE_REGEX = regexp.MustCompile(`^[\w-]{43}$`)
 )
-
-func init() {
-	var userAgent = map[string]string{
-		"linux":   "Mozilla/5.0 (X11; Linux x86_64)",
-		"darwin":  "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6)",
-		"windows": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-	}
-	userAgentOS, ok := userAgent[runtime.GOOS]
-	if !ok {
-		panic(
-			fmt.Errorf(
-				"error %d: Failed to get user agent OS as your OS, %q, is not supported",
-				cdlerrors.OS_ERROR,
-				runtime.GOOS,
-			),
-		)
-	}
-	USER_AGENT = fmt.Sprintf("%s AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36", userAgentOS)
-}

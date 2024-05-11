@@ -69,6 +69,7 @@ func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDl
 				Cookies:        dlOptions.SessionCookies,
 				UseHttp3:       httpfuncs.IsHttp3Supported(constants.KEMONO, false),
 				SupportRange:   constants.KEMONO_RANGE_SUPPORTED,
+				HeadReqTimeout: constants.KEMONO_HEAD_REQ_TIMEOUT,
 				RetryDelay:     &httpfuncs.RetryDelay{Min: 25, Max: 35},
 				ProgressBarInfo: &progress.ProgressBarInfo{
 					MainProgressBar:      dlOptions.MainProgBar,
