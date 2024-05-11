@@ -97,25 +97,39 @@ type PartialDlInfo struct {
 	ExpectedFileSize int64
 }
 
-func writeDlDetailsToProgBar(dlProgBar *progress.DownloadProgressBar, startTime time.Time, writtenBytes, expectedFileSize int64) {
+func writeDlDetailsToProgBar(dlProgBar *progress.DownloadProgressBar, startTime time.Time, bytesOnDisk, reqWrittenBytes, expectedFileSize int64) {
 	durationInSec := time.Since(startTime).Seconds()
 	var downloadSpeed float64
 	if durationInSec > 0 {
-		downloadSpeed = float64(writtenBytes) / durationInSec
+		downloadSpeed = float64(reqWrittenBytes) / durationInSec
 		(*dlProgBar).UpdateDownloadSpeed(downloadSpeed / 1024 / 1024)
 	} else {
 		downloadSpeed = 0
 	}
 
 	var estimatedTime float64
+	var progressPercentage float64
 	if expectedFileSize == -1 || downloadSpeed == 0 { // not present in the response or the time elapsed is too short
 		estimatedTime = -1 // -1 indicates that the ETA is unknown
+		progressPercentage = 0
 	} else {
-		estimatedTime = float64(expectedFileSize-writtenBytes) / downloadSpeed
-		(*dlProgBar).UpdatePercentage(min(int(float64(writtenBytes) / float64(expectedFileSize) * 100), 100))
+		// Calculate the total progress made so far, including initial progress from bytesOnDisk
+        totalProgress := reqWrittenBytes + bytesOnDisk
+
+		// Calculate the progress percentage based on total bytes and written bytes
+		progressPercentage = float64(totalProgress) / float64(expectedFileSize) * 100
+
+		// Calculate the estimated time based on remaining bytes to be downloaded and download speed
+		estimatedTime = float64(expectedFileSize-totalProgress) / downloadSpeed
 	}
-	(*dlProgBar).UpdateDownloadETA(max(estimatedTime, 0))
-	// fmt.Printf("\rDownload speed: %.2f MB/s | ETA: %.2f seconds", downloadSpeed/1024/1024, estimatedTime)
+	(*dlProgBar).UpdateDownloadETA(estimatedTime)
+
+	if progressPercentage > 100 {
+		progressPercentage = 100
+	} else if progressPercentage < 0 {
+		progressPercentage = 0
+	}
+	(*dlProgBar).UpdatePercentage(int(progressPercentage))
 }
 
 func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string, partialDlInfo PartialDlInfo, dlProgBar *progress.DownloadProgressBar) error {
@@ -137,10 +151,11 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 	}
 	defer file.Close()
 
+	var reqWrittenBytes int64
 	expectedFileSize := partialDlInfo.ExpectedFileSize
-	writtenBytes := partialDlInfo.DownloadedBytes
-	if writtenBytes == -1 { // since the iofuncs.GetFileSize function returns -1 if the file does not exist
-		writtenBytes = 0
+	bytesOnDisk := partialDlInfo.DownloadedBytes
+	if bytesOnDisk == -1 { // since the iofuncs.GetFileSize function returns -1 if the file does not exist
+		bytesOnDisk = 0
 	}
 
 	progressTicker := time.NewTicker(100 * time.Millisecond)
@@ -149,13 +164,6 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 	if hasDlProgBar {
 		// Measure download speed and ETA
 		startTime := time.Now()
-
-		// if the file has been partially downloaded
-		if writtenBytes > 0 {
-			expectedFileSize -= writtenBytes
-			writtenBytes = 0
-		}
-
 		go func() {
 			for {
 				select {
@@ -164,7 +172,7 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 					(*dlProgBar).UpdateDownloadSpeed(0)
 					return
 				case <-progressTicker.C:
-					writeDlDetailsToProgBar(dlProgBar, startTime, writtenBytes, expectedFileSize)
+					writeDlDetailsToProgBar(dlProgBar, startTime, bytesOnDisk, reqWrittenBytes, expectedFileSize)
 				}
 			}
 		}()
@@ -172,7 +180,7 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 
 	// write the body to file
 	respReader := ctxio.NewReader(dlRequestInfo.Ctx, res.Body)
-	_, err = io.Copy(io.MultiWriter(file, &totalBytesWriter{&writtenBytes}), respReader)
+	_, err = io.Copy(io.MultiWriter(file, &totalBytesWriter{&reqWrittenBytes}), respReader)
 	progressTicker.Stop()
 	cancelDlInfoCtx()
 
