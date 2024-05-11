@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -39,6 +40,7 @@ func ValidateFfmpegPathLogic(ctx context.Context, ffmpegPath string) error {
 
 	// execute the ffmpeg binary to check if it's working
 	cmd := exec.CommandContext(cmdCtx, ffmpegPath, "-version")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	stdout, ffmpegErr := cmd.Output()
 	if ffmpegErr != nil {
 		return ffmpegErr
