@@ -310,8 +310,8 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		}
 		err = DlToFile(res, dlReqInfo, filePath, dlPartialInfo, dlProgBar)
 	} else {
-		dlProgBar.UpdateTotalBytes(downloadedBytes)
 		if hasDlProgBar {
+			dlProgBar.UpdateTotalBytes(downloadedBytes)
 			dlProgBar.UpdateSuccessMsg("File already exists!")
 			dlProgBar.Stop(false)
 		}
