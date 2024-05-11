@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"syscall"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
@@ -132,6 +133,7 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 		"-vf", "palettegen",
 		palettePath,
 	)
+	imagePaletteCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
 	if constants.DEBUG_MODE {
 		imagePaletteCmd.Stdout = os.Stdout
