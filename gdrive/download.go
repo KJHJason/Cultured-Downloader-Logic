@@ -88,13 +88,6 @@ func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, int64, e
 //
 // If the md5Checksum has a mismatch, the file will be overwritten and downloaded again
 func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl, filePath string, config *configs.Config, progBarInfo *progress.ProgressBarInfo, queue chan struct{}) error {
-	skipDl, writtenBytes, err := checkIfCanSkipDl(filePath, fileInfo)
-	if skipDl || err != nil {
-		return err
-	}
-
-	queue <- struct{}{}
-
 	fileSize := fileInfo.GetIntSize()
 	var dlProgBar *progress.DownloadProgressBar
 	if progBarInfo.DownloadProgressBars != nil {
@@ -107,6 +100,19 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 		(*dlProgBar).UpdateFilename(filepath.Base(filePath))
 		progBarInfo.AppendDlProgBar(dlProgBar)
 	}
+
+	skipDl, writtenBytes, err := checkIfCanSkipDl(filePath, fileInfo)
+	if err != nil {
+		return err
+	}
+	if skipDl {
+		if dlProgBar != nil {
+			(*dlProgBar).UpdateSuccessMsg("File already exists!")
+			(*dlProgBar).Stop(false)
+		}
+	}
+
+	queue <- struct{}{}
 
 	var res *http.Response
 	url := fmt.Sprintf("%s/%s", gdrive.apiUrl, fileInfo.Id)
