@@ -110,6 +110,7 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 			(*dlProgBar).UpdateSuccessMsg("File already exists!")
 			(*dlProgBar).Stop(false)
 		}
+		return nil
 	}
 
 	queue <- struct{}{}

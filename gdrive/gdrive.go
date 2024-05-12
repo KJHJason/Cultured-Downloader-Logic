@@ -24,7 +24,7 @@ type GDrive struct {
 
 // Returns a GDrive structure with the given API key and max download workers
 func GetNewGDrive(ctx context.Context, apiKey, userAgent string, jsonBytes []byte, maxDownloadWorkers int) (*GDrive, error) {
-	if len(jsonBytes) == 0 && apiKey != "" {
+	if len(jsonBytes) != 0 && apiKey != "" {
 		return nil, fmt.Errorf(
 			"gdrive error %d: Both Google Drive API key and service account credentials file cannot be used at the same time",
 			cdlerrors.DEV_ERROR,
