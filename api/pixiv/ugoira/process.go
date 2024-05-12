@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"path/filepath"
 	"syscall"
 
@@ -57,12 +58,10 @@ func ConvertUgoira(ugoiraInfo *Ugoira, imagesFolderPath string, ugoiraFfmpeg *Ug
 
 	args, err := getFfmpegFlagsForUgoira(
 		&ffmpegOptions{
-			ffmpegPath:          ugoiraFfmpeg.ffmpegPath,
+			ugoiraArgs:          ugoiraFfmpeg,
 			outputExt:           outputExt,
 			concatDelayFilePath: concatDelayFilePath,
 			sortedFilenames:     sortedFilenames,
-			outputPath:          ugoiraFfmpeg.outputPath,
-			ugoiraQuality:       ugoiraFfmpeg.ugoiraQuality,
 		},
 		imagesFolderPath,
 	)
@@ -72,9 +71,12 @@ func ConvertUgoira(ugoiraInfo *Ugoira, imagesFolderPath string, ugoiraFfmpeg *Ug
 
 	// convert the frames to a gif or a video
 	cmd := exec.CommandContext(ugoiraFfmpeg.context, ugoiraFfmpeg.ffmpegPath, args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	if runtime.GOOS == "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	}
 	// cmd.Stderr = os.Stderr
 	// cmd.Stdout = os.Stdout
+
 	err = cmd.Run()
 	if err != nil {
 		os.Remove(ugoiraFfmpeg.outputPath)

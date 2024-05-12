@@ -1,10 +1,13 @@
 package ugoira
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"syscall"
@@ -15,12 +18,10 @@ import (
 )
 
 type ffmpegOptions struct {
-	ffmpegPath          string
+	ugoiraArgs          *UgoiraFfmpegArgs
 	outputExt           string
 	concatDelayFilePath string
 	sortedFilenames     []string
-	ugoiraQuality       int
-	outputPath          string
 }
 
 func writeDelays(ugoiraInfo *Ugoira, imagesFolderPath string) (string, []string, error) {
@@ -127,20 +128,26 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 		len(iofuncs.RemoveExtFromFilename(options.sortedFilenames[0])),
 		filepath.Ext(options.sortedFilenames[0]),
 	)
-	imagePaletteCmd := exec.Command(
-		options.ffmpegPath,
+	imagePaletteCmd := exec.CommandContext(
+		options.ugoiraArgs.context,
+		options.ugoiraArgs.ffmpegPath,
 		"-i", filepath.Join(imagesFolderPath, ffmpegImages),
 		"-vf", "palettegen",
 		palettePath,
 	)
-	imagePaletteCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-
+	if runtime.GOOS == "windows" {
+		imagePaletteCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	}
 	if constants.DEBUG_MODE {
 		imagePaletteCmd.Stdout = os.Stdout
 		imagePaletteCmd.Stderr = os.Stderr
 	}
+
 	err := imagePaletteCmd.Run()
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
 		return nil, fmt.Errorf(
 			"pixiv error %d: failed to generate palette for ugoira gif, more info => %w",
 			cdlerrors.CMD_ERROR,
@@ -165,7 +172,7 @@ func getFfmpegFlagsForUgoira(options *ffmpegOptions, imagesFolderPath string) ([
 	}
 	switch options.outputExt {
 	case ".webm", ".mp4":
-		args = append(args, getFlagsForWebmAndMp4(options.outputExt, options.ugoiraQuality)...)
+		args = append(args, getFlagsForWebmAndMp4(options.outputExt, options.ugoiraArgs.ugoiraQuality)...)
 	case ".gif":
 		gifArgs, err := getFlagsForGif(options, imagesFolderPath)
 		if err != nil {
@@ -200,6 +207,6 @@ func getFfmpegFlagsForUgoira(options *ffmpegOptions, imagesFolderPath string) ([
 		args = append(args, "-quality", "best")
 	}
 
-	args = append(args, options.outputPath)
+	args = append(args, options.ugoiraArgs.outputPath)
 	return args, nil
 }
