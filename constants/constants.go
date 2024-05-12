@@ -100,6 +100,7 @@ const (
 	GDRIVE_HTTP3_SUPPORTED        = true
 	GDRIVE_ERROR_FILENAME         = "gdrive_download.log"
 	GDRIVE_BASE_API_KEY_REGEX_STR = `AIza[\w-]{35}`
+	GDRIVE_MAX_CONCURRENCY        = 2
 
 	// file fields to fetch from GDrive API:
 	// https://developers.google.com/drive/api/v3/reference/files
