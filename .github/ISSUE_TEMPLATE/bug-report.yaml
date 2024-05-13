@@ -26,8 +26,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: Version
-      description: What version are you using?
+      label: Package Version
+      description: What version are you on?
     validations:
       required: true
 
