@@ -117,42 +117,18 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 
 	var res *http.Response
 	url := fmt.Sprintf("%s/%s", gdrive.apiUrl, fileInfo.Id)
-	if gdrive.client != nil {
-		fileCall := gdrive.client.Files.Get(fileInfo.Id).AcknowledgeAbuse(true).Context(ctx)
-		if writtenBytes > 0 {
-			// If the file has been partially downloaded, resume the download from where it left off
-			fileCall.Header().Add("Range", fmt.Sprintf("bytes=%d-", writtenBytes))
-		}
-		res, err = fileCall.Download()
-	} else {
-		params := map[string]string{
-			"key":              gdrive.apiKey,
-			"alt":              "media", // to tell Google that we are downloading the file
-			"acknowledgeAbuse": "true",  // If the files are marked as abusive, download them anyway
-		}
-		headers := map[string]string{}
-		if writtenBytes > 0 {
-			headers["Range"] = fmt.Sprintf("bytes=%d-", writtenBytes)
-		}
-		res, err = httpfuncs.CallRequest(
-			&httpfuncs.RequestArgs{
-				Url:       url,
-				Method:    "GET",
-				Timeout:   gdrive.downloadTimeout,
-				Params:    params,
-				Context:   ctx,
-				UserAgent: config.UserAgent,
-				Http2:     !constants.GDRIVE_HTTP3_SUPPORTED,
-				Http3:     constants.GDRIVE_HTTP3_SUPPORTED,
-				Headers:   headers,
-			},
-		)
+	fileCall := gdrive.client.Files.Get(fileInfo.Id).AcknowledgeAbuse(true).Context(ctx)
+	if writtenBytes > 0 {
+		// If the file has been partially downloaded, resume the download from where it left off
+		fileCall.Header().Add("Range", fmt.Sprintf("bytes=%d-", writtenBytes))
 	}
+	res, err = fileCall.Download()
 	if err != nil {
 		return err
 	}
+
 	defer res.Body.Close()
-	if res.StatusCode != 200 {
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return getFailedApiCallErr(res)
 	}
 

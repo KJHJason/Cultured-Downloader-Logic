@@ -12,8 +12,12 @@
 # Test binary, built with `go test -c`
 # *.test
 
-# anything with test in the name
+# anything with test in the name except for test cases
 *test*
+!*test.go
+
+# secrets
+*.env
 
 # saved json for testing
 json
