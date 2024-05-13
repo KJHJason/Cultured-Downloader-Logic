@@ -7,7 +7,7 @@
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
 
-## Program Version
+## Package Version
 
 Version: <!-- 1.0.0 or based on my latest commit [aeb698a](https://github.com/KJHJason/Cultured-Downloader-Logic/commit/aeb698a058f9b605c8c02bd6c1284690dc1ab5d8) -->
 
