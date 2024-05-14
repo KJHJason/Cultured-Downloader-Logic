@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -64,7 +63,7 @@ func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, int64, e
 	}
 
 	fileSize := fileStatInfo.Size()
-	if strconv.FormatInt(fileSize, 10) != fileInfo.Size {
+	if fileSize != fileInfo.Size {
 		return false, fileSize, nil
 	}
 
@@ -87,7 +86,6 @@ func checkIfCanSkipDl(filePath string, fileInfo *GdriveFileToDl) (bool, int64, e
 //
 // If the md5Checksum has a mismatch, the file will be overwritten and downloaded again
 func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl, filePath string, progBarInfo *progress.ProgressBarInfo, queue chan struct{}) error {
-	fileSize := fileInfo.GetIntSize()
 	var dlProgBar *progress.DownloadProgressBar
 	if progBarInfo.DownloadProgressBars != nil {
 		dlProgBar = progress.NewDlProgressBar(ctx, progress.Messages{
@@ -95,7 +93,7 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 			ErrMsg:     "Failed to download GDrive file!",
 			SuccessMsg: "Finished downloading GDrive file!",
 		})
-		(*dlProgBar).UpdateTotalBytes(fileSize)
+		(*dlProgBar).UpdateTotalBytes(fileInfo.Size)
 		(*dlProgBar).UpdateFilename(filepath.Base(filePath))
 		progBarInfo.AppendDlProgBar(dlProgBar)
 	}
@@ -137,7 +135,7 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 	dlPartialInfo := httpfuncs.PartialDlInfo{
 		DownloadPartial:  true,
 		DownloadedBytes:  writtenBytes,
-		ExpectedFileSize: fileSize,
+		ExpectedFileSize: fileInfo.Size,
 	}
 	return httpfuncs.DlToFile(res, dlReqInfo, filePath, dlPartialInfo, dlProgBar)
 }

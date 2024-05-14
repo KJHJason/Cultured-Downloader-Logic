@@ -3,7 +3,6 @@ package gdrive
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
@@ -54,7 +53,7 @@ func (gdrive *GDrive) getFolderContentsWithClient(folderId string) ([]*GdriveFil
 			gdriveFiles = append(gdriveFiles, &GdriveFileToDl{
 				Id:          file.Id,
 				Name:        file.Name,
-				Size:        strconv.FormatInt(file.Size, 10),
+				Size:        file.Size,
 				MimeType:    file.MimeType,
 				Md5Checksum: file.Md5Checksum,
 				FilePath:    "",
@@ -110,7 +109,7 @@ func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl) (*GdriveF
 	return &GdriveFileToDl{
 		Id:          file.Id,
 		Name:        file.Name,
-		Size:        strconv.FormatInt(file.Size, 10),
+		Size:        file.Size,
 		MimeType:    file.MimeType,
 		Md5Checksum: file.Md5Checksum,
 		FilePath:    gdriveInfo.FilePath,
