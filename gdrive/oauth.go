@@ -48,6 +48,13 @@ func GetOAuthUrl(config *oauth2.Config) string {
 }
 
 func ProcessAuthCode(ctx context.Context, authCode string, config *oauth2.Config) (*oauth2.Token, error) {
+	if authCode == "" {
+		return nil, fmt.Errorf(
+			"gdrive error %d: No auth code provided",
+			cdlerrors.INPUT_ERROR,
+		)
+	}
+
 	token, err := config.Exchange(ctx, authCode)
 	if err != nil {
 		return nil, fmt.Errorf(

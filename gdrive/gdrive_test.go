@@ -180,35 +180,32 @@ func getGDriveUserClientSecret(t *testing.T) (*oauth2.Config, []byte) {
 	return oauthConfig, credJson
 }
 
-func TestGDriveOauthProcess(t *testing.T) {
+func TestGDriveOauthProcessFlow(t *testing.T) {
 	oauthConfig, _ := getGDriveUserClientSecret(t)
 
 	url := GetOAuthUrl(oauthConfig)
 	t.Logf("Visit the URL for the auth dialog: %v", url)
-}
-
-func TestGDriveTokenExchange(t *testing.T) {
-	loadDotEnv(t)
-	oauthConfig, _ := getGDriveUserClientSecret(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	gdriveAccessCode := os.Getenv("GDRIVE_ACCESS_CODE")
-	if gdriveAccessCode == "" {
-		t.Fatal("GDRIVE_ACCESS_CODE is empty")
-	}
-
-	token, err := ProcessAuthCode(ctx, gdriveAccessCode, oauthConfig)
+	token, err := StartOAuthListener(ctx, oauthConfig)
 	if err != nil {
-		t.Fatalf("Error processing auth code: %v", err)
+		t.Fatal(err)
 	}
 
 	tokenJson, err := json.Marshal(token)
 	if err != nil {
 		t.Fatalf("Error marshalling token: %v", err)
 	}
-	t.Logf("Token JSON: %s", tokenJson)
+
+	// write token to file
+	tokenJsonPath := "../test-gcp-token.json"
+	err = os.WriteFile(tokenJsonPath, tokenJson, 0644)
+	if err != nil {
+		t.Fatalf("Error writing token to file: %v", err)
+	}
+	t.Logf("Token written to %s", tokenJsonPath)
 }
 
 func TestGDriveOauthDownload(t *testing.T) {
