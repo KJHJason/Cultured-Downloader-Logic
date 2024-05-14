@@ -80,6 +80,7 @@ func StartOAuthListener(ctx context.Context, config *oauth2.Config) (*oauth2.Tok
 	updateOauthCode("")
 	srvCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	defer updateOauthCode("")
 
 	var srvErr error
 	go func() {
