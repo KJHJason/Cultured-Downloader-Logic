@@ -302,12 +302,12 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 	}
 
 	if creatorIdsLen != len(f.FanclubPageNums) {
-		panic(
+		return []error{
 			fmt.Errorf(
 				"fantia error %d: creator IDs and page numbers slices are not the same length",
 				cdlerrors.DEV_ERROR,
 			),
-		)
+		}
 	}
 
 	var wg sync.WaitGroup

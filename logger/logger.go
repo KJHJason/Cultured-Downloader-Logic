@@ -11,9 +11,12 @@ import (
 
 const (
 	// Log levels
-	INFO = iota
-	ERROR
+	TRACE = iota
 	DEBUG
+	INFO
+	WARNING
+	ERROR
+	FATAL
 )
 
 type Logger struct {
@@ -54,15 +57,21 @@ func (l Logger) SetOutput(w io.Writer) {
 // # You can use this function to log a message with a format string
 //
 // However, please ensure that the
-// lvl passed in is valid (i.e. INFO, ERROR, or DEBUG), otherwise this function will panic
+// lvl passed in is valid (i.e. TRACE, DEBUG, etc.), otherwise this function will panic
 func (l Logger) LogBasedOnLvlf(lvl int, format string, args ...any) {
 	switch lvl {
-	case INFO:
-		l.Infof(format, args...)
-	case ERROR:
-		l.Errorf(format, args...)
+	case TRACE:
+		l.Tracef(format, args...)
 	case DEBUG:
 		l.Debugf(format, args...)
+	case INFO:
+		l.Infof(format, args...)
+	case WARNING:
+		l.Warningf(format, args...)
+	case ERROR:
+		l.Errorf(format, args...)
+	case FATAL:
+		l.Fatalf(format, args...)
 	default:
 		panic(
 			fmt.Sprintf(

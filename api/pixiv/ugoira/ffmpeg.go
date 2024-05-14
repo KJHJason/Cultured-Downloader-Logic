@@ -195,12 +195,10 @@ func getFfmpegFlagsForUgoira(options *ffmpegOptions, imagesFolderPath string) ([
 			"-lossless", "1", // lossless compression
 		)
 	default:
-		panic(
-			fmt.Sprintf(
-				"pixiv error %d: Output extension %s is not allowed for ugoira conversion",
-				cdlerrors.DEV_ERROR,
-				options.outputExt,
-			),
+		return nil, fmt.Errorf(
+			"pixiv error %d: Output extension %s is not allowed for ugoira conversion",
+			cdlerrors.DEV_ERROR,
+			options.outputExt,
 		)
 	}
 	if options.outputExt != ".webp" {

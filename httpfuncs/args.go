@@ -44,7 +44,7 @@ type RequestArgs struct {
 	RequestHandler RequestHandler
 }
 
-func (args *RequestArgs) validateHttp3Arg() {
+func (args *RequestArgs) validateHttp3Arg() error {
 	if !args.Http2 && !args.Http3 {
 		// if http2 and http3 are not enabled,
 		// do a check to determine which protocol to use.
@@ -65,13 +65,12 @@ func (args *RequestArgs) validateHttp3Arg() {
 			}
 		}
 	} else if args.Http2 && args.Http3 {
-		panic(
-			fmt.Errorf(
-				"error %d: http2 and http3 cannot be enabled at the same time",
-				cdlerrors.DEV_ERROR,
-			),
+		return fmt.Errorf(
+			"error %d: http2 and http3 cannot be enabled at the same time",
+			cdlerrors.DEV_ERROR,
 		)
 	}
+	return nil
 }
 
 func (args *RequestArgs) getDefaultArgs() {
@@ -110,36 +109,34 @@ func (args *RequestArgs) getDefaultArgs() {
 // ValidateArgs validates the arguments of the request
 //
 // Will panic if the arguments are invalid as this is a developer error
-func (args *RequestArgs) ValidateArgs() {
+func (args *RequestArgs) ValidateArgs() error {
 	args.getDefaultArgs()
-	args.validateHttp3Arg()
+	err := args.validateHttp3Arg()
+	if err != nil {
+		return err
+	}
 
 	if args.Method == "" {
-		panic(
-			fmt.Errorf(
-				"error %d: method cannot be empty",
-				cdlerrors.DEV_ERROR,
-			),
+		return fmt.Errorf(
+			"error %d: method cannot be empty",
+			cdlerrors.DEV_ERROR,
 		)
 	}
 
 	if args.Url == "" {
-		panic(
-			fmt.Errorf(
-				"error %d: url cannot be empty",
-				cdlerrors.DEV_ERROR,
-			),
+		return fmt.Errorf(
+			"error %d: url cannot be empty",
+			cdlerrors.DEV_ERROR,
 		)
 	}
 
 	if args.Timeout < 0 {
-		panic(
-			fmt.Errorf(
-				"error %d: timeout cannot be negative",
-				cdlerrors.DEV_ERROR,
-			),
+		return fmt.Errorf(
+			"error %d: timeout cannot be negative",
+			cdlerrors.DEV_ERROR,
 		)
 	} else if args.Timeout == 0 {
 		args.Timeout = 15
 	}
+	return nil
 }

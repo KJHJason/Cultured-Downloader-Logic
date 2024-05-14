@@ -130,7 +130,11 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error
 // If the request fails, it will retry the request again up
 // to the defined max retries in the constants.go in utils package
 func CallRequest(reqArgs *RequestArgs) (*http.Response, error) {
-	reqArgs.ValidateArgs()
+	err := reqArgs.ValidateArgs()
+	if err != nil {
+		return nil, err
+	}
+
 	req, err := http.NewRequestWithContext(
 		reqArgs.Context,
 		reqArgs.Method,
@@ -172,7 +176,12 @@ func CheckInternetConnection() error {
 // Sends a request with the given data
 func CallRequestWithData(reqArgs *RequestArgs, data map[string]string) (*http.Response, error) {
 	reqArgs.EditMu.Lock()
-	reqArgs.ValidateArgs()
+	err := reqArgs.ValidateArgs()
+	if err != nil {
+		reqArgs.EditMu.Unlock()
+		return nil, err
+	}
+
 	form := url.Values{}
 	for key, value := range data {
 		form.Add(key, value)

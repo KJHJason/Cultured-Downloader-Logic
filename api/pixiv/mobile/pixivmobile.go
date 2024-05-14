@@ -97,7 +97,10 @@ func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*http.Res
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_MOBILE, true)
 	reqArgs.Http3 = useHttp3
 	reqArgs.Http2 = !useHttp3
-	reqArgs.ValidateArgs()
+	err := reqArgs.ValidateArgs()
+	if err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequest(reqArgs.Method, reqArgs.Url, nil)
 	if err != nil {

@@ -297,12 +297,12 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) []error {
 	creatorIdsLen := len(pf.CreatorIds)
 	if creatorIdsLen != len(pf.CreatorPageNums) {
-		panic(
+		return []error{
 			fmt.Errorf(
 				"pixiv fanbox error %d: length of creator IDs and page numbers are not equal",
 				cdlerrors.DEV_ERROR,
 			),
-		)
+		}
 	}
 
 	var errSlice []error

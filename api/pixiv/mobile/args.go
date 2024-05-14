@@ -198,12 +198,10 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 		case "s_tc":
 			p.SearchMode = "title_and_caption"
 		default:
-			panic(
-				fmt.Sprintf(
-					"pixiv mobile error %d: invalid search mode %q",
-					cdlerrors.DEV_ERROR,
-					p.SearchMode,
-				),
+			return fmt.Errorf(
+				"pixiv mobile error %d: invalid search mode %q",
+				cdlerrors.DEV_ERROR,
+				p.SearchMode,
 			)
 		}
 
