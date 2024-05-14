@@ -15,9 +15,6 @@ type GDrive struct {
 	ctx                context.Context
 	cancel             context.CancelFunc
 	client             *drive.Service // Google Drive service client (if using service account credentials)
-	apiUrl             string         // https://www.googleapis.com/drive/v3/files
-	timeout            int            // timeout in seconds for GDrive API v3
-	downloadTimeout    int            // timeout in seconds for GDrive file downloads
 	maxDownloadWorkers int            // max concurrent workers for downloading files
 }
 
@@ -47,31 +44,45 @@ func GetNewGDrive(ctx context.Context, creds *CredsInputs, maxDownloadWorkers in
 		)
 	}
 
+	var err error
+	var srv *drive.Service
 	gdriveCtx, cancel := context.WithCancel(ctx)
+	if hasApiKey {
+		srv, err = parseApiKey(gdriveCtx, creds.ApiKey)
+	} else if hasSrvAccJson {
+		srv, err = parseSrvAccJson(gdriveCtx, creds.SrvAccJson)
+	} else {
+		srv, err = parseUserOauthJson(gdriveCtx, creds.ClientSecretJson, creds.UserOauthTokenJson)
+	}
+
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+
 	gdrive := &GDrive{
 		ctx:                gdriveCtx,
 		cancel:             cancel,
-		apiUrl:             "https://www.googleapis.com/drive/v3/files",
-		timeout:            15,
-		downloadTimeout:    900, // 15 minutes
-		maxDownloadWorkers: maxDownloadWorkers,
+		client:             srv,
+		maxDownloadWorkers: getDefaultMaxConcurrency(maxDownloadWorkers, hasSrvAccJson || hasUserOauthTokenJson),
 	}
-
-	var err error
-	var srv *drive.Service
-	if hasApiKey {
-		srv, err = parseApiKey(ctx, creds.ApiKey)
-	} else if len(creds.SrvAccJson) > 0 {
-		srv, err = parseSrvAccJson(ctx, creds.SrvAccJson)
-	} else {
-		srv, err = parseUserOauthJson(ctx, creds.ClientSecretJson, creds.UserOauthTokenJson)
-	}
-	gdrive.client = srv
 	return gdrive, err
 }
 
 func (gdrive *GDrive) Release() {
 	gdrive.cancel()
+}
+
+// getDefaultMaxConcurrency returns the default max concurrency if the given max concurrency is less than 1
+func getDefaultMaxConcurrency(maxConcurrency int, isAuthenticated bool) int {
+	if maxConcurrency > 1 {
+		return maxConcurrency
+	}
+
+	if isAuthenticated { // higher concurrency for authenticated users
+		return constants.GDRIVE_OAUTH_MAX_CONCURRENCY
+	}
+	return constants.GDRIVE_MAX_CONCURRENCY
 }
 
 func parseApiKey(ctx context.Context, apiKey string) (*drive.Service, error) {

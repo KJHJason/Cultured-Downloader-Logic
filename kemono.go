@@ -89,7 +89,6 @@ func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDl
 		downloadedPosts = true
 		err := dlOptions.GdriveClient.DownloadGdriveUrls(
 			gdriveLinks,
-			dlOptions.Configs,
 			&progress.ProgressBarInfo{
 				MainProgressBar:      dlOptions.MainProgBar,
 				DownloadProgressBars: dlOptions.DownloadProgressBars,

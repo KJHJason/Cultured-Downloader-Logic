@@ -95,6 +95,7 @@ const (
 	KEMONO_CONTENT_FOLDER = "post_content"
 
 	GDRIVE_URL                    = "https://drive.google.com"
+	GDRIVE_FILE_API_URL           = "https://www.googleapis.com/drive/v3/files"
 	GDRIVE_FOLDER                 = "gdrive"
 	GDRIVE_FILENAME               = "detected_gdrive_links.txt"
 	GDRIVE_HTTP3_SUPPORTED        = true

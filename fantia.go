@@ -35,7 +35,6 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 	if fantiaDlOptions.GdriveClient != nil && len(gdriveLinks) > 0 && fantiaDlOptions.CtxIsActive() {
 		gdriveErrs := fantiaDlOptions.GdriveClient.DownloadGdriveUrls(
 			gdriveLinks,
-			fantiaDlOptions.Configs,
 			&progress.ProgressBarInfo{
 				MainProgressBar:      fantiaDlOptions.MainProgBar,
 				DownloadProgressBars: fantiaDlOptions.DownloadProgressBars,

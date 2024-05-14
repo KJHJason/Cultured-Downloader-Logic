@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -71,21 +70,21 @@ func (gdrive *GDrive) getFolderContentsWithClient(folderId string) ([]*GdriveFil
 }
 
 // Returns the contents of the given GDrive folder
-func (gdrive *GDrive) GetFolderContents(folderId, logPath string, config *configs.Config) ([]*GdriveFileToDl, error) {
+func (gdrive *GDrive) GetFolderContents(folderId, logPath string) ([]*GdriveFileToDl, error) {
 	return gdrive.getFolderContentsWithClient(folderId)
 }
 
 // Retrieves the content of a GDrive folder and its subfolders recursively using GDrive API v3
-func (gdrive *GDrive) GetNestedFolderContents(folderId, logPath string, config *configs.Config) ([]*GdriveFileToDl, error) {
+func (gdrive *GDrive) GetNestedFolderContents(folderId, logPath string) ([]*GdriveFileToDl, error) {
 	var files []*GdriveFileToDl
-	folderContents, err := gdrive.GetFolderContents(folderId, logPath, config)
+	folderContents, err := gdrive.GetFolderContents(folderId, logPath)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, file := range folderContents {
 		if file.MimeType == "application/vnd.google-apps.folder" {
-			subFolderFiles, err := gdrive.GetNestedFolderContents(file.Id, logPath, config)
+			subFolderFiles, err := gdrive.GetNestedFolderContents(file.Id, logPath)
 			if err != nil {
 				return nil, err
 			}
@@ -119,6 +118,6 @@ func (gdrive *GDrive) getFileDetailsWithClient(gdriveInfo *GDriveToDl) (*GdriveF
 }
 
 // Retrieves the file details of the given GDrive file using GDrive API v3
-func (gdrive *GDrive) GetFileDetails(gdriveInfo *GDriveToDl, config *configs.Config) (*GdriveFileToDl, error) {
+func (gdrive *GDrive) GetFileDetails(gdriveInfo *GDriveToDl) (*GdriveFileToDl, error) {
 	return gdrive.getFileDetailsWithClient(gdriveInfo)
 }

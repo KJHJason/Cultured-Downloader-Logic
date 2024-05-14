@@ -6,26 +6,18 @@ import (
 	"os"
 	"testing"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 )
 
-func getConfigAndProgInfo() (*configs.Config, *progress.ProgressBarInfo) {
-	config := &configs.Config{
-		DownloadPath:   "./",
-		FfmpegPath:     "",
-		OverwriteFiles: false,
-		LogUrls: 	    false,
-		UserAgent:      httpfuncs.DEFAULT_USER_AGENT,
-	}
+func getProgInfo() *progress.ProgressBarInfo {
 	prog := &progress.ProgressBarInfo{
 		MainProgressBar:      &progress.DummyProgBar{},
 		DownloadProgressBars: nil,
 	}
-	return config, prog
+	return prog
 }
 
 func loadDotEnv(t *testing.T) {
@@ -35,7 +27,7 @@ func loadDotEnv(t *testing.T) {
 	}
 }
 
-func initTestGDrive(t *testing.T) (*GDrive, context.CancelFunc, *configs.Config, *progress.ProgressBarInfo) {
+func initTestGDrive(t *testing.T) (*GDrive, context.CancelFunc, *progress.ProgressBarInfo) {
 	loadDotEnv(t)
 
 	apiKey := os.Getenv("GDRIVE_API_KEY")
@@ -52,12 +44,12 @@ func initTestGDrive(t *testing.T) (*GDrive, context.CancelFunc, *configs.Config,
 		t.Fatalf("Error creating GDrive client: %v", err)
 	}
 
-	config, prog := getConfigAndProgInfo()
-	return gdriveClient, cancel, config, prog
+	prog := getProgInfo()
+	return gdriveClient, cancel, prog
 }
 
 func TestGDriveFileDownload(t *testing.T) {
-	gdriveClient, cancel, config, progInfo := initTestGDrive(t)
+	gdriveClient, cancel, progInfo := initTestGDrive(t)
 	defer cancel()
 
 	url := "https://drive.google.com/file/d/1xnDYjiH866KOlAGnZ3mDJuqpPq3mRF1F/view?usp=sharing"
@@ -71,7 +63,6 @@ func TestGDriveFileDownload(t *testing.T) {
 
 	errSlice := gdriveClient.DownloadGdriveUrls(
 		[]*httpfuncs.ToDownload{toDlInfo},
-		config,
 		progInfo,
 	)
 	if len(errSlice) > 0 {
@@ -86,7 +77,7 @@ func TestGDriveFileDownload(t *testing.T) {
 }
 
 func TestGDriveFolderDownload(t *testing.T) {
-	gdriveClient, cancel, config, progInfo := initTestGDrive(t)
+	gdriveClient, cancel, progInfo := initTestGDrive(t)
 	defer cancel()
 
 	url := "https://drive.google.com/drive/folders/1zhP5ZzpxFX654-KSNP8d4nA2-zqLa-qq?usp=sharing"
@@ -100,7 +91,6 @@ func TestGDriveFolderDownload(t *testing.T) {
 
 	errSlice := gdriveClient.DownloadGdriveUrls(
 		[]*httpfuncs.ToDownload{toDlInfo},
-		config,
 		progInfo,
 	)
 	if len(errSlice) > 0 {
@@ -145,10 +135,9 @@ func TestGDriveServiceAcc(t *testing.T) {
 		FilePath: dirPath,
 	}
 
-	config, progInfo := getConfigAndProgInfo()
+	progInfo := getProgInfo()
 	errSlice := gdriveClient.DownloadGdriveUrls(
 		[]*httpfuncs.ToDownload{toDlInfo},
-		config,
 		progInfo,
 	)
 	if len(errSlice) > 0 {
@@ -243,10 +232,9 @@ func TestGDriveOauthDownload(t *testing.T) {
 		FilePath: dirPath,
 	}
 
-	config, progInfo := getConfigAndProgInfo()
+	progInfo := getProgInfo()
 	errSlice := gdriveClient.DownloadGdriveUrls(
 		[]*httpfuncs.ToDownload{toDlInfo},
-		config,
 		progInfo,
 	)
 	if len(errSlice) > 0 {

@@ -63,7 +63,6 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 		downloadedPosts = true
 		err := pixivFanboxDlOptions.GdriveClient.DownloadGdriveUrls(
 			gdriveUrlsToDownload, 
-			pixivFanboxDlOptions.Configs, 
 			&progress.ProgressBarInfo{
 				MainProgressBar:      pixivFanboxDlOptions.MainProgBar,
 				DownloadProgressBars: pixivFanboxDlOptions.DownloadProgressBars,
