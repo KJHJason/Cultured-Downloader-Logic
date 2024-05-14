@@ -101,6 +101,7 @@ const (
 	GDRIVE_ERROR_FILENAME         = "gdrive_download.log"
 	GDRIVE_BASE_API_KEY_REGEX_STR = `AIza[\w-]{35}`
 	GDRIVE_MAX_CONCURRENCY        = 2
+	GDRIVE_OAUTH_MAX_CONCURRENCY  = 4
 
 	// file fields to fetch from GDrive API:
 	// https://developers.google.com/drive/api/v3/reference/files
