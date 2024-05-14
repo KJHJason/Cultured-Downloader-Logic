@@ -120,7 +120,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 
 	var errSlice []error
 	downloadInfoLen := len(ugoiraArgs.ToDownload)
-	baseMsg := "Converting Ugoira to %s [%d/" + fmt.Sprintf("%d]...", downloadInfoLen)
+	baseMsg := fmt.Sprintf("Converting Ugoira to %s ", ugoiraOptions.OutputFormat) + "[%d/" + fmt.Sprintf("%d]...", downloadInfoLen)
 	prog := ugoiraArgs.MainProgBar
 	prog.UpdateBaseMsg(baseMsg)
 	prog.UpdateSuccessMsg(
