@@ -7,22 +7,6 @@ import (
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
-type GDriveFile struct {
-	Kind        string `json:"kind"`
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Size        string `json:"size"`
-	MimeType    string `json:"mimeType"`
-	Md5Checksum string `json:"md5Checksum"`
-}
-
-type GDriveFolder struct {
-	Kind             string       `json:"kind"`
-	IncompleteSearch bool         `json:"incompleteSearch"`
-	Files            []GDriveFile `json:"files"`
-	NextPageToken    string       `json:"nextPageToken"`
-}
-
 type GDriveToDl struct {
 	Id       string
 	Type     string

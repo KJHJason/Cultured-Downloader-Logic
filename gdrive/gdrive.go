@@ -38,8 +38,9 @@ func GetNewGDrive(ctx context.Context, creds *CredsInputs, maxDownloadWorkers in
 
 	hasApiKey := creds.ApiKey != ""
 	hasSrvAccJson := len(creds.SrvAccJson) > 0
+	hasClientSecretJson := len(creds.ClientSecretJson) > 0
 	hasUserOauthTokenJson := len(creds.UserOauthTokenJson) > 0
-	if !hasApiKey && !hasSrvAccJson && !hasUserOauthTokenJson {
+	if !hasApiKey && !hasSrvAccJson && !hasUserOauthTokenJson && !hasClientSecretJson  {
 		return nil, fmt.Errorf(
 			"gdrive error %d: Google Drive API key, service account credentials, or user's OAuth token is required",
 			cdlerrors.INPUT_ERROR,
@@ -62,11 +63,12 @@ func GetNewGDrive(ctx context.Context, creds *CredsInputs, maxDownloadWorkers in
 		return nil, err
 	}
 
+	isAuthenticated := (hasSrvAccJson || (hasClientSecretJson && hasUserOauthTokenJson))
 	gdrive := &GDrive{
 		ctx:                gdriveCtx,
 		cancel:             cancel,
 		client:             srv,
-		maxDownloadWorkers: getDefaultMaxConcurrency(maxDownloadWorkers, hasSrvAccJson || hasUserOauthTokenJson),
+		maxDownloadWorkers: getDefaultMaxConcurrency(maxDownloadWorkers, isAuthenticated),
 	}
 	return gdrive, err
 }
