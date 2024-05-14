@@ -25,6 +25,8 @@ type CredsInputs struct {
 	UserOauthTokenJson  []byte
 }
 
+const USE_DEFAULT_MAX_CONCURRENCY = -1
+
 // Returns a GDrive structure with the given API key and max download workers
 func GetNewGDrive(ctx context.Context, creds *CredsInputs, maxDownloadWorkers int) (*GDrive, error) {
 	if creds == nil {
