@@ -17,7 +17,7 @@ Cultured Downloader Logic
     <img src="https://img.shields.io/codeclimate/maintainability/KJHJason/Cultured-Downloader-CLI" alt="Code Climate maintainability">
 </div>
 
-Code for the main logic of Cultured Downloader so expect bug fixes and new features to be added here.
+### Code for the main logic of Cultured Downloader so expect bug fixes and new features to be added here.
 
 Used in:
 - [Cultured Downloader](https://github.com/KJHJason/Cultured-Downloader)
