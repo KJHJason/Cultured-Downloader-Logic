@@ -78,24 +78,22 @@ func getOauthCode() string {
 
 func StartOAuthListener(ctx context.Context, config *oauth2.Config) (*oauth2.Token, error) {
 	updateOauthCode("")
-
-	var err error
 	srvCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	var srvErr error
 	go func() {
-		err = startOAuthServer(srvCtx)
+		srvErr = startOAuthServer(srvCtx)
 	}()
 
 codeLoop:
 	for {
-		// check if parent ctx is done
 		select {
 		case <-ctx.Done():
 			return nil, context.Canceled
 		case <-srvCtx.Done():
-			if err != nil {
-				return nil, err
+			if srvErr != nil {
+				return nil, srvErr
 			}
 		default:
 			if getOauthCode() != "" {
