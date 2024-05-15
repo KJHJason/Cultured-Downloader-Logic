@@ -34,7 +34,7 @@ type FantiaPost struct {
 				Name string `json:"name"`
 			} `json:"user"`
 		} `json:"fanclub"`
-		Status       string `json:"status"`
+		Status       string          `json:"status"`
 		PostContents []FantiaContent `json:"post_contents"`
 	} `json:"post"`
 	Redirect string `json:"redirect"` // if get flagged by the system, it will redirect to this recaptcha url

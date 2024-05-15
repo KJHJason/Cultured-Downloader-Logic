@@ -13,9 +13,9 @@ import (
 
 type RequestArgs struct {
 	// Main Request Options
-	Method      string
-	Url         string
-	Timeout     int
+	Method  string
+	Url     string
+	Timeout int
 
 	// Additional Request Options
 	EditMu             sync.Mutex

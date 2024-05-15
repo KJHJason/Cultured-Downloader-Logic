@@ -2,8 +2,8 @@ package parsers
 
 import (
 	"bufio"
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"

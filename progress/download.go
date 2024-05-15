@@ -12,8 +12,8 @@ type DownloadProgressBar struct {
 	hasError   bool
 	finished   bool
 
-	totalBytes   int64
-	percentage   int // -1 if unknown, 0-100 otherwise if there's a known ETA
+	totalBytes int64
+	percentage int // -1 if unknown, 0-100 otherwise if there's a known ETA
 
 	filename      string
 	downloadSpeed float64
@@ -29,8 +29,8 @@ func NewDlProgressBar(ctx context.Context, messages Messages) *DownloadProgressB
 		hasError:   false,
 		finished:   false,
 
-		totalBytes:   0,
-		percentage:   0,
+		totalBytes: 0,
+		percentage: 0,
 
 		filename:      "",
 		downloadSpeed: 0,

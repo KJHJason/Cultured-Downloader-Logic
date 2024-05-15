@@ -19,10 +19,10 @@ type GDrive struct {
 }
 
 type CredsInputs struct {
-	ApiKey              string
-	SrvAccJson          []byte
-	ClientSecretJson    []byte 
-	UserOauthTokenJson  []byte
+	ApiKey             string
+	SrvAccJson         []byte
+	ClientSecretJson   []byte
+	UserOauthTokenJson []byte
 }
 
 const USE_DEFAULT_MAX_CONCURRENCY = -1
@@ -40,7 +40,7 @@ func GetNewGDrive(ctx context.Context, creds *CredsInputs, maxDownloadWorkers in
 	hasSrvAccJson := len(creds.SrvAccJson) > 0
 	hasClientSecretJson := len(creds.ClientSecretJson) > 0
 	hasUserOauthTokenJson := len(creds.UserOauthTokenJson) > 0
-	if !hasApiKey && !hasSrvAccJson && !hasUserOauthTokenJson && !hasClientSecretJson  {
+	if !hasApiKey && !hasSrvAccJson && !hasUserOauthTokenJson && !hasClientSecretJson {
 		return nil, fmt.Errorf(
 			"gdrive error %d: Google Drive API key, service account credentials, or user's OAuth token is required",
 			cdlerrors.INPUT_ERROR,
@@ -124,9 +124,9 @@ func parseApiKey(ctx context.Context, apiKey string) (*drive.Service, error) {
 			"gdrive error %d: Google Drive API key is invalid",
 			cdlerrors.INPUT_ERROR,
 		)
-	} 
+	}
 
-	// other errors should be due to insufficient permissions 
+	// other errors should be due to insufficient permissions
 	//as we're using the API key instead of using OAuth
 	return srv, nil
 }

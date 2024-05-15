@@ -8,8 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"runtime"
 	"path/filepath"
+	"runtime"
 	"syscall"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"

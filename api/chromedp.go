@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/chromedp"
 )
 
 func SetChromedpAllocCookies(cookies []*http.Cookie) chromedp.Action {

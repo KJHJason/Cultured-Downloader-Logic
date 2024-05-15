@@ -151,7 +151,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 			Cookies:        dlOptions.SessionCookies,
 			UseHttp3:       false,
 			HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
-			SupportRange: constants.FANTIA_RANGE_SUPPORTED,
+			SupportRange:   constants.FANTIA_RANGE_SUPPORTED,
 			ProgressBarInfo: &progress.ProgressBarInfo{
 				MainProgressBar:      dlOptions.MainProgBar,
 				DownloadProgressBars: dlOptions.DownloadProgressBars,

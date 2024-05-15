@@ -23,8 +23,8 @@ const (
 	PAGE_NUM_IDX_NAME             = "pageNum"
 	PAGE_NUM_WITH_INPUT_REGEX_STR = `(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?`
 
-	DEFAULT_HEAD_REQ_TIMEOUT = 15 // in seconds
-	DOWNLOAD_TIMEOUT = 25 * 60 // 25 minutes in seconds as downloads
+	DEFAULT_HEAD_REQ_TIMEOUT = 15      // in seconds
+	DOWNLOAD_TIMEOUT         = 25 * 60 // 25 minutes in seconds as downloads
 	// can take quite a while for large files (especially for Pixiv)
 	// However, the average max file size on these platforms is around 300MB.
 	// Note: Fantia do have a max file size per post of 3GB if one paid extra for it.
@@ -130,7 +130,7 @@ var (
 	GDRIVE_REGEX_ID_INDEX   = GDRIVE_URL_REGEX.SubexpIndex("id")
 	GDRIVE_REGEX_TYPE_INDEX = GDRIVE_URL_REGEX.SubexpIndex("type")
 
-	GDRIVE_API_KEY_REGEX       = regexp.MustCompile(
+	GDRIVE_API_KEY_REGEX = regexp.MustCompile(
 		fmt.Sprintf(`^%s$`, GDRIVE_BASE_API_KEY_REGEX_STR),
 	)
 	GDRIVE_API_KEY_PARAM_REGEX = regexp.MustCompile(

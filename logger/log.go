@@ -34,7 +34,7 @@ func init() {
 	// create the logs directory if it does not exist
 	os.MkdirAll(logFolder, 0755)
 
-	// will be opened througout the program's runtime
+	// will be opened throughout the program's runtime
 	// hence, there is no need to call f.Close() at the end of this function
 	f, fileErr := os.OpenFile(
 		logFilePath,

@@ -57,7 +57,7 @@ type OauthFlowJson struct {
 
 type UgoiraJson struct {
 	Metadata struct {
-		Frames ugoira.UgoiraFramesJson `json:"frames"`
+		Frames  ugoira.UgoiraFramesJson `json:"frames"`
 		ZipUrls struct {
 			Medium string `json:"medium"`
 		} `json:"zip_urls"`
@@ -70,7 +70,7 @@ type IllustJson struct {
 	Type  string `json:"type"`
 
 	User struct {
-		Name  string `json:"name"`
+		Name string `json:"name"`
 	} `json:"user"`
 
 	MetaSinglePage struct {
@@ -89,5 +89,5 @@ type ArtworkJson struct {
 }
 type ArtworksJson struct {
 	Illusts []*IllustJson `json:"illusts"`
-	NextUrl *string                  `json:"next_url"`
+	NextUrl *string       `json:"next_url"`
 }

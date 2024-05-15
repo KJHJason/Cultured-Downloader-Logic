@@ -69,10 +69,10 @@ type FanboxArticleBlocks []struct {
 		Url    string `json:"url"`
 	} `json:"links,omitempty"`
 	FileID string `json:"fileId,omitempty"`
-} 
+}
 
 type FanboxArticleJson struct {
-	Blocks FanboxArticleBlocks `json:"blocks"`
+	Blocks   FanboxArticleBlocks `json:"blocks"`
 	ImageMap map[string]struct {
 		ID           string `json:"id"`
 		Extension    string `json:"extension"`

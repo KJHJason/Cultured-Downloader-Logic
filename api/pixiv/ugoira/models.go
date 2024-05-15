@@ -7,6 +7,6 @@ type Ugoira struct {
 }
 
 type UgoiraFramesJson []struct {
-	File string `json:"file"`
+	File  string  `json:"file"`
 	Delay float64 `json:"delay"`
 }

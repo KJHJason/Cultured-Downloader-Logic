@@ -92,6 +92,7 @@ func (l Logger) LogBasedOnLvl(lvl int, msg string) {
 }
 
 var printLogger = log.New(os.Stdout, "[PRINT]: ", log.Ldate|log.Ltime)
+
 func (l Logger) Print(message string) {
 	printLogger.Println(message)
 }

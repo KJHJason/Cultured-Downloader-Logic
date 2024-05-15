@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"sync"
 
-	"golang.org/x/oauth2"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"golang.org/x/oauth2"
 )
 
 // Example OAuth callback URL:
@@ -65,6 +65,7 @@ var (
 	oauthCode string
 	oauthMu   sync.RWMutex
 )
+
 func updateOauthCode(code string) {
 	oauthMu.Lock()
 	oauthCode = code

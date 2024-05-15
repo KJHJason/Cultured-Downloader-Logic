@@ -14,9 +14,9 @@ type ArtworkDetails struct {
 
 type ArtworkUgoiraJson struct {
 	Body struct {
-		Src         string `json:"src"`
-		OriginalSrc string `json:"originalSrc"`
-		MimeType    string `json:"mime_type"`
+		Src         string                  `json:"src"`
+		OriginalSrc string                  `json:"originalSrc"`
+		MimeType    string                  `json:"mime_type"`
 		Frames      ugoira.UgoiraFramesJson `json:"frames"`
 	} `json:"body"`
 }
@@ -45,8 +45,8 @@ type PixivTag struct {
 }
 
 type IllustratorJson struct {
-    Body struct {
-        Illusts interface{} `json:"illusts"`
-        Manga   interface{} `json:"manga"`
-    } `json:"body"`
+	Body struct {
+		Illusts interface{} `json:"illusts"`
+		Manga   interface{} `json:"manga"`
+	} `json:"body"`
 }

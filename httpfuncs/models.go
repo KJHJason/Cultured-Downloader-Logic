@@ -7,7 +7,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
-type RequestHandler func (reqArgs *RequestArgs) (*http.Response, error)
+type RequestHandler func(reqArgs *RequestArgs) (*http.Response, error)
 
 type versionInfo struct {
 	Major int
@@ -27,7 +27,7 @@ type ToDownload struct {
 
 type DlOptions struct {
 	// Parent context for the download process
-	Context    context.Context
+	Context context.Context
 
 	// MaxConcurrency is the maximum number of concurrent downloads
 	MaxConcurrency int
@@ -42,7 +42,7 @@ type DlOptions struct {
 	// Otherwise, HTTP/2 will be used by default
 	UseHttp3 bool
 
-	// Since a HEAD request is sent to determine the expected 
+	// Since a HEAD request is sent to determine the expected
 	// file size (if known), HeadReqTimeout is the timeout for the HEAD request
 	HeadReqTimeout int
 

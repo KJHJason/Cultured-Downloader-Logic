@@ -108,7 +108,7 @@ func TestGDriveServiceAcc(t *testing.T) {
 	gdriveJsonPath := "../test-gdrive-service-acc.json"
 	if _, err := os.Stat(gdriveJsonPath); os.IsNotExist(err) {
 		t.Fatalf("gdrive-service-acc.json not found at %s", gdriveJsonPath)
-	} 
+	}
 
 	credJson, err := os.ReadFile(gdriveJsonPath)
 	if err != nil {
@@ -215,7 +215,7 @@ func TestGDriveOauthDownload(t *testing.T) {
 	defer cancel()
 
 	creds := &CredsInputs{
-		ClientSecretJson: credJson,
+		ClientSecretJson:   credJson,
 		UserOauthTokenJson: tokenJson,
 	}
 	gdriveClient, err := GetNewGDrive(ctx, creds, 2)

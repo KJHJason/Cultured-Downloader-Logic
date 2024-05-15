@@ -114,7 +114,7 @@ func writeDlDetailsToProgBar(dlProgBar *progress.DownloadProgressBar, startTime 
 		progressPercentage = 0
 	} else {
 		// Calculate the total progress made so far, including initial progress from bytesOnDisk
-        totalProgress := reqWrittenBytes + bytesOnDisk
+		totalProgress := reqWrittenBytes + bytesOnDisk
 
 		// Calculate the progress percentage based on total bytes and written bytes
 		progressPercentage = float64(totalProgress) / float64(expectedFileSize) * 100

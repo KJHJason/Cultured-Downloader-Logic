@@ -9,7 +9,7 @@ import (
 
 // Returns a random time.Duration between the given min and max arguments
 func GetRandomTime(min, max float32) time.Duration {
-	randomDelay := min + rand.Float32() * (max-min)
+	randomDelay := min + rand.Float32()*(max-min)
 	return time.Duration(randomDelay*1000) * time.Millisecond
 }
 

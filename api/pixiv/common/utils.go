@@ -7,8 +7,8 @@ import "github.com/KJHJason/Cultured-Downloader-Logic/api"
 // Usually for paginated results from Pixiv's mobile API, checkPixivMax should be set to true.
 func ConvertPageNumToOffset(minPageNum, maxPageNum, perPage int, checkPixivMax bool) (int, int) {
 	minOffset, maxOffset := api.ConvertPageNumToOffset(
-		minPageNum, 
-		maxPageNum, 
+		minPageNum,
+		maxPageNum,
 		perPage,
 	)
 	if checkPixivMax {

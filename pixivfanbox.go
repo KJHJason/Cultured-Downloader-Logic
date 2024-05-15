@@ -1,10 +1,10 @@
 package cdlogic
 
 import (
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixivfanbox"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixivfanbox"
 )
 
 // Start the download process for Pixiv Fanbox
@@ -33,7 +33,7 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 	}
 
 	var downloadedPosts bool
-	if len(urlsToDownload) > 0 &&  pixivFanboxDlOptions.CtxIsActive() {
+	if len(urlsToDownload) > 0 && pixivFanboxDlOptions.CtxIsActive() {
 		downloadedPosts = true
 		cancelled, err := httpfuncs.DownloadUrls(
 			urlsToDownload,
@@ -62,7 +62,7 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 	if pixivFanboxDlOptions.GdriveClient != nil && len(gdriveUrlsToDownload) > 0 && pixivFanboxDlOptions.CtxIsActive() {
 		downloadedPosts = true
 		err := pixivFanboxDlOptions.GdriveClient.DownloadGdriveUrls(
-			gdriveUrlsToDownload, 
+			gdriveUrlsToDownload,
 			&progress.ProgressBarInfo{
 				MainProgressBar:      pixivFanboxDlOptions.MainProgBar,
 				DownloadProgressBars: pixivFanboxDlOptions.DownloadProgressBars,

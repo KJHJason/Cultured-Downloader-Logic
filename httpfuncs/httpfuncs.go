@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"runtime"
+	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"

@@ -49,7 +49,7 @@ func (pixiv *PixivMobile) processArtworkJson(artworkJson *IllustJson) ([]*httpfu
 	return artworksToDownload, nil, nil
 }
 
-// The same as the processArtworkJson function but for mutliple JSONs at once
+// The same as the processArtworkJson function but for multiple JSONs at once
 // (Those with the "illusts" key which holds a slice of maps containing the artwork JSON)
 func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *ArtworksJson) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	if resJson == nil {
