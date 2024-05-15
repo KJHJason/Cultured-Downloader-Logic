@@ -275,6 +275,12 @@ func DetectPasswordInText(text string) bool {
 			return true
 		}
 	}
+
+	for _, passwordRegex := range constants.PASSWORD_REGEXES {
+		if passwordRegex.MatchString(text) {
+			return true
+		}
+	}
 	return false
 }
 

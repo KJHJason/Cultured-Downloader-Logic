@@ -3,6 +3,8 @@ package gdrive
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"testing"
 
@@ -106,7 +108,7 @@ func TestGDriveFolderDownload(t *testing.T) {
 
 func TestGDriveServiceAcc(t *testing.T) {
 	gdriveJsonPath := "../test-gdrive-service-acc.json"
-	if _, err := os.Stat(gdriveJsonPath); os.IsNotExist(err) {
+	if _, err := os.Stat(gdriveJsonPath); errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("gdrive-service-acc.json not found at %s", gdriveJsonPath)
 	}
 
@@ -153,7 +155,7 @@ func TestGDriveServiceAcc(t *testing.T) {
 
 func getGDriveUserClientSecret(t *testing.T) (*oauth2.Config, []byte) {
 	gdriveJsonPath := "../test-gcp-client-secret.json"
-	if _, err := os.Stat(gdriveJsonPath); os.IsNotExist(err) {
+	if _, err := os.Stat(gdriveJsonPath); errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("test-gcp-client-secret.json not found at %s", gdriveJsonPath)
 	}
 
@@ -202,7 +204,7 @@ func TestGDriveOauthDownload(t *testing.T) {
 	_, credJson := getGDriveUserClientSecret(t)
 
 	tokenJsonPath := "../test-gcp-token.json"
-	if _, err := os.Stat(tokenJsonPath); os.IsNotExist(err) {
+	if _, err := os.Stat(tokenJsonPath); errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("test-gcp-token.json not found at %s", tokenJsonPath)
 	}
 

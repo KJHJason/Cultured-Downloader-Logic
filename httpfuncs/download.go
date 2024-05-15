@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
@@ -282,7 +283,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 
 	downloadedBytes, err := iofuncs.GetFileSize(filePath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			// if the error wasn't because the file does not exist,
 			// then log the error and continue with the download process
 			logger.LogError(err, false, logger.ERROR)

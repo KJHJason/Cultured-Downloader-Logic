@@ -2,7 +2,9 @@ package pixivfanbox
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"path/filepath"
 
@@ -19,39 +21,60 @@ import (
 // https://fanbox.pixiv.help/hc/en-us/articles/360011057793-What-types-of-attachments-can-I-post-
 var pixivFanboxAllowedImageExt = []string{"jpg", "jpeg", "png", "gif"}
 
-func detectUrlsAndPasswordsInPost(text, postFolderPath string, articleBlocks FanboxArticleBlocks, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, bool) {
-	loggedPassword := false
-	if api.DetectPasswordInText(text) {
-		// Log the entire post text if it contains a password
-		filePath := filepath.Join(postFolderPath, constants.PASSWORD_FILENAME)
-		if !iofuncs.PathExists(filePath) {
-			loggedPassword = true
-			postBodyStr := "Found potential password in the post:\n\n"
-			for _, articleContent := range articleBlocks {
-				articleText := articleContent.Text
-				if articleText != "" {
-					postBodyStr += articleText + "\n"
-				}
+func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath string, dlOptions *PixivFanboxDlOptions) []*httpfuncs.ToDownload {
+	var combinedText string
+	var gdriveLinks []*httpfuncs.ToDownload
+	for _, block := range blocks {
+		if block.Type == "image" { // image already processed in ImageMap
+			continue
+		}
+
+		// note: usually block.Type should be "p"
+		combinedText += block.Text + "\n"
+
+		linkUrlSlice := block.Links
+		if len(block.Links) == 0 {
+			continue
+		}
+		for _, linkUrlEl := range linkUrlSlice {
+			linkUrl := linkUrlEl.Url
+			api.DetectOtherExtDLLink(linkUrl, postFolderPath)
+			if api.DetectGDriveLinks(linkUrl, postFolderPath, true, dlOptions.Configs.LogUrls) && dlOptions.DlGdrive {
+				gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
+					Url:      linkUrl,
+					FilePath: filepath.Join(postFolderPath, constants.GDRIVE_FOLDER),
+				})
+				continue
 			}
-			logger.LogMessageToPath(
-				postBodyStr,
-				filePath,
-				logger.ERROR,
-			)
 		}
 	}
 
-	var gdriveLinks []*httpfuncs.ToDownload
-	if dlOptions.Configs.LogUrls {
-		api.DetectOtherExtDLLink(text, postFolderPath)
+	if api.DetectPasswordInText(combinedText) {
+		// Log the entire post text if it contains a password
+		filePath := filepath.Join(postFolderPath, constants.PASSWORD_FILENAME)
+		logFileSize, err := iofuncs.GetFileSize(filePath)
+		doesNotExist := errors.Is(err, fs.ErrNotExist)
+		if !doesNotExist && err != nil { // unexpected OS error
+			err = fmt.Errorf(
+				"pixiv fanbox error %d: error getting file size of %q More info => %w",
+				cdlerrors.OS_ERROR,
+				filePath,
+				err,
+			)
+			logger.LogError(err, false, logger.ERROR)
+			return gdriveLinks
+		}
+
+		if logFileSize == 0 || doesNotExist { // checks if password file is empty or does not exist to avoid writing the same password multiple times
+			postBodyStr := "Found potential password in the post:\n\n" + combinedText
+			logger.LogMessageToPath(
+				postBodyStr,
+				filePath,
+				logger.INFO,
+			)
+		}
 	}
-	if api.DetectGDriveLinks(text, postFolderPath, false, dlOptions.Configs.LogUrls) && dlOptions.DlGdrive {
-		gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
-			Url:      text,
-			FilePath: filepath.Join(postFolderPath, constants.GDRIVE_FOLDER),
-		})
-	}
-	return gdriveLinks, loggedPassword
+	return gdriveLinks
 }
 
 func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
@@ -90,36 +113,12 @@ func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, d
 		return urlsSlice, gdriveLinks, nil
 	}
 
-	loggedPassword := false
-	for _, articleBlock := range articleBlocks {
-		text := articleBlock.Text
-		if text != "" && !loggedPassword {
-			var detectedGdriveUrls []*httpfuncs.ToDownload
-			detectedGdriveUrls, loggedPassword = detectUrlsAndPasswordsInPost(
-				text,
-				postFolderPath,
-				articleBlocks,
-				dlOptions,
-			)
-			gdriveLinks = append(gdriveLinks, detectedGdriveUrls...)
-		}
-
-		articleLinks := articleBlock.Links
-		if len(articleLinks) > 0 {
-			for _, articleLink := range articleLinks {
-				linkUrl := articleLink.Url
-				api.DetectOtherExtDLLink(linkUrl, postFolderPath)
-				if api.DetectGDriveLinks(linkUrl, postFolderPath, true, dlOptions.Configs.LogUrls) && dlOptions.DlGdrive {
-					gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
-						Url:      linkUrl,
-						FilePath: filepath.Join(postFolderPath, constants.GDRIVE_FOLDER),
-					})
-					continue
-				}
-			}
-		}
-	}
-
+	detectedGdriveUrls := detectUrlsAndLogPasswordsInPost(
+		articleBlocks,
+		postFolderPath,
+		dlOptions,
+	)
+	gdriveLinks = append(gdriveLinks, detectedGdriveUrls...)
 	return urlsSlice, gdriveLinks, nil
 }
 

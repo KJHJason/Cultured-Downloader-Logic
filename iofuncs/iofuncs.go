@@ -2,7 +2,9 @@ package iofuncs
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,7 +13,7 @@ import (
 // checks if a file or directory exists
 func PathExists(filepath string) bool {
 	_, err := os.Stat(filepath)
-	return !os.IsNotExist(err)
+	return !errors.Is(err, fs.ErrNotExist)
 }
 
 // similar to PathExists but checks if the path exists and is a directory
