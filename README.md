@@ -18,6 +18,9 @@ Cultured Downloader Logic
         <img src="https://img.shields.io/github/issues-pr/KJHJason/Cultured-Downloader-Logic" />
     </a>
     <img src="https://img.shields.io/codeclimate/maintainability/KJHJason/Cultured-Downloader-CLI" alt="Code Climate maintainability">
+    <a href="https://goreportcard.com/report/github.com/KJHJason/Cultured-Downloader-Logic">
+        <img src="https://goreportcard.com/badge/github.com/KJHJason/Cultured-Downloader-Logic" alt="Go Report Card">
+    </a>
 </div>
 
 ### Code for the main logic of Cultured Downloader so expect bug fixes and new features to be added here.
