@@ -26,7 +26,7 @@ func getKemonoPartyHeaders() map[string]string {
 	return map[string]string{}
 }
 
-func parseCreatorHtml(res *http.Response, url string) (string, error) {
+func parseCreatorHtmlAndGetName(res *http.Response, url string) (string, error) {
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	res.Body.Close()
 	if err != nil {
@@ -70,7 +70,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)
 	url := fmt.Sprintf(
 		"%s/%s/user/%s",
-		constants.KEMONO_API_URL,
+		constants.KEMONO_URL,
 		service,
 		userId,
 	)
@@ -91,7 +91,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 		return userId, err
 	}
 
-	creatorName, err := parseCreatorHtml(res, url)
+	creatorName, err := parseCreatorHtmlAndGetName(res, url)
 	if err != nil {
 		return userId, err
 	}
