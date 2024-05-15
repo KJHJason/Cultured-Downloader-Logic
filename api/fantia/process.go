@@ -15,7 +15,17 @@ import (
 )
 
 func dlImagesFromPost(content *FantiaContent, postFolderPath string) []*httpfuncs.ToDownload {
-	var urlsSlice []*httpfuncs.ToDownload
+	// for images that are embedded in the post content
+	comment := content.Comment
+	matchedStr := constants.FANTIA_IMAGE_URL_REGEX.FindAllStringSubmatch(comment, -1)
+	urlsSlice := make([]*httpfuncs.ToDownload, 0, len(matchedStr))
+	for _, matched := range matchedStr {
+		imageUrl := constants.FANTIA_URL + matched[constants.FANTIA_REGEX_URL_INDEX]
+		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
+			Url:      imageUrl,
+			FilePath: filepath.Join(postFolderPath, constants.IMAGES_FOLDER),
+		})
+	}
 
 	// download images that are uploaded to their own section
 	postContentPhotos := content.PostContentPhotos
@@ -27,16 +37,6 @@ func dlImagesFromPost(content *FantiaContent, postFolderPath string) []*httpfunc
 		})
 	}
 
-	// for images that are embedded in the post content
-	comment := content.Comment
-	matchedStr := constants.FANTIA_IMAGE_URL_REGEX.FindAllStringSubmatch(comment, -1)
-	for _, matched := range matchedStr {
-		imageUrl := constants.FANTIA_URL + matched[constants.FANTIA_REGEX_URL_INDEX]
-		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
-			Url:      imageUrl,
-			FilePath: filepath.Join(postFolderPath, constants.IMAGES_FOLDER),
-		})
-	}
 	return urlsSlice
 }
 

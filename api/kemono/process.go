@@ -16,8 +16,13 @@ import (
 )
 
 func getInlineImages(content, postFolderPath string) []*httpfuncs.ToDownload {
-	var toDownload []*httpfuncs.ToDownload
-	for _, match := range constants.KEMONO_IMG_SRC_TAG_REGEX.FindAllStringSubmatch(content, -1) {
+	matches := constants.KEMONO_IMG_SRC_TAG_REGEX.FindAllStringSubmatch(content, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	toDownload := make([]*httpfuncs.ToDownload, 0, len(matches))
+	for _, match := range matches {
 		imgSrc := match[constants.KEMONO_IMG_SRC_TAG_REGEX_IDX]
 		if imgSrc == "" {
 			continue
@@ -81,7 +86,7 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 			if dlOptions.Configs.LogUrls {
 				api.DetectOtherExtDLLink(resJson.Embed.Url, embedsDirPath)
 			}
-			if api.DetectGDriveLinks(resJson.Embed.Url, postFolderPath, true, dlOptions.Configs.LogUrls) && dlOptions.DlGdrive {
+			if dlOptions.DlGdrive && api.DetectGDriveLinks(resJson.Embed.Url, postFolderPath, true, dlOptions.Configs.LogUrls) {
 				gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
 					Url:      resJson.Embed.Url,
 					FilePath: embedsDirPath,
