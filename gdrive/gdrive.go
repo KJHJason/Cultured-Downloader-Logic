@@ -15,7 +15,8 @@ type GDrive struct {
 	ctx                context.Context
 	cancel             context.CancelFunc
 	client             *drive.Service // Google Drive service client (if using service account credentials)
-	maxDownloadWorkers int            // max concurrent workers for downloading files
+	useCacheDb         bool
+	maxDownloadWorkers int // max concurrent workers for downloading files
 }
 
 type CredsInputs struct {
@@ -28,7 +29,7 @@ type CredsInputs struct {
 const USE_DEFAULT_MAX_CONCURRENCY = -1
 
 // Returns a GDrive structure with the given API key and max download workers
-func GetNewGDrive(ctx context.Context, creds *CredsInputs, maxDownloadWorkers int) (*GDrive, error) {
+func GetNewGDrive(ctx context.Context, creds *CredsInputs, maxDownloadWorkers int, useCacheDb bool) (*GDrive, error) {
 	if creds == nil {
 		return nil, fmt.Errorf(
 			"gdrive error %d: CredsInputs is nil in GetNewGDrive()",
@@ -68,6 +69,7 @@ func GetNewGDrive(ctx context.Context, creds *CredsInputs, maxDownloadWorkers in
 		ctx:                gdriveCtx,
 		cancel:             cancel,
 		client:             srv,
+		useCacheDb:         useCacheDb,
 		maxDownloadWorkers: getDefaultMaxConcurrency(maxDownloadWorkers, isAuthenticated),
 	}
 	return gdrive, err

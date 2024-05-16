@@ -74,6 +74,7 @@ type FantiaDlOptions struct {
 	DlAttachments       bool
 	DlGdrive            bool
 	DetectOtherDlLinks  bool
+	UseCacheDb          bool
 	BaseDownloadDirPath string
 
 	GdriveClient *gdrive.GDrive

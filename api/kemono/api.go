@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -60,20 +61,28 @@ var creatorNameCacheLock sync.Mutex
 var creatorNameCache = make(map[string]string)
 
 func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string, error) {
-	creatorNameCacheLock.Lock()
-	defer creatorNameCacheLock.Unlock()
-	cacheKey := fmt.Sprintf("%s/%s", service, userId)
-	if name, ok := creatorNameCache[cacheKey]; ok {
-		return name, nil
-	}
-
-	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)
 	url := fmt.Sprintf(
 		"%s/%s/user/%s",
 		constants.KEMONO_URL,
 		service,
 		userId,
 	)
+
+	var cacheKey string
+	if dlOptions.UseCacheDb {
+		if name := cache.GetKemonoCreatorCache(url); name != "" {
+			return name, nil
+		}
+	} else {
+		creatorNameCacheLock.Lock()
+		defer creatorNameCacheLock.Unlock()
+		cacheKey = fmt.Sprintf("%s/%s", service, userId)
+		if name, ok := creatorNameCache[cacheKey]; ok {
+			return name, nil
+		}
+	}
+
+	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
 			Url:         url,
@@ -96,21 +105,30 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 		return userId, err
 	}
 
-	creatorNameCache[cacheKey] = creatorName
+	if dlOptions.UseCacheDb {
+		cache.CacheKemonoCreatorName(url, creatorName)
+	} else {
+		creatorNameCache[cacheKey] = creatorName
+	}
 	return creatorName, nil
 }
 
 func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+	url := fmt.Sprintf(
+		"%s/%s/user/%s/post/%s",
+		constants.KEMONO_API_URL,
+		post.Service,
+		post.CreatorId,
+		post.PostId,
+	)
+	if dlOptions.UseCacheDb && cache.PostCacheExists(url) {
+		return nil, nil, nil
+	}
+
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Url: fmt.Sprintf(
-				"%s/%s/user/%s/post/%s",
-				constants.KEMONO_API_URL,
-				post.Service,
-				post.CreatorId,
-				post.PostId,
-			),
+			Url:         url,
 			Method:      "GET",
 			Headers:     getKemonoPartyHeaders(),
 			UserAgent:   dlOptions.Configs.UserAgent,
@@ -132,6 +150,11 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 	}
 
 	postsToDl, gdriveLinks := processMultipleJson(KemonoJson{&resJson}, dlOptions)
+	if dlOptions.UseCacheDb {
+		for _, post := range postsToDl {
+			post.CacheKey = url
+		}
+	}
 	return postsToDl, gdriveLinks, nil
 }
 

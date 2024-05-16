@@ -41,7 +41,7 @@ func initTestGDrive(t *testing.T) (*GDrive, context.CancelFunc, *progress.Progre
 	creds := &CredsInputs{
 		ApiKey: apiKey,
 	}
-	gdriveClient, err := GetNewGDrive(ctx, creds, 2)
+	gdriveClient, err := GetNewGDrive(ctx, creds, 2, false)
 	if err != nil {
 		t.Fatalf("Error creating GDrive client: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestGDriveServiceAcc(t *testing.T) {
 	creds := &CredsInputs{
 		SrvAccJson: credJson,
 	}
-	gdriveClient, err := GetNewGDrive(ctx, creds, 2)
+	gdriveClient, err := GetNewGDrive(ctx, creds, 2, false)
 	if err != nil {
 		t.Fatalf("Error setting with service account: %v", err)
 	}
@@ -220,7 +220,7 @@ func TestGDriveOauthDownload(t *testing.T) {
 		ClientSecretJson:   credJson,
 		UserOauthTokenJson: tokenJson,
 	}
-	gdriveClient, err := GetNewGDrive(ctx, creds, 2)
+	gdriveClient, err := GetNewGDrive(ctx, creds, 2, false)
 	if err != nil {
 		t.Fatalf("Error setting with oauth2 credentials: %v", err)
 	}

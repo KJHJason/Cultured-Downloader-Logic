@@ -17,6 +17,7 @@ type PixivMobile struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	useCacheDb          bool
 	baseDownloadDirPath string
 
 	// API information and its endpoints
@@ -52,6 +53,10 @@ func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, cance
 
 func (pixiv *PixivMobile) SetBaseDlDirPath(dlDirPath string) {
 	pixiv.baseDownloadDirPath = dlDirPath
+}
+
+func (pixiv *PixivMobile) SetUseCacheDb(useCacheDb bool) {
+	pixiv.useCacheDb = useCacheDb
 }
 
 // This is due to Pixiv's strict rate limiting.

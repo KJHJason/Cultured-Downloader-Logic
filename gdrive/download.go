@@ -14,6 +14,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -130,7 +131,7 @@ func (gdrive *GDrive) DownloadFile(ctx context.Context, fileInfo *GdriveFileToDl
 
 	dlReqInfo := &httpfuncs.DlRequestInfo{
 		Ctx: ctx,
-		Url: fmt.Sprintf("%s/%s", constants.GDRIVE_FILE_API_URL, fileInfo.Id),
+		Url: fileInfo.GetUrl(),
 	}
 	dlPartialInfo := httpfuncs.PartialDlInfo{
 		DownloadPartial:  true,
@@ -254,11 +255,21 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 				<-queue
 			}()
 
+			var cacheKey string
+			if gdrive.useCacheDb {
+				cacheKey = file.GetUrl()
+				if cache.GDriveCacheExists(cacheKey) {
+					prog.Increment()
+					return
+				}
+			}
+
 			os.MkdirAll(file.FilePath, 0755)
 			filePath := filepath.Join(file.FilePath, file.Name)
 
 			err := gdrive.DownloadFile(ctx, file, filePath, progBarInfo, queue)
-			if err != nil && err != context.Canceled {
+			hasErr := err != nil
+			if hasErr && !errors.Is(err, context.Canceled) {
 				err = fmt.Errorf(
 					"failed to download file: %s (ID: %s, MIME Type: %s)\nRefer to error details below:\n%w",
 					file.Name, file.Id, file.MimeType, err,
@@ -271,6 +282,11 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 					),
 				}
 			}
+
+			if !hasErr && gdrive.useCacheDb {
+				cache.CacheGDrive(cacheKey)
+			}
+
 			prog.Increment()
 		}(file)
 	}

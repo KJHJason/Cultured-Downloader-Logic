@@ -1,15 +1,25 @@
 package pixivmobile
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
+func parseUgoiraCacheKey(artworkId string) string {
+	return fmt.Sprintf("%s?illust_id=%s", constants.PIXIV_MOBILE_UGOIRA_URL, artworkId)
+}
+
+func parseUgoiraCacheKeyFromInt(artworkId int) string {
+	return parseUgoiraCacheKey(strconv.Itoa(artworkId))
+}
+
 // Process the artwork JSON and returns a slice of map that contains the urls of the images and the file path
-func (pixiv *PixivMobile) processArtworkJson(artworkJson *IllustJson) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
+func (pixiv *PixivMobile) processArtworkJson(ugoiraCacheKey string, artworkJson *IllustJson) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
 	if artworkJson == nil {
 		return nil, nil, nil
 	}
@@ -23,7 +33,7 @@ func (pixiv *PixivMobile) processArtworkJson(artworkJson *IllustJson) ([]*httpfu
 	)
 
 	if artworkType == "ugoira" {
-		ugoiraInfo, err := pixiv.getUgoiraMetadata(artworkId, artworkFolderPath)
+		ugoiraInfo, err := pixiv.getUgoiraMetadata(ugoiraCacheKey, artworkId, artworkFolderPath)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -65,7 +75,9 @@ func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *ArtworksJson) ([]*
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 	for _, artwork := range artworksMaps {
-		artworks, ugoiraVal, err := pixiv.processArtworkJson(artwork)
+		artworks, ugoiraVal, err := pixiv.processArtworkJson(
+			parseUgoiraCacheKeyFromInt(artwork.Id), artwork,
+		)
 		if err != nil {
 			errSlice = append(errSlice, err)
 			continue

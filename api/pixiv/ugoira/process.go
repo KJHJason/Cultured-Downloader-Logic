@@ -14,6 +14,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
@@ -226,6 +227,17 @@ func (u *UgoiraArgs) SetContext(ctx context.Context) {
 
 // Downloads multiple Ugoira artworks and converts them based on the output format
 func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config, reqHandler httpfuncs.RequestHandler, progBarInfo *progress.ProgressBarInfo) []error {
+	if ugoiraOptions.UseCacheDb {
+		filteredUgoira := make([]*Ugoira, 0, len(ugoiraArgs.ToDownload))
+		for _, ugoira := range ugoiraArgs.ToDownload {
+			if ugoira.CacheKey != "" && cache.UgoiraCacheExists(ugoira.CacheKey) {
+				continue
+			}
+			filteredUgoira = append(filteredUgoira, ugoira)
+		}
+		ugoiraArgs.ToDownload = filteredUgoira
+	}
+
 	var urlsToDownload []*httpfuncs.ToDownload
 	for _, ugoira := range ugoiraArgs.ToDownload {
 		filePath, outputFilePath := GetUgoiraFilePaths(

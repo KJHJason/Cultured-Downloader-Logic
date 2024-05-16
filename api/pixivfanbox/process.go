@@ -290,7 +290,7 @@ func processFanboxPostJson(res *http.Response, dlOptions *PixivFanboxDlOptions) 
 	return urlsSlice, gdriveLinks, nil
 }
 
-func processMultiplePostJson(resChan chan *http.Response, dlOptions *PixivFanboxDlOptions) (urlsSlice []*httpfuncs.ToDownload, gdriveUrls []*httpfuncs.ToDownload) {
+func processMultiplePostJson(resChan chan *resChanVal, dlOptions *PixivFanboxDlOptions) (urlsSlice []*httpfuncs.ToDownload, gdriveUrls []*httpfuncs.ToDownload) {
 	var errSlice []error
 	resChanLen := len(resChan)
 	baseMsg := "Processing received JSON(s) from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", resChanLen)
@@ -313,10 +313,15 @@ func processMultiplePostJson(resChan chan *http.Response, dlOptions *PixivFanbox
 	progress.Start()
 	defer progress.SnapshotTask()
 	for res := range resChan {
-		postUrls, postGdriveLinks, err := processFanboxPostJson(res, dlOptions)
+		postUrls, postGdriveLinks, err := processFanboxPostJson(res.response, dlOptions)
 		if err != nil {
 			errSlice = append(errSlice, err)
 		} else {
+			if dlOptions.UseCacheDb && res.cacheKey != "" {
+				for _, url := range postUrls {
+					url.CacheKey = res.cacheKey
+				}
+			}
 			urlsSlice = append(urlsSlice, postUrls...)
 			gdriveUrls = append(gdriveUrls, postGdriveLinks...)
 		}

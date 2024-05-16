@@ -141,6 +141,7 @@ type KemonoDlOptions struct {
 	cancel              context.CancelFunc
 	DlAttachments       bool
 	DlGdrive            bool
+	UseCacheDb          bool
 	BaseDownloadDirPath string
 
 	Configs *configs.Config

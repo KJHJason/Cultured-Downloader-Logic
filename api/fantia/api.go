@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -107,6 +108,14 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		maxCount,
 	)
 
+	var cacheKey string
+	if dlOptions.UseCacheDb {
+		cacheKey = constants.FANTIA_POST_API_URL + postId
+		if cache.PostCacheExists(cacheKey) {
+			return false, nil, nil
+		}
+	}
+
 	res, err := getFantiaPostDetails(
 		&fantiaPostArgs{
 			msgSuffix: msgSuffix,
@@ -164,6 +173,9 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		dlOptions.CancelCtx()
 		return true, nil, errorSlice
 	}
+	if dlOptions.UseCacheDb {
+		cache.CachePost(cacheKey)
+	}
 	return false, postGdriveUrls, nil
 }
 
@@ -178,7 +190,6 @@ func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDow
 	postIdsLen := len(f.PostIds)
 	for i, postId := range f.PostIds {
 		cancelled, postGdriveLinks, err := DlFantiaPost(i+1, postIdsLen, postId, dlOptions)
-
 		if len(err) > 0 {
 			if cancelled {
 				return nil, nil
@@ -187,6 +198,7 @@ func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDow
 			errSlice = append(errSlice, err...)
 			continue
 		}
+
 		if len(postGdriveLinks) > 0 {
 			gdriveLinks = append(gdriveLinks, postGdriveLinks...)
 		}
@@ -242,10 +254,10 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 		return nil, err
 	}
 
+	url := fmt.Sprintf("%s/fanclubs/%s/posts", constants.FANTIA_URL, creatorId)
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	curPage := minPage
 	for {
-		url := fmt.Sprintf("%s/fanclubs/%s/posts", constants.FANTIA_URL, creatorId)
 		params := map[string]string{
 			"page":   strconv.Itoa(curPage),
 			"q[s]":   "newer",
@@ -268,7 +280,7 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 			},
 		)
 		if err != nil {
-			if err != context.Canceled {
+			if !errors.Is(err, context.Canceled) {
 				err = fmt.Errorf(
 					"fantia error %d: failed to get creator's pages for %s, more info => %w",
 					cdlerrors.CONNECTION_ERROR,

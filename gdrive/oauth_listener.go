@@ -2,6 +2,7 @@ package gdrive
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"sync"
@@ -45,7 +46,7 @@ func startOAuthServer(ctx context.Context) error {
 	var startUpErr error
 	go func() {
 		logger.MainLogger.Info("Starting OAuth listener server...")
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			// start up error
 			startUpErr = err
 			logger.MainLogger.Error("OAuth listener server error: " + err.Error())

@@ -18,6 +18,7 @@ import (
 
 	ctxio "github.com/jbenet/go-context/io"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
@@ -262,7 +263,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 
 	res, err := reqArgs.RequestHandler(reqArgs)
 	if err != nil {
-		if err != context.Canceled {
+		if !errors.Is(err, context.Canceled) {
 			err = fmt.Errorf(
 				"error %d: failed to download file, more info => %w\nurl: %s",
 				cdlerrors.DOWNLOAD_ERROR,
@@ -335,10 +336,15 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 	return err
 }
 
+type cacheEl struct {
+	hasErr   bool
+	cacheKey string
+}
+
 // DownloadUrls is used to download multiple files from URLs concurrently
 //
 // Note: If the file already exists, the download process will be skipped
-func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config, reqHandler RequestHandler) (cancelled bool, errors []error) {
+func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, config *configs.Config, reqHandler RequestHandler) (cancelled bool, errorSlice []error) {
 	urlsLen := len(urlInfoSlice)
 	if urlsLen == 0 {
 		return false, nil
@@ -350,6 +356,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, dlOptions.MaxConcurrency)
 	errChan := make(chan error, urlsLen)
+	cacheChan := make(chan *cacheEl, urlsLen)
 
 	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
 	ctx, cancel := context.WithCancel(dlOptions.Context)
@@ -385,11 +392,12 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	defer progress.SnapshotTask()
 	for _, urlInfo := range urlInfoSlice {
 		wg.Add(1)
-		go func(fileUrl, filePath string) {
+		go func(fileUrl, filePath, cacheKey string) {
 			defer func() {
 				wg.Done()
 				<-queue
 			}()
+			hasCacheKey := cacheKey != ""
 			err := downloadUrl(
 				filePath,
 				queue,
@@ -409,28 +417,62 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 				config.OverwriteFiles,
 				dlOptions,
 			)
-			if err != nil {
+			hasErr := err != nil
+			if hasErr {
 				errChan <- err
 			}
+			if hasCacheKey {
+				cacheChan <- &cacheEl{
+					hasErr:   hasErr,
+					cacheKey: cacheKey,
+				}
+			}
 
-			if err != context.Canceled {
+			if !errors.Is(err, context.Canceled) {
 				progress.Increment()
 			}
-		}(urlInfo.Url, urlInfo.FilePath)
+		}(urlInfo.Url, urlInfo.FilePath, urlInfo.CacheKey)
 	}
 	wg.Wait()
 	close(queue)
 	close(errChan)
+	close(cacheChan)
+
+	// since the CacheKey in the ToDownload struct can belong to multiple URLs
+	// E.g. CacheKey of "https://example.com/post/123456" for all elements,
+	// [
+	// 	{url: "https://example.com/post/123456/image1.jpg", cacheKey: "https://example.com/post/123456"},
+	// 	{url: "https://example.com/post/123456/image2.jpg", cacheKey: "https://example.com/post/123456"},
+	// ]
+	// we have to make sure all the request for that particular cache key has no errors to assume that the download was successful
+	var hasSeenCacheKey map[string]bool
+	if len(cacheChan) > 0 {
+		hasSeenCacheKey = make(map[string]bool)
+		for cacheEl := range cacheChan {
+			if _, ok := hasSeenCacheKey[cacheEl.cacheKey]; ok {
+				if cacheEl.hasErr {
+					hasSeenCacheKey[cacheEl.cacheKey] = false
+				}
+				continue
+			}
+			hasSeenCacheKey[cacheEl.cacheKey] = !cacheEl.hasErr
+		}
+
+		for cacheKey, hasErr := range hasSeenCacheKey {
+			if hasErr {
+				continue
+			}
+			cache.CachePost(cacheKey)
+		}
+	}
 
 	hasErr := false
-	var errorSlice []error
 	if len(errChan) > 0 {
 		hasErr = true
-		if hasCancelled, errSlice := logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
+		var hasCancelled bool
+		if hasCancelled, errorSlice = logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
 			progress.StopInterrupt("Stopped downloading files (incomplete downloads will be resumed later or be deleted)...")
-			return true, errSlice
-		} else {
-			errorSlice = errSlice
+			return true, errorSlice
 		}
 	}
 	progress.Stop(hasErr)

@@ -19,6 +19,7 @@ type PixivWebDlOptions struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	UseCacheDb          bool
 	BaseDownloadDirPath string
 
 	// Sort order of the results. Can be "date_desc" or "date_asc".

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -22,6 +23,11 @@ func GetPixivFanboxHeaders() map[string]string {
 	}
 }
 
+type resChanVal struct {
+	cacheKey string
+	response *http.Response
+}
+
 // Query Pixiv Fanbox's API based on the slice of post IDs and
 // returns a map of urls and a map of GDrive urls to download from.
 func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, []error) {
@@ -32,7 +38,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	}
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, maxConcurrency)
-	resChan := make(chan *http.Response, postIdsLen)
+	resChan := make(chan *resChanVal, postIdsLen)
 	errChan := make(chan error, postIdsLen)
 
 	baseMsg := "Getting post details from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", postIdsLen)
@@ -58,8 +64,17 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_FANBOX, true)
 	url := fmt.Sprintf("%s/post.info", constants.PIXIV_FANBOX_API_URL)
 	for _, postId := range pf.PostIds {
+		var cacheKey string
+		if dlOptions.UseCacheDb {
+			cacheKey = fmt.Sprintf("%s?postId=%s", url, postId)
+			if cache.PostCacheExists(cacheKey) {
+				progress.Increment()
+				continue
+			}
+		}
+
 		wg.Add(1)
-		go func(postId string) {
+		go func(postId, cacheKey string) {
 			defer func() {
 				wg.Done()
 				<-queue
@@ -100,10 +115,13 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 					res.Status,
 				)
 			} else {
-				resChan <- res
+				if dlOptions.UseCacheDb {
+					cache.CachePost(cacheKey)
+				}
+				resChan <- &resChanVal{cacheKey: cacheKey, response: res}
 			}
 			progress.Increment()
-		}(postId)
+		}(postId, cacheKey)
 	}
 	wg.Wait()
 	close(queue)
@@ -245,7 +263,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 				if err == nil {
 					res.Body.Close()
 				}
-				if err != context.Canceled {
+				if !errors.Is(err, context.Canceled) {
 					logger.LogError(
 						fmt.Errorf(
 							"failed to get post for %s\n%w",

@@ -14,6 +14,7 @@ type UgoiraOptions struct {
 	DeleteZip    bool
 	Quality      int
 	OutputFormat string
+	UseCacheDb   bool
 }
 
 var UGOIRA_ACCEPTED_EXT = []string{

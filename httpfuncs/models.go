@@ -21,6 +21,7 @@ type RetryDelay struct {
 }
 
 type ToDownload struct {
+	CacheKey string
 	Url      string
 	FilePath string
 }

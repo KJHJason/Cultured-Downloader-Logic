@@ -74,6 +74,7 @@ type PixivFanboxDlOptions struct {
 	DlImages            bool
 	DlAttachments       bool
 	DlGdrive            bool
+	UseCacheDb          bool
 	BaseDownloadDirPath string
 
 	Configs *configs.Config

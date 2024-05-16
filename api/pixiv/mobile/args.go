@@ -18,6 +18,7 @@ type PixivMobileDlOptions struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	UseCacheDb          bool
 	BaseDownloadDirPath string
 
 	// Sort order of the results. Can be "date_desc" or "date_asc".
@@ -158,6 +159,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 			return err
 		}
 		p.MobileClient.SetBaseDlDirPath(p.BaseDownloadDirPath)
+		p.MobileClient.SetUseCacheDb(p.UseCacheDb)
 
 		// The web API value is the opposite of the mobile API;
 		// Mobile API:

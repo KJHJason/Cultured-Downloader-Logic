@@ -10,6 +10,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -56,19 +57,9 @@ func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*
 }
 
 func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpfuncs.RequestArgs) (*http.Response, error) {
-	var url string
-	switch artworkType {
-	case ILLUST, MANGA: // illustration or manga
-		url = fmt.Sprintf("%s/illust/%s/pages", constants.PIXIV_API_URL, artworkId)
-	case UGOIRA: // ugoira
-		url = fmt.Sprintf("%s/illust/%s/ugoira_meta", constants.PIXIV_API_URL, artworkId)
-	default:
-		return nil, fmt.Errorf(
-			"pixiv web error %d: unsupported artwork type %d for artwork ID %s",
-			cdlerrors.JSON_ERROR,
-			artworkType,
-			artworkId,
-		)
+	url, err := getDownloadableUrls(artworkType, artworkId)
+	if err != nil {
+		return nil, err
 	}
 
 	reqArgs.Url = url
@@ -107,7 +98,16 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 		return nil, nil, nil
 	}
 
-	url := fmt.Sprintf("%s/illust/%s", constants.PIXIV_API_URL, artworkId)
+	var cacheKey string
+	url := getArtworkDetailsApi(artworkId)
+	if dlOptions.UseCacheDb {
+		cacheKey = fmt.Sprintf("pixiv_%s", artworkId)
+		if cache.PostCacheExists(cacheKey) || cache.UgoiraCacheExists(cacheKey) {
+			// either the artwork or the ugoira cache exists
+			return nil, nil, nil
+		}
+	}
+
 	headers := pixivcommon.GetPixivRequestHeaders()
 	headers["Referer"] = pixivcommon.GetUserUrl(artworkId)
 
@@ -150,6 +150,7 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 	}
 
 	urlsToDl, ugoiraInfo, err := processArtworkJson(
+		cacheKey,
 		artworkUrlsRes,
 		artworkType,
 		artworkPostDir,
@@ -236,7 +237,7 @@ func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions
 func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions) ([]string, error) {
 	headers := pixivcommon.GetPixivRequestHeaders()
 	headers["Referer"] = pixivcommon.GetIllustUrl(illustratorId)
-	url := fmt.Sprintf("%s/user/%s/profile/all", constants.PIXIV_API_URL, illustratorId)
+	url := getArtistArtworksApi(illustratorId)
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV, true)
 	res, err := httpfuncs.CallRequest(
@@ -402,7 +403,7 @@ func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]string,
 		return nil, []error{err}, false
 	}
 
-	url := fmt.Sprintf("%s/search/artworks/%s", constants.PIXIV_API_URL, tagName)
+	url := getTagArtworksApi(tagName)
 	params := map[string]string{
 		// search term
 		"word": tagName,

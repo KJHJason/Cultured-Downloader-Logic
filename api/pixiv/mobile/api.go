@@ -10,6 +10,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -25,11 +26,17 @@ type offsetArgs struct {
 // Returns the Ugoira structure with the necessary information to download the ugoira
 //
 // Will return an error which has been logged if unexpected error occurs like connection error, json marshal error, etc.
-func (pixiv *PixivMobile) getUgoiraMetadata(illustId, dlFilePath string) (*ugoira.Ugoira, error) {
+func (pixiv *PixivMobile) getUgoiraMetadata(cacheKey, illustId, dlFilePath string) (*ugoira.Ugoira, error) {
 	params := map[string]string{"illust_id": illustId}
 	additionalHeaders := pixiv.getHeaders(
 		map[string]string{"Referer": constants.PIXIV_MOBILE_BASE_URL},
 	)
+
+	if pixiv.useCacheDb {
+		if cache.UgoiraCacheExists(cacheKey) {
+			return nil, nil
+		}
+	}
 
 	res, err := pixiv.SendRequest(
 		&httpfuncs.RequestArgs{
@@ -63,6 +70,7 @@ func (pixiv *PixivMobile) getUgoiraMetadata(illustId, dlFilePath string) (*ugoir
 	// map the files to their delay
 	frameInfoMap := ugoira.MapDelaysToFilename(ugoiraMetadata.Frames)
 	return &ugoira.Ugoira{
+		CacheKey: cacheKey,
 		Url:      ugoiraDlUrl,
 		Frames:   frameInfoMap,
 		FilePath: dlFilePath,
@@ -71,7 +79,17 @@ func (pixiv *PixivMobile) getUgoiraMetadata(illustId, dlFilePath string) (*ugoir
 
 // Query Pixiv's API (mobile) to get the JSON of an artwork ID
 func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
+	var cacheKey string
+	var ugoiraCacheKey string
 	params := map[string]string{"illust_id": artworkId}
+	if pixiv.useCacheDb {
+		cacheKey = fmt.Sprintf("%s?illust_id=%s", constants.PIXIV_MOBILE_ARTWORK_URL, artworkId)
+		ugoiraCacheKey = parseUgoiraCacheKey(artworkId)
+		if cache.PostCacheExists(cacheKey) || cache.UgoiraCacheExists(ugoiraCacheKey) {
+			// either the artwork or the ugoira is already in the cache
+			return nil, nil, nil
+		}
+	}
 
 	res, err := pixiv.SendRequest(
 		&httpfuncs.RequestArgs{
@@ -98,7 +116,12 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 		return nil, nil, err
 	}
 
-	artworkDetails, ugoiraToDl, err := pixiv.processArtworkJson(artworkJson.Illust)
+	artworkDetails, ugoiraToDl, err := pixiv.processArtworkJson(ugoiraCacheKey, artworkJson.Illust)
+	if pixiv.useCacheDb {
+		for _, artwork := range artworkDetails {
+			artwork.CacheKey = cacheKey
+		}
+	}
 	return artworkDetails, ugoiraToDl, err
 }
 
