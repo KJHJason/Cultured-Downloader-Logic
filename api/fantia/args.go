@@ -70,10 +70,10 @@ type FantiaDlOptions struct {
 	cancel              context.CancelFunc
 	DlThumbnails        bool
 	DlImages            bool
+	OrganiseImages      bool
 	DlAttachments       bool
 	DlGdrive            bool
 	DetectOtherDlLinks  bool
-	OrganiseImages      bool
 	BaseDownloadDirPath string
 
 	GdriveClient *gdrive.GDrive

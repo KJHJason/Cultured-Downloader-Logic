@@ -12,7 +12,6 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/quic-go/quic-go v0.43.1
-	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	golang.org/x/oauth2 v0.20.0
 	google.golang.org/api v0.180.0
 )
