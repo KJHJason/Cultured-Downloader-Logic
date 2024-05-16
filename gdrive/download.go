@@ -159,7 +159,7 @@ func filterDownloads(files []*GdriveFileToDl) []*GdriveFileToDl {
 				file.Name, file.Id, file.MimeType,
 			)
 		}
-		logger.LogError(errors.New(noticeMsg), false, logger.INFO)
+		logger.LogError(errors.New(noticeMsg), logger.INFO)
 	}
 	return allowedForDownload
 }
@@ -294,7 +294,7 @@ func GetFileIdAndTypeFromUrl(url string) (string, string) {
 	}
 
 	var fileType string
-	matchedFileType := matched[constants.GDRIVE_REGEX_TYPE_INDEX]
+	matchedFileType := matched[constants.GDRIVE_REGEX_TYPE_IDX]
 	if strings.Contains(matchedFileType, "folder") {
 		fileType = "folder"
 	} else if strings.Contains(matchedFileType, "file") {
@@ -305,10 +305,10 @@ func GetFileIdAndTypeFromUrl(url string) (string, string) {
 			cdlerrors.DEV_ERROR,
 			url,
 		)
-		logger.LogError(err, false, logger.ERROR)
+		logger.LogError(err, logger.ERROR)
 		return "", ""
 	}
-	return matched[constants.GDRIVE_REGEX_ID_INDEX], fileType
+	return matched[constants.GDRIVE_REGEX_ID_IDX], fileType
 }
 
 func (gdrive *GDrive) getGdriveFileInfo(gdriveId *GDriveToDl) ([]*GdriveFileToDl, *GdriveError) {

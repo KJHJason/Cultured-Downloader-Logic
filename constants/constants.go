@@ -38,6 +38,7 @@ const (
 	FANTIA_POST_API_URL         = "https://fantia.jp/api/v1/posts/"
 	FANTIA_CAPTCHA_BTN_SELECTOR = `//input[@name='commit']`
 	FANTIA_CAPTCHA_TIMEOUT      = 45
+	FANTIA_POST_BLOG_DIR_NAME   = "blog_contents"
 
 	PIXIV                          = "pixiv"
 	PIXIV_MOBILE                   = "pixiv_mobile"
@@ -133,8 +134,8 @@ var (
 	GDRIVE_URL_REGEX = regexp.MustCompile(
 		`https://drive\.google\.com/(?P<type>file/d|drive/(u/\d+/)?folders)/(?P<id>[\w-]+)`,
 	)
-	GDRIVE_REGEX_ID_INDEX   = GDRIVE_URL_REGEX.SubexpIndex("id")
-	GDRIVE_REGEX_TYPE_INDEX = GDRIVE_URL_REGEX.SubexpIndex("type")
+	GDRIVE_REGEX_ID_IDX   = GDRIVE_URL_REGEX.SubexpIndex("id")
+	GDRIVE_REGEX_TYPE_IDX = GDRIVE_URL_REGEX.SubexpIndex("type")
 
 	GDRIVE_API_KEY_REGEX = regexp.MustCompile(
 		fmt.Sprintf(`^%s$`, GDRIVE_BASE_API_KEY_REGEX_STR),
@@ -144,10 +145,17 @@ var (
 	)
 
 	// For Fantia
-	FANTIA_IMAGE_URL_REGEX = regexp.MustCompile(
-		`original_url":"(?P<url>/posts/\d+/album_image\?query=[\w%-]*)"`,
+	FANTIA_COMMENT_IMAGE_URL_REGEX = regexp.MustCompile(
+		// Note: the "original_url" field points to the "url" field in the JSON response
+		`"url":"(?P<url>https://cc\.fantia\.jp/uploads/album_image/file/[\d]+/[\w-]+\.(?P<ext>[a-z]+)\?[^"]+)"`,
 	)
-	FANTIA_REGEX_URL_INDEX = FANTIA_IMAGE_URL_REGEX.SubexpIndex("url")
+	FANTIA_COMMENT_REGEX_EXT_IDX = FANTIA_IMAGE_URL_REGEX.SubexpIndex("ext")
+	FANTIA_COMMENT_REGEX_URL_IDX = FANTIA_IMAGE_URL_REGEX.SubexpIndex("url")
+
+	FANTIA_IMAGE_URL_REGEX = regexp.MustCompile(
+		`^https://cc\.fantia\.jp/uploads/post_content_photo/file/[\d]+/[\w-]+\.(?P<ext>[a-z]+)\?`,
+	)
+	FANTIA_IMAGE_URL_REGEX_EXT_IDX = FANTIA_IMAGE_URL_REGEX.SubexpIndex("ext")
 
 	// Since the URLs below will be redirected to Fantia's AWS S3 URL,
 	// we need to use HTTP/2 as it is not supported by HTTP/3 yet.

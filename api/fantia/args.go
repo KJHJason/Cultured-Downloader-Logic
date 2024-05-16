@@ -73,6 +73,7 @@ type FantiaDlOptions struct {
 	DlAttachments       bool
 	DlGdrive            bool
 	DetectOtherDlLinks  bool
+	OrganiseImages      bool
 	BaseDownloadDirPath string
 
 	GdriveClient *gdrive.GDrive

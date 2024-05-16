@@ -193,7 +193,7 @@ func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDow
 	}
 
 	if len(errSlice) > 0 {
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		logger.LogErrors(logger.ERROR, errSlice...)
 	}
 	return gdriveLinks, errSlice
 }
@@ -378,7 +378,7 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 	hasErr, hasCancelled := false, false
 	if len(errChan) > 0 {
 		hasErr = true
-		if errCtxCancelled, errSlice := logger.LogChanErrors(false, logger.ERROR, errChan); !hasCancelled && errCtxCancelled {
+		if errCtxCancelled, errSlice := logger.LogChanErrors(logger.ERROR, errChan); !hasCancelled && errCtxCancelled {
 			hasCancelled = true
 		} else {
 			errorSlice = append(errorSlice, errSlice...)

@@ -57,8 +57,8 @@ func (pgi *ProgressBarInfo) AppendDlProgBar(progBar *DownloadProgressBar) {
 	pgi.mu.Lock()
 	defer pgi.mu.Unlock()
 
-	if pgi.DownloadProgressBars != nil {
-		*pgi.DownloadProgressBars = append(*pgi.DownloadProgressBars, progBar)
+	if pgi.DownloadProgressBars == nil {
 		return
 	}
+	*pgi.DownloadProgressBars = append(*pgi.DownloadProgressBars, progBar)
 }

@@ -116,7 +116,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	if len(errChan) > 0 {
 		hasErr = true
 		var errCtxCancelled bool
-		if errCtxCancelled, errSlice = logger.LogChanErrors(false, logger.ERROR, errChan); errCtxCancelled {
+		if errCtxCancelled, errSlice = logger.LogChanErrors(logger.ERROR, errChan); errCtxCancelled {
 			hasCancelled = true
 		}
 	}
@@ -252,7 +252,6 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 							reqUrl,
 							err,
 						),
-						false,
 						logger.ERROR,
 					)
 				}
@@ -285,7 +284,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 
 	hasCancelled = false
 	if len(errSlice) > 0 {
-		hasCancelled = logger.LogErrors(false, logger.ERROR, errSlice...)
+		hasCancelled = logger.LogErrors(logger.ERROR, errSlice...)
 		if hasCancelled {
 			dlOptions.CancelCtx()
 		}
@@ -357,7 +356,7 @@ func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) []err
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		logger.LogErrors(logger.ERROR, errSlice...)
 	}
 	progress.Stop(hasErr)
 	pf.PostIds = api.RemoveSliceDuplicates(pf.PostIds)

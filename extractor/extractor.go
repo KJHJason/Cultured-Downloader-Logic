@@ -62,7 +62,7 @@ func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveE
 		if errors.Is(err, context.Canceled) {
 			// delete all the files that were extracted
 			if osErr := os.RemoveAll(dest); osErr != nil {
-				logger.LogError(osErr, false, logger.ERROR)
+				logger.LogError(osErr, logger.ERROR)
 			}
 			return err
 		}

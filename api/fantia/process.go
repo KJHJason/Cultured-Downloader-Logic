@@ -3,6 +3,7 @@ package fantia
 import (
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -12,28 +13,67 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/teris-io/shortid"
 )
 
-func dlImagesFromPost(content *FantiaContent, postFolderPath string) []*httpfuncs.ToDownload {
+func generateId() string {
+	id, err := shortid.Generate()
+	if err == nil {
+		return id // in the unlikely event that shortid fails to generate an id
+	}
+	return strconv.Itoa(rand.IntN(900000) + 100000)
+}
+
+func dlImagesFromPost(content *FantiaContent, postFolderPath string, organise bool) []*httpfuncs.ToDownload {
 	// for images that are embedded in the post content
-	comment := content.Comment
-	matchedStr := constants.FANTIA_IMAGE_URL_REGEX.FindAllStringSubmatch(comment, -1)
-	urlsSlice := make([]*httpfuncs.ToDownload, 0, len(matchedStr))
-	for _, matched := range matchedStr {
-		imageUrl := constants.FANTIA_URL + matched[constants.FANTIA_REGEX_URL_INDEX]
+	commentCount := 1
+	commentId := generateId() // generate a short id just in case there's multiple comments within a post
+	matchedUrlInComments := constants.FANTIA_COMMENT_IMAGE_URL_REGEX.FindAllStringSubmatch(content.Comment, -1)
+	urlsSlice := make([]*httpfuncs.ToDownload, 0, len(matchedUrlInComments))
+	for _, matched := range matchedUrlInComments {
+		imageUrl := constants.FANTIA_URL + matched[constants.FANTIA_COMMENT_REGEX_URL_IDX]
+		filePath := filepath.Join(postFolderPath, constants.FANTIA_POST_BLOG_DIR_NAME)
+
+		if organise {
+			fileExt := matched[constants.FANTIA_COMMENT_REGEX_EXT_IDX]
+			filePath = filepath.Join(filePath, fmt.Sprintf("%s_%d.%s", commentId, commentCount, fileExt))
+			commentCount++
+		}
+
 		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      imageUrl,
-			FilePath: filepath.Join(postFolderPath, constants.IMAGES_FOLDER),
+			FilePath: filePath,
 		})
 	}
 
 	// download images that are uploaded to their own section
+	postCount := 0
+	postId := generateId() // needed as there might more than one "photo_gallery" category in a post
 	postContentPhotos := content.PostContentPhotos
 	for _, image := range postContentPhotos {
 		imageUrl := image.URL.Original
+		filePath := filepath.Join(postFolderPath, constants.IMAGES_FOLDER)
+
+		if organise {
+			matched := constants.FANTIA_IMAGE_URL_REGEX.FindStringSubmatch(imageUrl)
+			if len(matched) > 0 {
+				fileExt := matched[constants.FANTIA_IMAGE_URL_REGEX_EXT_IDX]
+				filePath = filepath.Join(filePath, fmt.Sprintf("%s_%d.%s", postId, postCount, fileExt))
+			} else {
+				err := fmt.Errorf(
+					"fantia error %d: failed to match image url %q when trying to organise images from post %s",
+					cdlerrors.UNEXPECTED_ERROR,
+					imageUrl,
+					postId,
+				)
+				logger.LogError(err, logger.ERROR)
+			}
+		}
+
 		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      imageUrl,
-			FilePath: filepath.Join(postFolderPath, constants.IMAGES_FOLDER),
+			FilePath: filePath,
 		})
 	}
 
@@ -122,7 +162,7 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 			gdriveLinks = append(gdriveLinks, commentGdriveLinks...)
 		}
 		if dlOptions.DlImages {
-			urlsSlice = append(urlsSlice, dlImagesFromPost(&content, postFolderPath)...)
+			urlsSlice = append(urlsSlice, dlImagesFromPost(&content, postFolderPath, dlOptions.OrganiseImages)...)
 		}
 		if dlOptions.DlAttachments {
 			urlsSlice = append(urlsSlice, dlAttachmentsFromPost(&content, postFolderPath)...)

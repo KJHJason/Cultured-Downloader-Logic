@@ -137,7 +137,6 @@ func processCookieVerification(website string, err error) error {
 	if err != nil {
 		logger.LogError(
 			fmt.Errorf("error occurred when trying to verify %s cookie...\n%w", GetReadableSiteStr(website), err),
-			false,
 			logger.ERROR,
 		)
 		return fmt.Errorf(

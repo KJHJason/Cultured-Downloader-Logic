@@ -202,7 +202,6 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 						filePath,
 						fileErr,
 					),
-					false,
 					logger.ERROR,
 				)
 			}
@@ -225,7 +224,6 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 				dlRequestInfo.Url,
 				err,
 			),
-			false,
 			logger.ERROR,
 		)
 		return err
@@ -286,7 +284,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		if errors.Is(err, fs.ErrNotExist) {
 			// if the error wasn't because the file does not exist,
 			// then log the error and continue with the download process
-			logger.LogError(err, false, logger.ERROR)
+			logger.LogError(err, logger.ERROR)
 		}
 	}
 
@@ -428,7 +426,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	var errorSlice []error
 	if len(errChan) > 0 {
 		hasErr = true
-		if hasCancelled, errSlice := logger.LogChanErrors(false, logger.ERROR, errChan); hasCancelled {
+		if hasCancelled, errSlice := logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
 			progress.StopInterrupt("Stopped downloading files (incomplete downloads will be resumed later or be deleted)...")
 			return true, errSlice
 		} else {

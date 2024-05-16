@@ -155,7 +155,7 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string) ([]*htt
 
 	hasErr := len(errSlice) > 0
 	if hasErr {
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		logger.LogErrors(logger.ERROR, errSlice...)
 	}
 	progress.Stop(hasErr)
 	return artworksToDownload, ugoiraSlice, errSlice
@@ -305,7 +305,7 @@ func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, ar
 			artworkType,
 		)
 		if err != nil {
-			if hasCancelled := logger.LogErrors(false, logger.ERROR, err...); hasCancelled {
+			if hasCancelled := logger.LogErrors(logger.ERROR, err...); hasCancelled {
 				pixiv.cancel()
 				progress.StopInterrupt("Stopped getting artwork details from artists(s) on Pixiv!")
 				return nil, nil, errSlice
@@ -397,7 +397,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName string, dlOptions *PixivMobileD
 func (pixiv *PixivMobile) TagSearch(tagName, pageNum string, dlOptions *PixivMobileDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
-		logger.LogError(err, false, logger.ERROR)
+		logger.LogError(err, logger.ERROR)
 		return nil, nil, []error{err}, false
 	}
 	minOffset, maxOffset := pixivcommon.ConvertPageNumToOffset(minPage, maxPage, constants.PIXIV_PER_PAGE, false)
@@ -412,7 +412,7 @@ func (pixiv *PixivMobile) TagSearch(tagName, pageNum string, dlOptions *PixivMob
 		},
 	)
 	if len(errSlice) > 0 {
-		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+		if hasCancelled := logger.LogErrors(logger.ERROR, errSlice...); hasCancelled {
 			return nil, nil, errSlice, true
 		}
 	}

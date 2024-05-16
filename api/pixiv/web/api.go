@@ -221,7 +221,7 @@ func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+		if hasCancelled := logger.LogErrors(logger.ERROR, errSlice...); hasCancelled {
 			dlOptions.CancelCtx()
 			progress.StopInterrupt("Stopped getting and processing artwork details from Pixiv!")
 			return nil, nil, errSlice
@@ -327,7 +327,7 @@ func GetMultipleArtistsPosts(illustratorIds, pageNums []string, dlOptions *Pixiv
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+		if hasCancelled := logger.LogErrors(logger.ERROR, errSlice...); hasCancelled {
 			dlOptions.CancelCtx()
 			progress.StopInterrupt("Stopped getting artwork details from artist(s) on Pixiv!")
 			return nil, errSlice
@@ -398,7 +398,7 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]string, []error, bool) {
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
-		logger.LogError(err, false, logger.ERROR)
+		logger.LogError(err, logger.ERROR)
 		return nil, []error{err}, false
 	}
 
@@ -449,7 +449,7 @@ func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]string,
 	)
 
 	if len(errSlice) > 0 {
-		if cancelled := logger.LogErrors(false, logger.ERROR, errSlice...); cancelled {
+		if cancelled := logger.LogErrors(logger.ERROR, errSlice...); cancelled {
 			dlOptions.CancelCtx()
 			return nil, errSlice, true
 		}

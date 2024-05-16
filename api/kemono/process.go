@@ -57,7 +57,7 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 			resJson.Service,
 			err,
 		)
-		logger.LogError(err, false, logger.ERROR)
+		logger.LogError(err, logger.ERROR)
 		creatorNamePath = resJson.User
 	} else {
 		creatorNamePath = fmt.Sprintf("%s [%s]", creatorName, resJson.User)

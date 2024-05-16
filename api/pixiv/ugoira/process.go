@@ -200,7 +200,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		if hasCancelled := logger.LogErrors(false, logger.ERROR, errSlice...); hasCancelled {
+		if hasCancelled := logger.LogErrors(logger.ERROR, errSlice...); hasCancelled {
 			prog.StopInterrupt(
 				fmt.Sprintf("Stopped converting ugoira to %s!", ugoiraOptions.OutputFormat),
 			)

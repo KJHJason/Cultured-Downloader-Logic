@@ -73,21 +73,18 @@ func DeleteEmptyAndOldLogs() error {
 }
 
 // Thread-safe logging function that logs to "cultured_downloader.log" in the logs directory
-func LogError(err error, exit bool, level int) {
+func LogError(err error, level int) {
 	if err == nil {
 		return
 	}
 
 	MainLogger.LogBasedOnLvl(level, err.Error()+LogSuffix)
-	if exit {
-		os.Exit(1)
-	}
 }
 
 // Uses the thread-safe LogError() function to log multiple errors
 //
 // Also returns if any errors were due to context.Canceled which is caused by Ctrl + C.
-func LogErrors(exit bool, level int, errs ...error) bool {
+func LogErrors(level int, errs ...error) bool {
 	var hasCanceled bool
 	for _, err := range errs {
 		if errors.Is(err, context.Canceled) {
@@ -96,7 +93,7 @@ func LogErrors(exit bool, level int, errs ...error) bool {
 			}
 			continue
 		}
-		LogError(err, exit, level)
+		LogError(err, level)
 	}
 	return hasCanceled
 }
@@ -104,7 +101,7 @@ func LogErrors(exit bool, level int, errs ...error) bool {
 // Uses the thread-safe LogError() function to log a channel of errors
 //
 // Also returns if any errors were due to context.Canceled which is caused by Ctrl + C.
-func LogChanErrors(exit bool, level int, errChan chan error) (bool, []error) {
+func LogChanErrors(level int, errChan chan error) (bool, []error) {
 	var hasCanceled bool
 	errSlice := make([]error, 0, len(errChan))
 	for err := range errChan {
@@ -114,7 +111,7 @@ func LogChanErrors(exit bool, level int, errChan chan error) (bool, []error) {
 			}
 			continue
 		}
-		LogError(err, exit, level)
+		LogError(err, level)
 		errSlice = append(errSlice, err)
 	}
 	return hasCanceled, errSlice
@@ -138,7 +135,7 @@ func LogMessageToPath(message, filePath string, level int) {
 				filePath,
 				message,
 			)
-			LogError(err, false, ERROR)
+			LogError(err, ERROR)
 			return
 		}
 
@@ -161,7 +158,7 @@ func LogMessageToPath(message, filePath string, level int) {
 			filePath,
 			message,
 		)
-		LogError(err, false, ERROR)
+		LogError(err, ERROR)
 		return
 	}
 	defer logFile.Close()

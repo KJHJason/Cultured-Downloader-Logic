@@ -23,7 +23,7 @@ func logJsonResponse(body []byte) error {
 			cdlerrors.JSON_ERROR,
 			err,
 		)
-		logger.LogError(err, false, logger.ERROR)
+		logger.LogError(err, logger.ERROR)
 		return err
 	}
 
@@ -37,7 +37,7 @@ func logJsonResponse(body []byte) error {
 			cdlerrors.UNEXPECTED_ERROR,
 			err,
 		)
-		logger.LogError(err, false, logger.ERROR)
+		logger.LogError(err, logger.ERROR)
 		return err
 	}
 	return nil

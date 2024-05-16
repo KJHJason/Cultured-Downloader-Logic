@@ -61,7 +61,7 @@ func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath 
 				filePath,
 				err,
 			)
-			logger.LogError(err, false, logger.ERROR)
+			logger.LogError(err, logger.ERROR)
 			return gdriveLinks
 		}
 
@@ -326,7 +326,7 @@ func processMultiplePostJson(resChan chan *http.Response, dlOptions *PixivFanbox
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		logger.LogErrors(logger.ERROR, errSlice...)
 	}
 	progress.Stop(hasErr)
 	return urlsSlice, gdriveUrls

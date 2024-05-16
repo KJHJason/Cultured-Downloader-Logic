@@ -208,7 +208,7 @@ func GetMultiplePosts(posts []*KemonoPostToDl, dlOptions *KemonoDlOptions) (urls
 		if !hasError {
 			hasError = true
 		}
-		logger.LogError(res.err, false, logger.ERROR)
+		logger.LogError(res.err, logger.ERROR)
 		errSlice = append(errSlice, res.err)
 	}
 
@@ -331,7 +331,7 @@ func GetMultipleCreators(creators []*KemonoCreatorToDl, dlOptions *KemonoDlOptio
 	hasErr := false
 	if len(errSlice) > 0 {
 		hasErr = true
-		logger.LogErrors(false, logger.ERROR, errSlice...)
+		logger.LogErrors(logger.ERROR, errSlice...)
 	}
 	if hasCancelled {
 		dlOptions.CancelCtx()

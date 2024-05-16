@@ -4,13 +4,15 @@ type FantiaContent struct {
 	// Any attachments such as pdfs that are on their dedicated section
 	AttachmentURI string `json:"attachment_uri"`
 
+	Category string `json:"category"`
+
 	// For images that are uploaded to their own section
 	PostContentPhotos []struct {
 		ID  int `json:"id"`
 		URL struct {
 			Original string `json:"original"`
 		} `json:"url"`
-	} `json:"post_content_photos"`
+	} `json:"post_content_photos,omitempty"`
 
 	// For images that are embedded in the post content blocks.
 	// Could also contain links to other external file hosting providers.

@@ -70,7 +70,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 				readableSite,
 				err,
 			)
-			logger.LogError(fmtErr, false, logger.ERROR)
+			logger.LogError(fmtErr, logger.ERROR)
 		}
 		notifier.Alert("Failed to solve reCAPTCHA automatically...")
 		return fmtErr

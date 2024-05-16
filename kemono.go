@@ -26,7 +26,7 @@ func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDl
 		favToDl, favGdriveLinks, err := kemono.GetFavourites(dlOptions)
 		hasErr := (err != nil)
 		if hasErr {
-			cancel := logger.LogErrors(false, logger.ERROR, err...)
+			cancel := logger.LogErrors(logger.ERROR, err...)
 			if cancel {
 				return nil
 			}
