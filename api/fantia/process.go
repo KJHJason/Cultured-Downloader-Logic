@@ -20,8 +20,9 @@ import (
 func generateId() string {
 	id, err := shortid.Generate()
 	if err == nil {
-		return id // in the unlikely event that shortid fails to generate an id
+		return id
 	}
+	// in the unlikely event that shortid fails to generate an id
 	return strconv.Itoa(rand.IntN(900000) + 100000)
 }
 
