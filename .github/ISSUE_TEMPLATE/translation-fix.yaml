@@ -11,15 +11,11 @@ body:
       value: |
         Thanks for taking the time to fill out this translation error report! If you found a translation error in Cultured Downloader, feel free to share it here.
 
-  - type: dropdown
-    id: program_name
+  - type: input
+    id: package_version
     attributes:
-      label: Which program are you suggesting this feature for?
-      description: If you are suggesting a feature for the Python program, do take note that it is likely that it will get rejected as it is no longer getting new features.
-      multiple: true
-      options:
-        - Cultured Downloader (Go)
-        - Cultured Downloader (Python)
+      label: Package Version
+      description: What version of Cultured Downloader Logic are you using?
     validations:
       required: true
 
@@ -32,7 +28,7 @@ body:
       required: true
 
   - type: textarea
-    id: screenshot
+    id: screenshot_line_number
     attributes:
-      label: Screenshot
-      description: Paste a screenshot of the translation error here so that I can locate the source of the translation error.
+      label: Screenshot/Line Number
+      description: Paste a screenshot of the translation error or the line number here so that I can locate the source of the translation error.
