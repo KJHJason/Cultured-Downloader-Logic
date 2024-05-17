@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"io"
 	"os"
@@ -124,13 +123,11 @@ func (db *DbWrapper) SetString(key string, value string) error {
 }
 
 func (db *DbWrapper) SetInt64(key string, value int64) error {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, uint64(value))
-	return db.Set(key, buf)
+	return db.Set(key, ParseInt64(value))
 }
 
 func (db *DbWrapper) SetInt(key string, value int) error {
-	return db.SetInt64(key, int64(value))
+	return db.Set(key, ParseInt(value))
 }
 
 func (db *DbWrapper) SetTime(key string, value time.Time) error {
@@ -154,11 +151,15 @@ func (db *DbWrapper) GetInt64(key string) int64 {
 	if value == nil {
 		return -1
 	}
-	return int64(binary.LittleEndian.Uint64(value))
+	return ParseBytesToInt64(value)
 }
 
 func (db *DbWrapper) GetInt(key string) int {
-	return int(db.GetInt64(key))
+	value := db.Get(key)
+	if value == nil {
+		return -1
+	}
+	return ParseBytesToInt(value)
 }
 
 func (db *DbWrapper) GetTime(key string) time.Time {

@@ -1,0 +1,934 @@
+{
+    "settings": {
+        "general": {
+            "en": "General",
+            "jp": "一般設定"
+        },
+        "preferences": {
+            "en": "Preferences",
+            "jp": "ダウンロード設定"
+        },
+        "advanced": {
+            "en": "Advanced",
+            "jp": "高度な設定"
+        },
+        "sessions": {
+            "en": "Sessions",
+            "jp": "セッション"
+        },
+        "program info": {
+            "en": "Program Info",
+            "jp": "プログラム情報"
+        }
+    },
+    "platform_base": {
+        "e.g. \"1\" for page 1 or \"1-2\" for pages 1 to 2": {
+            "en": "e.g. \"1\" for page 1 or \"1-2\" for pages 1 to 2",
+            "jp": "例：ページ1の場合は「1」、ページ1から2の場合は「1-2」"
+        },
+        "input example:": {
+            "en": "Input Example:",
+            "jp": "入力例："
+        },
+        "input error: invalid url(s)!": {
+            "en": "Input error: invalid URL(s)!",
+            "jp": "入力エラー：無効なURL！"
+        },
+        "invalid url(s)!": {
+            "en": "Invalid URL(s)!",
+            "jp": "無効なURL！"
+        },
+        "unknown input error!": {
+            "en": "Unknown input error!",
+            "jp": "不明な入力エラー！"
+        },
+        "input error: no url(s)!": {
+            "en": "Input error: no URL(s)!",
+            "jp": "入力エラー：URLがありません！"
+        },
+        "input error": {
+            "en": "Input Error",
+            "jp": "入力エラー"
+        },
+        "invalid page number filter format!": {
+            "en": "Invalid page number filter format!",
+            "jp": "無効なページ番号フィルタ形式！"
+        },
+        "adding to queue...": {
+            "en": "Adding to queue...",
+            "jp": "キューに追加中..."
+        },
+        "added to queue!": {
+            "en": "Added to queue!",
+            "jp": "キューに追加されました！"
+        },
+        "please wait while the url(s) are being processed and added to the download queue!": {
+            "en": "Please wait while the URL(s) are being processed and added to the download queue!",
+            "jp": "URLが処理され、ダウンロードキューに追加されるのをお待ちください！"
+        },
+        "the url(s) have been added to the download queue!": {
+            "en": "The URL(s) have been added to the download queue!",
+            "jp": "URLがダウンロードキューに追加されました！"
+        },
+        ". please login first!": {
+            "en": ". Please login first!",
+            "jp": "。最初にログインしてください！"
+        },
+        "add to queue!": {
+            "en": "Add to Queue!",
+            "jp": "キューに追加！"
+        },
+        "inputs": {
+            "en": "Inputs",
+            "jp": "入力"
+        },
+        "page numbers filter": {
+            "en": "Page Numbers Filter",
+            "jp": "ページ番号フィルタ"
+        },
+        "note that this is optional as you can leave this empty to download all pages!": {
+            "en": "Note that this is optional as you can leave this empty to download all pages!",
+            "jp": "これは任意ですので、すべてのページをダウンロードするには空のままにしておくこともできます！"
+        },
+        "invalid filter format!": {
+            "en": "Invalid filter format!",
+            "jp": "無効なフィルタ形式！"
+        },
+        "download settings": {
+            "en": "Download Settings",
+            "jp": "ダウンロード設定"
+        },
+        "this settings is for the current download inputs. however, you can save it globally by clicking \"save settings\" button below!": {
+            "en": "This settings is for the current download inputs. However, you can save it globally by clicking \"Save Settings\" button below!",
+            "jp": "この設定は現在のダウンロード入力用です。ただし、下の「設定を保存」ボタンをクリックして保存できます！"
+        },
+        "save settings globally": {
+            "en": "Save Settings Globally",
+            "jp": "設定を保存"
+        }
+    },
+    "navbar": {
+        "open sidebar": {
+            "en": "Open Sidebar",
+            "jp": "サイドバーを開く"
+        },
+        "open user menu": {
+            "en": "Open User Menu",
+            "jp": "ユーザーメニューを開く"
+        },
+        "settings": {
+            "en": "Settings",
+            "jp": "設定"
+        },
+        "dark mode": {
+            "en": "Dark Mode",
+            "jp": "ダークモード"
+        },
+        "light mode": {
+            "en": "Light Mode",
+            "jp": "ライトモード"
+        }
+    },
+    "home": {
+        "to get started, click on one of the options below or use the navigation bar in the top-left corner.": {
+            "en": "To get started, click on one of the options below or use the navigation bar in the top-left corner.",
+            "jp": "始めるには、以下のオプションのいずれかをクリックするか、左上隅のナビゲーションバーを使用してください。"
+        },
+        "welcome back,": {
+            "en": "Welcome back,",
+            "jp": "おかえりなさい、"
+        },
+        "!": {
+            "en": "!",
+            "jp": "！"
+        },
+        "home": {
+            "en": "Home",
+            "jp": "ホーム"
+        },
+        "image:": {
+            "en": "Image:",
+            "jp": "イラスト："
+        },
+        "karutamo": {
+            "en": "Karutamo",
+            "jp": "かるたも"
+        },
+        "found an issue? click me!": {
+            "en": "Found an issue? Click me!",
+            "jp": "問題を発見しましたか？私をクリックしてください！"
+        }
+    },
+    "download_queue": {
+        "download queues": {
+            "en": "Download Queues",
+            "jp": "ダウンロードキュー"
+        },
+        "date/time": {
+            "en": "Date/Time",
+            "jp": "日付/時間"
+        },
+        "your inputs": {
+            "en": "Your Inputs",
+            "jp": "あなたの入力"
+        },
+        "current task": {
+            "en": "Current Task",
+            "jp": "現在のタスク"
+        },
+        "actions": {
+            "en": "Actions",
+            "jp": "アクション"
+        },
+        "there are no download queues at the moment.": {
+            "en": "There are no download queues at the moment.",
+            "jp": "現在、ダウンロードキューはありません。"
+        }
+    },
+    "sessions": {
+        "delete": {
+            "en": "Delete",
+            "jp": "削除"
+        },
+        "save": {
+            "en": "Save",
+            "jp": "保存"
+        },
+        "upload netscape/mozilla generated cookie file": {
+            "en": "Upload Netscape/Mozilla Generated Cookie File",
+            "jp": "Netscape/Mozilla生成クッキーファイルをアップロード"
+        },
+        "if you have saved an oauth refresh token for pixiv in the advanced tab, you can ignore/delete this field as the program will use the token instead.": {
+            "en": "If you have saved an OAuth Refresh Token for Pixiv in the Advanced tab, you can ignore/delete this field as the program will use the token instead.",
+            "jp": "PixivのOAuthリフレッシュトークンを高度なタブに保存している場合は、このフィールドを無視/削除しても問題ありません。プログラムは代わりにトークンを使用します。"
+        },
+        "session cookie saved successfully!": {
+            "en": "Session cookie saved successfully!",
+            "jp": "セッションクッキーが正常に保存されました！"
+        },
+        "saved session cookie deleted successfully": {
+            "en": "Saved session cookie deleted successfully",
+            "jp": "保存されたセッションクッキーが正常に削除されました"
+        },
+        "error": {
+            "en": "Error",
+            "jp": "エラー"
+        }
+    },
+    "program_info": {
+        "check for updates": {
+            "en": "Check for Updates",
+            "jp": "更新を確認"
+        },
+        "checking for updates...": {
+            "en": "Checking for updates...",
+            "jp": "更新を確認中..."
+        },
+        "outdated, last checked at": {
+            "en": "Outdated, last checked at",
+            "jp": "古い、最後に確認した日時"
+        },
+        "up-to-date, last checked at": {
+            "en": "Up-to-date, last checked at",
+            "jp": "最新、最後に確認した日時"
+        },
+        "if you like using Cultured Downloader, please consider giving it a star on": {
+            "en": "If you like using Cultured Downloader, please consider giving it a star on",
+            "jp": "Cultured Downloaderをご利用いただき、ありがとうございます。もしまだであれば、"
+        },
+        "program_info_if you haven't already!": {
+            "en": "if you haven't already!",
+            "jp": "でスターを付けていただけると嬉しいです！"
+        },
+        "additionally, please consider supporting this project by": {
+            "en": "Additionally, please consider supporting this project by",
+            "jp": "このプロジェクトのサポートを検討していただき、ありがとうございます。こちらから"
+        },
+        "buying me a coffee": {
+            "en": "buying me a coffee",
+            "jp": "コーヒーをご購入"
+        },
+        "program_info_or": {
+            "en": "or",
+            "jp": "いただくか、"
+        },
+        "program_info_sponsoring me": {
+            "en": "sponsoring me",
+            "jp": "GitHubスポンサー"
+        },
+        "via github sponsors! Your contribution would help ensure the sustainability of this project. Thank you for reading <3": {
+            "en": " via GitHub sponsors! Your contribution would help ensure the sustainability of this project. Thank you for reading <3",
+            "jp": "としてサポートすることができます。皆様の貢献は、このプロジェクトの持続可能性を確保するのに役立ちます。お読みいただき、ありがとうございます。<3"
+        },
+        "program_info_unknown": {
+            "en": "Unknown",
+            "jp": "最新の情報はありません"
+        },
+        "developer's note:": {
+            "en": "Developer's Note:",
+            "jp": "開発者のメモ："
+        },
+        "version": {
+            "en": "Version",
+            "jp": "バージョン"
+        },
+        "program_info_by": {
+            "en": "by",
+            "jp": "作成者: "
+        },
+        "repository:": {
+            "en": "Repository:",
+            "jp": "リポジトリ："
+        },
+        "latest version:": {
+            "en": "Latest Version:",
+            "jp": "最新バージョン："
+        }
+    },
+    "preferences": {
+        "general": {
+            "en": "General",
+            "jp": "一般"
+        },
+        "pixiv specific": {
+            "en": "Pixiv Specific",
+            "jp": "Pixiv専用"
+        },
+        "save all": {
+            "en": "Save All",
+            "jp": "すべて保存"
+        },
+        "loading form...": {
+            "en": "Loading form...",
+            "jp": "フォームを読み込んでいます..."
+        }
+    },
+    "pixiv_settings": {
+        "illustrations and ugoira": {
+            "en": "Illustrations and Ugoira",
+            "jp": "イラストとうごイラ"
+        },
+        "manga": {
+            "en": "Manga",
+            "jp": "マンガ"
+        },
+        "all": {
+            "en": "All",
+            "jp": "すべて"
+        },
+        "safe": {
+            "en": "Safe",
+            "jp": "年齢制限作品を表示しない"
+        },
+        "r-18": {
+            "en": "R-18",
+            "jp": "年齢制限作品を表示"
+        },
+        "similar tag names": {
+            "en": "Similar Tag Names",
+            "jp": "類似タグ名"
+        },
+        "tags": {
+            "en": "Tags",
+            "jp": "タグ"
+        },
+        "title and caption": {
+            "en": "Title and Caption",
+            "jp": "タイトルとキャプション"
+        },
+        "by date": {
+            "en": "By Oldest Date",
+            "jp": "古い順"
+        },
+        "by date (descending)": {
+            "en": "By Newest Date",
+            "jp": "新しい順"
+        },
+        "by popularity": {
+            "en": "By Least Popular",
+            "jp": "全体の人気のない順"
+        },
+        "by popularity (descending)": {
+            "en": "By Most Popular",
+            "jp": "全体の人気順"
+        },
+        "by popularity (male)": {
+            "en": "By Least Popular to Male Users",
+            "jp": "男性の人気のない順"
+        },
+        "by popularity (descending/male)": {
+            "en": "By Most Popular to Male Users",
+            "jp": "男性の人気順"
+        },
+        "by popularity (female)": {
+            "en": "By Least Popular to Female Users",
+            "jp": "女性の人気のない順"
+        },
+        "by popularity (descending/female)": {
+            "en": "By Most Popular to Female Users",
+            "jp": "女性の人気順"
+        },
+        "display ai works": {
+            "en": "Display AI Works",
+            "jp": "AI作品を表示"
+        },
+        "filter ai works": {
+            "en": "Filter AI Works",
+            "jp": "AI作品を表示しない"
+        },
+        "success": {
+            "en": "Success",
+            "jp": "成功"
+        },
+        "preferences saved successfully!": {
+            "en": "Preferences saved successfully!",
+            "jp": "設定が正常に保存されました！"
+        },
+        "delete ugoira zip after conversion": {
+            "en": "Delete Ugoira ZIP After Conversion",
+            "jp": "うごイラZIPを変換後に削除"
+        },
+        "artwork type:": {
+            "en": "Artwork Type:",
+            "jp": "イラストの種類："
+        },
+        "rating mode:": {
+            "en": "Rating Mode:",
+            "jp": "年齢制限モード："
+        },
+        "search mode:": {
+            "en": "Search Mode:",
+            "jp": "検索モード："
+        },
+        "ai search mode:": {
+            "en": "AI Search Mode:",
+            "jp": "AI検索モード："
+        },
+        "sort order:": {
+            "en": "Sort Order:",
+            "jp": "並び順："
+        },
+        "ugoira output file format:": {
+            "en": "Ugoira Output File Format:",
+            "jp": "うごイラ出力ファイル拡張子："
+        },
+        "ugoira quality:": {
+            "en": "Ugoira Quality:",
+            "jp": "うごイラ品質："
+        },
+        "Lower values mean better quality but longer conversion times!": {
+            "en": "Lower values mean better quality but longer conversion times!",
+            "jp": "値が小さいほど品質が向上しますが、変換時間が長くなります！"
+        },
+        "Loading the rest of the form...": {
+            "en": "Loading the rest of the form...",
+            "jp": "フォームの残りを読み込んでいます..."
+        }
+    },
+    "merged_settings": {
+        "success": {
+            "en": "Success",
+            "jp": "成功"
+        },
+        "preferences saved successfully!": {
+            "en": "Preferences saved successfully!",
+            "jp": "設定が正常に保存されました！"
+        },
+        "error": {
+            "en": "Error",
+            "jp": "エラー"
+        },
+        "forms not loaded yet... please wait a moment and try again.": {
+            "en": "Forms not loaded yet... Please wait a moment and try again.",
+            "jp": "フォームがまだ読み込まれていません...しばらくお待ちいただいてからもう一度お試しください。"
+        }
+    },
+    "general_settings": {
+        "success": {
+            "en": "Success",
+            "jp": "成功"
+        },
+        "preferences saved successfully!": {
+            "en": "Preferences saved successfully!",
+            "jp": "設定が正常に保存されました！"
+        },
+        "download post thumbnail": {
+            "en": "Download Post Thumbnail",
+            "jp": "投稿サムネイルをダウンロード"
+        },
+        "download post images": {
+            "en": "Download Post Images",
+            "jp": "投稿画像をダウンロード"
+        },
+        "download post attachments": {
+            "en": "Download Post Attachments",
+            "jp": "投稿添付ファイルをダウンロード"
+        },
+        "organise post images": {
+            "en": "Organise Post Images",
+            "jp": "投稿画像を整理"
+        },
+        "download gdrive links": {
+            "en": "Download GDrive Links",
+            "jp": "GDriveリンクをダウンロード"
+        },
+        "overwrite files (not recommended)": {
+            "en": "Overwrite Files (Not Recommended)",
+            "jp": "ファイルを上書き（推奨されません）"
+        },
+        "detect other url(s) like mega": {
+            "en": "Detect Other URL(s) Like Mega",
+            "jp": "Megaなどの他のURLを検出"
+        },
+        "use cache db": {
+            "en": "Use Cache Database",
+            "jp": "キャッシュデータベースを使用"
+        }
+    },
+    "general": {
+        "Profile image path is empty": {
+            "en": "Profile image path is empty",
+            "jp": "プロフィール画像のパスが空です"
+        },
+        "success": {
+            "en": "Success",
+            "jp": "成功"
+        },
+        "your profile has been updated.": {
+            "en": "Your profile has been updated.",
+            "jp": "プロフィールが更新されました。"
+        },
+        "confirm master password": {
+            "en": "Confirm Master Password",
+            "jp": "マスターパスワードを確認"
+        },
+        "please enter your master password again as confirmation.": {
+            "en": "Please enter your master password again as confirmation.",
+            "jp": "確認のためにもう一度マスターパスワードを入力してください。"
+        },
+        "cancel": {
+            "en": "Cancel",
+            "jp": "キャンセル"
+        },
+        "master_password_submit": {
+            "en": "Submit",
+            "jp": "確認"
+        },
+        "password cannot be empty": {
+            "en": "Password cannot be empty",
+            "jp": "パスワードは空にできません"
+        },
+        "entered password does not match your master password!": {
+            "en": "Entered password does not match your master password!",
+            "jp": "入力されたパスワードがマスターパスワードと一致しません！"
+        },
+        "master password has been updated.": {
+            "en": "Master password has been updated.",
+            "jp": "マスターパスワードが更新されました。"
+        },
+        "error": {
+            "en": "Error",
+            "jp": "エラー"
+        },
+        "an error occurred while setting the master password. Please try again later.": {
+            "en": "An error occurred while setting the master password. Please try again later.",
+            "jp": "マスターパスワードの設定中にエラーが発生しました。後でもう一度お試しください。"
+        },
+        "the new master password is the same as the current one.": {
+            "en": "The new master password is the same as the current one.",
+            "jp": "新しいマスターパスワードは現在のものと同じです。"
+        },
+        "the current master password is incorrect.": {
+            "en": "The current master password is incorrect.",
+            "jp": "現在のマスターパスワードが間違っています。"
+        },
+        "confirm master password change": {
+            "en": "Confirm Master Password Change",
+            "jp": "マスターパスワードの変更を確認"
+        },
+        "please enter your new master password again to confirm the change.": {
+            "en": "Please enter your new master password again to confirm the change.",
+            "jp": "変更を確認するために、新しいマスターパスワードをもう一度入力してください。"
+        },
+        "entered password does not match your new master password!": {
+            "en": "Entered password does not match your new master password!",
+            "jp": "入力されたパスワードが新しいマスターパスワードと一致しません！"
+        },
+        "remove master password?": {
+            "en": "Remove Master Password?",
+            "jp": "マスターパスワードを削除しますか？"
+        },
+        "all your saved encrypted config data will be lost.": {
+            "en": "All your saved encrypted config data will be lost.",
+            "jp": "保存されたすべての暗号化された設定データが失われます。"
+        },
+        "master password removed": {
+            "en": "Master password removed",
+            "jp": "マスターパスワードが削除されました"
+        },
+        "you have removed your master password and all your saved encrypted config data have been removed.": {
+            "en": "You have removed your master password and all your saved encrypted config data have been removed.",
+            "jp": "マスターパスワードが削除され、保存されたすべての暗号化された設定データが削除されました。"
+        },
+        "reset image": {
+            "en": "Reset Image",
+            "jp": "画像をリセット"
+        },
+        "username:": {
+            "en": "Username:",
+            "jp": "ユーザー名："
+        },
+        "language:": {
+            "en": "Language:",
+            "jp": "言語："
+        },
+        "upload profile image:": {
+            "en": "Upload Profile Image:",
+            "jp": "プロフィール画像をアップロード："
+        },
+        "png, jpg, gif or webp.": {
+            "en": "PNG, JPG, GIF or WEBP.",
+            "jp": "PNG、JPG、GIFまたはWEBP。"
+        },
+        "reset": {
+            "en": "Reset",
+            "jp": "リセット"
+        },
+        "save all": {
+            "en": "Save All",
+            "jp": "すべて保存"
+        },
+        "current master password:": {
+            "en": "Current Master Password:",
+            "jp": "現在のマスターパスワード："
+        },
+        "new master password:": {
+            "en": "New Master Password:",
+            "jp": "新しいマスターパスワード："
+        },
+        "master password:": {
+            "en": "Master Password:",
+            "jp": "マスターパスワード："
+        },
+        "save": {
+            "en": "Save",
+            "jp": "保存"
+        }
+    },
+    "advanced": {
+        "advanced_submit": {
+            "en": "Submit",
+            "jp": "確認"
+        },
+        "success": {
+            "en": "Success",
+            "jp": "成功"
+        },
+        "download location set successfully": {
+            "en": "Download location set successfully",
+            "jp": "ダウンロード場所が正常に設定されました"
+        },
+        "ffmpeg location set successfully": {
+            "en": "FFmpeg location set successfully",
+            "jp": "FFmpegの場所が正常に設定されました"
+        },
+        "client secret json:": {
+            "en": "Client Secret JSON:",
+            "jp": "クライアントシークレットJSON："
+        },
+        "oauth token json:": {
+            "en": "OAuth Token JSON:",
+            "jp": "OAuthトークンJSON："
+        },
+        "authentication required for oauth": {
+            "en": "Authentication Required for OAuth",
+            "jp": "OAuthの認証が必要です"
+        },
+        "please visit the recently opened tab in your default browser and authenticate yourself.": {
+            "en": "Please visit the recently opened tab in your default browser and authenticate yourself.",
+            "jp": "デフォルトのブラウザで最近開いたタブを訪れ、自分自身を認証してください。"
+        },
+        "cancel": {
+            "en": "Cancel",
+            "jp": "キャンセル"
+        },
+        "verify": {
+            "en": "Verify",
+            "jp": "確認"
+        },
+        "an error occurred while trying to verify oauth2 flow for google cloud platform.": {
+            "en": "An error occurred while trying to verify OAuth2 flow for Google Cloud Platform.",
+            "jp": "Google Cloud PlatformのOAuth2フローを検証しようとしてエラーが発生しました。"
+        },
+        "authentication not finished yet. please try again.": {
+            "en": "Authentication not finished yet. Please try again.",
+            "jp": "認証がまだ完了していません。もう一度お試しください。"
+        },
+        "authentication success": {
+            "en": "Authentication Success",
+            "jp": "認証成功"
+        },
+        "you have successfully authenticated yourself.": {
+            "en": "You have successfully authenticated yourself.",
+            "jp": "認証が成功しました。"
+        },
+        "authentication cancelled": {
+            "en": "Authentication Cancelled",
+            "jp": "認証がキャンセルされました"
+        },
+        "you have cancelled the authentication process.": {
+            "en": "You have cancelled the authentication process.",
+            "jp": "認証プロセスをキャンセルしました。"
+        },
+        "an error occurred while trying to upload the json file for gdrive api.": {
+            "en": "An error occurred while trying to upload the JSON file for GDrive API.",
+            "jp": "GDrive APIのJSONファイルをアップロードしようとしてエラーが発生しました。"
+        },
+        "google cloud platform credentials json file uploaded successfully": {
+            "en": "Google Cloud Platform Credentials JSON File Uploaded Successfully",
+            "jp": "Google Cloud Platform認証情報JSONファイルが正常にアップロードされました"
+        },
+        "enter pixiv oauth code": {
+            "en": "Enter Pixiv OAuth Code",
+            "jp": "Pixiv OAuthコードを入力"
+        },
+        "pixiv code cannot be empty": {
+            "en": "Pixiv Code cannot be empty",
+            "jp": "Pixivコードは空にできません"
+        },
+        "pixiv oauth code verified successfully and your pixiv oauth refresh token has been saved successfully.": {
+            "en": "Pixiv OAuth Code verified successfully and your Pixiv OAuth Refresh Token has been saved successfully.",
+            "jp": "Pixiv OAuthコードが正常に検証され、Pixiv OAuthリフレッシュトークンが正常に保存されました。"
+        },
+        "google cloud platform credentials json": {
+            "en": "Google Cloud Platform Credentials JSON",
+            "jp": "Google Cloud Platform認証情報JSON"
+        },
+        "delete": {
+            "en": "Delete",
+            "jp": "削除"
+        },
+        "delete google cloud platform credentials json file?": {
+            "en": "Delete Google Cloud Platform Credentials JSON File?",
+            "jp": "Google Cloud Platform認証情報JSONファイルを削除しますか？"
+        },
+        "are you sure you want to delete the google cloud platform credentials json file?": {
+            "en": "Are you sure you want to delete the Google Cloud Platform Credentials JSON file?",
+            "jp": "Google Cloud Platform認証情報JSONファイルを削除してもよろしいですか？"
+        },
+        "yes": {
+            "en": "Yes",
+            "jp": "はい"
+        },
+        "google cloud platform credentials json file deleted successfully": {
+            "en": "Google Cloud Platform Credentials JSON File Deleted Successfully",
+            "jp": "Google Cloud Platform認証情報JSONファイルが正常に削除されました"
+        },
+        "settings saved successfully": {
+            "en": "Settings Saved Successfully",
+            "jp": "設定が正常に保存されました"
+        },
+        "upload google cloud platform json file": {
+            "en": "Upload Google Cloud Platform JSON File",
+            "jp": "Google Cloud Platform JSONファイルをアップロード"
+        },
+        "user agent:": {
+            "en": "User Agent:",
+            "jp": "ユーザーエージェント："
+        },
+        "only edit this when you know what you're doing as you can be flagged as a bot with the wrong user agent!": {
+            "en": "Only edit this when you know what you're doing as you can be flagged as a bot with the wrong user agent!",
+            "jp": "間違ったユーザーエージェントを使用すると、ボットとしてフラグが立てられる可能性があるため、何をしているかわかっているときだけ編集してください！"
+        },
+        "download location:": {
+            "en": "Download Location:",
+            "jp": "ダウンロード場所："
+        },
+        "browse": {
+            "en": "Browse",
+            "jp": "参照"
+        },
+        "gdrive credentials:": {
+            "en": "GDrive Credentials:",
+            "jp": "GDrive認証情報："
+        },
+        "view uploaded json": {
+            "en": "View Uploaded JSON",
+            "jp": "アップロードされたJSONを表示"
+        },
+        "if you're unsure how to obtain the relevant API key or credentials, please refer to the guide below.": {
+            "en": "If you're unsure how to obtain the relevant API key or credentials, please refer to the guide below.",
+            "jp": "関連するAPIキーまたは認証情報の取得方法がわからない場合は、以下のガイドを参照してください。"
+        },
+        "pixiv mobile oauth refresh token:": {
+            "en": "Pixiv Mobile OAuth Refresh Token:",
+            "jp": "PixivモバイルOAuthリフレッシュトークン："
+        },
+        "start oauth": {
+            "en": "Start OAuth",
+            "jp": "OAuthを開始"
+        },
+        "if you're unsure what to do after clicking \"start oauth\", please refer to the guide below.": {
+            "en": "If you're unsure what to do after clicking \"Start OAuth\", please refer to the guide below.",
+            "jp": "「OAuthを開始」をクリックした後の操作方法がわからない場合は、以下のガイドを参照してください。"
+        },
+        "ffmpeg location:": {
+            "en": "FFmpeg Location:",
+            "jp": "FFmpeg場所："
+        },
+        "this is used for pixiv ugoira downloads. if you're not downloading from pixiv, you can ignore this. Otherwise you can install it from the link below.": {
+            "en": "This is used for Pixiv Ugoira downloads. If you're not downloading from Pixiv, you can ignore this. Otherwise you can install it from the link below.",
+            "jp": "これはPixivうごイラのダウンロードに使用されます。Pixivからダウンロードしていない場合は、これを無視できます。それ以外の場合は、以下のリンクからインストールできます。"
+        },
+        "save all": {
+            "en": "Save All",
+            "jp": "すべて保存"
+        }
+    },
+    "tasks": {
+        "view tasks history...": {
+            "en": "View Tasks History...",
+            "jp": "タスク履歴を表示..."
+        },
+        "tasks history": {
+            "en": "Tasks History",
+            "jp": "タスク履歴"
+        },
+        "date/time": {
+            "en": "Date/Time",
+            "jp": "日付/時間"
+        },
+        "progress": {
+            "en": "Progress",
+            "jp": "進捗"
+        },
+        "nothing here!": {
+            "en": "Nothing here!",
+            "jp": "ここには何もありません！"
+        }
+    },
+    "inputs": {
+        "your inputs": {
+            "en": "Your Inputs",
+            "jp": "あなたの入力"
+        },
+        "input": {
+            "en": "Input",
+            "jp": "入力"
+        },
+        "parsed url (*may be inaccurate)": {
+            "en": "Parsed URL (*May be inaccurate)",
+            "jp": "解析されたURL（*不正確な場合があります）"
+        }
+    },
+    "errors": {
+        "errors": {
+            "en": "Errors",
+            "jp": "エラー"
+        }
+    },
+    "download_details": {
+        "minutes": {
+            "en": "minutes",
+            "jp": "分"
+        },
+        "seconds": {
+            "en": "seconds",
+            "jp": "秒"
+        },
+        "loading...": {
+            "en": "Loading...",
+            "jp": "読み込み中..."
+        },
+        "unknown eta...": {
+            "en": "Unknown ETA...",
+            "jp": "不明なETA..."
+        }
+    },
+    "actions": {
+        "view download details": {
+            "en": "View Download Details",
+            "jp": "ダウンロードの詳細を表示"
+        },
+        "view downloaded files": {
+            "en": "View Downloaded Files",
+            "jp": "ダウンロードされたファイルを表示"
+        },
+        "view errors": {
+            "en": "View Errors",
+            "jp": "エラーを表示"
+        },
+        "stop download": {
+            "en": "Stop Download",
+            "jp": "ダウンロードを停止"
+        },
+        "remove from queue": {
+            "en": "Remove from Queue",
+            "jp": "キューから削除"
+        },
+        "download details": {
+            "en": "Download Details",
+            "jp": "ダウンロードの詳細"
+        },
+        "filename": {
+            "en": "Filename",
+            "jp": "ファイル名"
+        },
+        "file size": {
+            "en": "File Size",
+            "jp": "ファイルサイズ"
+        },
+        "download speed": {
+            "en": "Download Speed",
+            "jp": "ダウンロード速度"
+        },
+        "progress/eta": {
+            "en": "Progress/ETA",
+            "jp": "進捗/ETA"
+        },
+        "nothing here!": {
+            "en": "Nothing here!",
+            "jp": "ここには何もありません！"
+        }
+    },
+    "navbar_btn": {
+        "home": {
+            "en": "Home",
+            "jp": "ホーム"
+        },
+        "downloads": {
+            "en": "Downloads",
+            "jp": "ダウンロードキュー"
+        }
+    },
+    "pagination": {
+        "no entries to show.": {
+            "en": "No entries to show.",
+            "jp": "表示するエントリーはありません。"
+        },
+        "showing": {
+            "en": "Showing",
+            "jp": "エントリーの表示:"
+        },
+        "to": {
+            "en": "to",
+            "jp": "から"
+        },
+        "of": {
+            "en": "of",
+            "jp": "までの"
+        },
+        "entries": {
+            "en": "entries",
+            "jp": "エントリー"
+        },
+        "previous": {
+            "en": "Previous",
+            "jp": "前"
+        },
+        "next": {
+            "en": "Next",
+            "jp": "次"
+        }
+    }
+}

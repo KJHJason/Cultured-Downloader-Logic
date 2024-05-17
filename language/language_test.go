@@ -23,11 +23,11 @@ func TestPrintAllKV(t *testing.T) {
 func TestTranslationLogic(t *testing.T) {
 	defer CloseDb()
 
-	if Translate("home", EN) != "Home" {
+	if Translate("home", EN, "") != "Home" {
 		t.Error("expected: Home")
 	}
 
-	if Translate("home", JP) != "ホーム" {
+	if Translate("home", JP, "") != "ホーム" {
 		t.Error("expected: ホーム")
 	}
 }
