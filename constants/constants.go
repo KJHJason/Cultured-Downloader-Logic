@@ -16,6 +16,8 @@ const (
 	MAIN_REPO_NAME        = "KJHJason/Cultured-Downloader"
 	CLI_REPO_NAME         = "KJHJason/Cultured-Downloader-CLI"
 	LOGIC_REPO_NAME       = "KJHJason/Cultured-Downloader-Logic"
+	EN                    = "en"
+	JP                    = "ja"
 
 	ERR_RECAPTCHA_STR = "recaptcha detected for the current session"
 

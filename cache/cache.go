@@ -43,11 +43,7 @@ func handleCloserErr(closer io.Closer) {
 }
 
 func (db *DbWrapper) Get(key string) []byte {
-	if CacheDb == nil {
-		return nil
-	}
-
-	value, closer, err := CacheDb.Db.Get([]byte(key))
+	value, closer, err := db.Db.Get([]byte(key))
 	if err != nil {
 		if err == pebble.ErrNotFound {
 			return nil
@@ -66,7 +62,7 @@ func (db *DbWrapper) Delete(key string) error {
 	return nil
 }
 
-func (db *DbWrapper) ResetDb() error {
+func (db *DbWrapper) ResetDbWithCond(checkCondToSkip func(key, val []byte) bool) error {
 	iter, err := db.Db.NewIter(nil)
 	if err != nil {
 		return err
@@ -75,7 +71,12 @@ func (db *DbWrapper) ResetDb() error {
 
 	batch := db.Db.NewBatch()
 	for iter.First(); iter.Valid(); iter.Next() {
-		err = batch.Delete(iter.Key(), pebble.Sync)
+		key, val := iter.Key(), iter.Value()
+		if checkCondToSkip != nil && !checkCondToSkip(key, val) {
+			continue
+		}
+
+		err = batch.Delete(key, pebble.Sync)
 		if err != nil {
 			batch.Close()
 			return err
@@ -88,6 +89,10 @@ func (db *DbWrapper) ResetDb() error {
 		return err
 	}
 	return nil
+}
+
+func (db *DbWrapper) ResetDb() error {
+	return db.ResetDbWithCond(nil)
 }
 
 func (db *DbWrapper) SetBatch(batch *pebble.Batch) error {

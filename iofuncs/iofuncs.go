@@ -10,6 +10,30 @@ import (
 	"strings"
 )
 
+const (
+	FILESIZE_TB = 1 << 40
+	FILESIZE_GB = 1 << 30
+	FILESIZE_MB = 1 << 20
+	FILESIZE_KB = 1 << 10
+)
+
+// Returns a string representation of the estimated file size
+// Note: uses bitwise operations to calculate the file size. Hence, the file size is an estimate.
+func FormatFileSize(fileSize int64) string {
+	if fileSize == -1 {
+		return "Unknown"
+	} else if fileSize > FILESIZE_TB {
+		return fmt.Sprintf("~%d TB", fileSize>>40)
+	} else if fileSize > FILESIZE_GB {
+		return fmt.Sprintf("~%d GB", fileSize>>30)
+	} else if fileSize > FILESIZE_MB {
+		return fmt.Sprintf("~%d MB", fileSize>>20)
+	} else if fileSize > FILESIZE_KB {
+		return fmt.Sprintf("~%d KB", fileSize>>10)
+	}
+	return fmt.Sprintf("~%d B", fileSize)
+}
+
 // checks if a file or directory exists
 func PathExists(filepath string) bool {
 	_, err := os.Stat(filepath)

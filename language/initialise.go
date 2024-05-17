@@ -2,11 +2,12 @@ package language
 
 import (
 	"github.com/cockroachdb/pebble"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 )
 
 const (
-	EN = "en"
-	JP = "ja"
+	EN = constants.EN
+	JP = constants.JP
 )
 
 // example of the Key-Value pairs in the database
@@ -20,24 +21,28 @@ func parseKey(key, lang string) string {
 	return key + "_" + lang
 }
 
-func addData(key, value, lang string) {
+type dataInitWrapper struct {
+	batch *pebble.Batch
+}
+
+func (d *dataInitWrapper) addData(key, value, lang string) {
 	key = parseKey(key, lang)
-	if err := langDb.Db.Set([]byte(key), []byte(value), pebble.Sync); err != nil {
+	if err := d.batch.Set([]byte(key), []byte(value), pebble.Sync); err != nil {
 		panic("failed to set key: " + err.Error())
 	}
 }
 
 func initialiseDbData() {
-	batch := langDb.Db.NewBatch()
-	addData("test", "test", EN)
+	db := &dataInitWrapper{ batch: langDb.Db.NewBatch() }
+	db.addData("test", "test", EN)
 
-	initForDownloadQueue()
-	initForGeneral()
-	initForHomePage()
-	initForProgramInfo()
-	initForPagination()
+	initForDownloadQueue(db)
+	initForGeneral(db)
+	initForHomePage(db)
+	initForProgramInfo(db)
+	initForPagination(db)
 
-	if err := langDb.SetBatch(batch); err != nil {
+	if err := langDb.SetBatch(db.batch); err != nil {
 		panic("failed to apply batch: " + err.Error())
 	}
 }

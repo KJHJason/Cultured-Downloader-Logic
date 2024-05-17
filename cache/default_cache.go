@@ -15,9 +15,14 @@ var (
 	CacheDb      *DbWrapper = nil
 )
 
-func InitCache(path string) error {
+func InitCacheDb(path string) error {
 	if path == "" {
 		path = DEFAULT_PATH
+	}
+
+	// if the cache db is already initialised, return
+	if CacheDb != nil {
+		return nil
 	}
 
 	db, err := NewDb(path)
@@ -30,7 +35,7 @@ func InitCache(path string) error {
 
 func MoveDb(oldPath, newPath string) error {
 	if CacheDb != nil {
-		if err := CacheDb.Close(); err != nil {
+		if err := CloseCacheDb(); err != nil {
 			return err
 		}
 	}
@@ -44,7 +49,19 @@ func MoveDb(oldPath, newPath string) error {
 	if err := os.RemoveAll(oldPath); err != nil {
 		logger.MainLogger.Errorf("Failed to remove old cache directory: %s", err)
 	}
-	return InitCache(newPath)
+	return InitCacheDb(newPath)
+}
+
+func CloseCacheDb() error {
+	if CacheDb == nil {
+		return nil
+	}
+
+	if err := CacheDb.Close(); err != nil {
+		return err
+	}
+	CacheDb = nil
+	return nil
 }
 
 func Get(key string) []byte {
