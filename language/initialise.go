@@ -53,12 +53,12 @@ func InitLangDb(ctx context.Context) {
 	var err error
 	langDb, err = cache.NewDb(langDbPath)
 	if err != nil {
-		panic("failed to open language db: " + err.Error())
+		logger.MainLogger.Fatalf("failed to open language db: %v", err)
 	}
 
 	if DEBUG || needReseedDb() {
 		if err := langDb.ResetDb(ctx); err != nil {
-			panic("failed to reset language db: " + err.Error())
+			logger.MainLogger.Fatalf("failed to reset language db: %v", err)
 		}
 
 		initialiseDbData()
@@ -81,12 +81,12 @@ func (d *dataInitWrapper) addTranslations(key string, translations translations)
 
 	enKey := parseKey(key, EN)
 	if err := d.batch.Set([]byte(enKey), []byte(translations.En), pebble.Sync); err != nil {
-		panic("failed to set key: " + err.Error())
+		logger.MainLogger.Fatalf("failed to set key (EN): %v", err)
 	}
 
 	jpKey := parseKey(key, JP)
 	if err := d.batch.Set([]byte(jpKey), []byte(translations.Jp), pebble.Sync); err != nil {
-		panic("failed to set key: " + err.Error())
+		logger.MainLogger.Fatalf("failed to set key (JP): %v", err)
 	}
 }
 
@@ -99,7 +99,7 @@ func initialiseDbData() {
 	var translations map[string]map[string]translations
 	err := json.Unmarshal(translationsJson, &translations)
 	if err != nil {
-		panic("failed to unmarshal translations: " + err.Error())
+		logger.MainLogger.Fatalf("failed to unmarshal translations: %v", err)
 	}
 
 	for _, section := range translations {
@@ -109,6 +109,6 @@ func initialiseDbData() {
 	}
 
 	if err := langDb.SetBatch(db.batch); err != nil {
-		panic("failed to apply batch: " + err.Error())
+		logger.MainLogger.Fatalf("failed to apply translations batch: %v", err)
 	}
 }
