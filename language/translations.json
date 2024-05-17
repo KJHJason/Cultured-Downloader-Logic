@@ -1,4 +1,66 @@
 {
+    "app": {
+        "enter your master password": {
+            "en": "Enter your master password",
+            "jp": "マスターパスワードを入力してください"
+        },
+        "remove": {
+            "en": "Remove",
+            "jp": "削除"
+        },
+        "submit": {
+            "en": "Submit",
+            "jp": "確認"
+        },
+        "password cannot be empty": {
+            "en": "Password cannot be empty",
+            "jp": "パスワードは空にできません"
+        },
+        "incorrect password": {
+            "en": "Incorrect password",
+            "jp": "パスワードが間違っています"
+        },
+        "correct password": {
+            "en": "Correct password",
+            "jp": "パスワードが正しい"
+        },
+        "you have entered the correct password.": {
+            "en": "You have entered the correct password.",
+            "jp": "正しいパスワードを入力しました。"
+        },
+        "remove master password?": {
+            "en": "Remove Master Password?",
+            "jp": "マスターパスワードを削除しますか？"
+        },
+        "all your sensitive data like your session cookies will be exposed! this is not recommended unless you are using your own device.": {
+            "en": "All your sensitive data like your session cookies will be exposed! This is not recommended unless you are using your own device.",
+            "jp": "セッションクッキーなどのすべての機密データが公開されます！これは、自分のデバイスを使用していない限りお勧めしません。"
+        },
+        "back": {
+            "en": "Back",
+            "jp": "戻る"
+        },
+        "master password removed": {
+            "en": "Master password removed",
+            "jp": "マスターパスワードが削除されました"
+        },
+        "you have removed your master password and all your saved encrypted data has been decrypted.": {
+            "en": "You have removed your master password and all your saved encrypted data has been decrypted.",
+            "jp": "マスターパスワードが削除され、保存されているすべての暗号化されたデータが復号化されました。"
+        },
+        "not implemented yet": {
+            "en": "Not implemented yet",
+            "jp": "まだ実装されていません"
+        },
+        "unexpected error": {
+            "en": "Unexpected error",
+            "jp": "予期しないエラー"
+        },
+        "unknown error": {
+            "en": "Unknown error",
+            "jp": "不明なエラー"
+        }
+    },
     "settings": {
         "general": {
             "en": "General",
@@ -558,17 +620,17 @@
             "en": "Remove Master Password?",
             "jp": "マスターパスワードを削除しますか？"
         },
-        "all your saved encrypted config data will be lost.": {
-            "en": "All your saved encrypted config data will be lost.",
-            "jp": "保存されたすべての暗号化された設定データが失われます。"
+        "all your sensitive data like your session cookies will be exposed! this is not recommended unless you are using your own device.": {
+            "en": "All your sensitive data like your session cookies will be exposed! This is not recommended unless you are using your own device.",
+            "jp": "セッションクッキーなどのすべての機密データが公開されます！これは、自分のデバイスを使用していない限りお勧めしません。"
         },
         "master password removed": {
             "en": "Master password removed",
             "jp": "マスターパスワードが削除されました"
         },
-        "you have removed your master password and all your saved encrypted config data have been removed.": {
-            "en": "You have removed your master password and all your saved encrypted config data have been removed.",
-            "jp": "マスターパスワードが削除され、保存されたすべての暗号化された設定データが削除されました。"
+        "you have removed your master password and all your saved encrypted data has been decrypted.": {
+            "en": "You have removed your master password and all your saved encrypted data has been decrypted.",
+            "jp": "マスターパスワードが削除され、保存されているすべての暗号化されたデータが復号化されました。"
         },
         "reset image": {
             "en": "Reset Image",
