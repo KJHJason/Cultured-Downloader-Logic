@@ -15,7 +15,7 @@ require (
 	github.com/otiai10/copy v1.14.0
 	github.com/quic-go/quic-go v0.43.1
 	golang.org/x/oauth2 v0.20.0
-	google.golang.org/api v0.180.0
+	google.golang.org/api v0.181.0
 )
 
 require (
@@ -90,6 +90,7 @@ require (
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/tools v0.21.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240506185236-b8a5c65736ae // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240515191416-fc5f0ca64291 // indirect
 	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
