@@ -67,7 +67,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 		var cacheKey string
 		if dlOptions.UseCacheDb {
 			cacheKey = fmt.Sprintf("%s?postId=%s", url, postId)
-			if cache.PostCacheExists(cacheKey) {
+			if cache.PostCacheExists(cacheKey, constants.PIXIV_FANBOX) {
 				progress.Increment()
 				continue
 			}

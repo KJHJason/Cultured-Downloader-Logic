@@ -1,6 +1,7 @@
 package language
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"path/filepath"
@@ -46,7 +47,7 @@ func needReseedDb() bool {
 	return DEBUG || CURRENT_VERSION > version
 }
 
-func InitLangDb() {
+func InitLangDb(ctx context.Context) {
 	langDbPath := filepath.Join(iofuncs.APP_PATH, "language-db")
 
 	var err error
@@ -56,7 +57,7 @@ func InitLangDb() {
 	}
 
 	if DEBUG || needReseedDb() {
-		if err := langDb.ResetDb(); err != nil {
+		if err := langDb.ResetDb(ctx); err != nil {
 			panic("failed to reset language db: " + err.Error())
 		}
 

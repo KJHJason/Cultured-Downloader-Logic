@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"context"
+	"strings"
 	"time"
 )
 
@@ -32,7 +34,31 @@ func parseKey(key, category string) string {
 	}
 }
 
-func PostCacheExists(key string) bool {
+func separatePostKey(keyBytes []byte) (url string, platform string) {
+	key := string(keyBytes)
+
+	// key is in the format <url>_<platform>_post
+	if !strings.HasSuffix(key, POST) {
+		return "", ""
+	}
+
+	// remove the _post suffix
+	key = key[:len(key)-len(POST)]
+
+	// split the key into <url> and <platform>
+	splitKey := strings.Split(key, "_")
+	if len(splitKey) < 2 {
+		// shouldn't happen but just in case
+		return "", ""
+	}
+
+	url = strings.Join(splitKey[:len(splitKey)-1], "_")
+	platform = splitKey[len(splitKey)-1]
+	return url, platform
+}
+
+func PostCacheExists(key, platform string) bool {
+	key += "_" + platform
 	return len(Get(parseKey(key, POST))) > 0
 }
 
@@ -64,4 +90,55 @@ func CacheUgoira(key string) {
 
 func CacheKemonoCreatorName(key string, creatorName string) {
 	SetString(parseKey(key, KEMONO_CREATOR), creatorName)
+}
+
+type PostCache struct {
+	Url      string
+	Platform string
+	Datetime time.Time
+	CacheKey string
+}
+
+func GetAllCacheForPlatform(ctx context.Context, platform string) []*PostCache {
+	keys := CacheDb.GetCacheKeyValue(ctx, func(key, _ []byte) bool {
+		_, keyPlatform := separatePostKey(key)
+		return keyPlatform == platform
+	})
+
+	caches := make([]*PostCache, 0, len(keys))
+	for i, key := range keys {
+		url, _ := separatePostKey(key.Key)
+		caches[i] = &PostCache{
+			Url:      url,
+			Platform: platform,
+			Datetime: ParseBytesToDateTime(key.Val),
+			CacheKey: key.GetKey(),
+		}
+	}
+	return caches
+}
+
+func DeletePostCacheForPlatform(ctx context.Context, platform string) error {
+	return CacheDb.ResetDbWithCond(ctx, func(key, _ []byte) bool {
+		_, keyPlatform := separatePostKey(key)
+		return keyPlatform != platform
+	})
+}
+
+func DeleteGdriveCache(ctx context.Context) error {
+	return CacheDb.ResetDbWithCond(ctx, func(key, _ []byte) bool {
+		return strings.HasSuffix(string(key), GDRIVE)
+	})
+}
+
+func DeleteUgoiraCache(ctx context.Context) error {
+	return CacheDb.ResetDbWithCond(ctx, func(key, _ []byte) bool {
+		return strings.HasSuffix(string(key), UGOIRA)
+	})
+}
+
+func DeleteKemonoCreatorCache(ctx context.Context) error {
+	return CacheDb.ResetDbWithCond(ctx, func(key, _ []byte) bool {
+		return strings.HasSuffix(string(key), KEMONO_CREATOR)
+	})
 }

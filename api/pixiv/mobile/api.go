@@ -85,7 +85,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 	if pixiv.useCacheDb {
 		cacheKey = fmt.Sprintf("%s?illust_id=%s", constants.PIXIV_MOBILE_ARTWORK_URL, artworkId)
 		ugoiraCacheKey = parseUgoiraCacheKey(artworkId)
-		if cache.PostCacheExists(cacheKey) || cache.UgoiraCacheExists(ugoiraCacheKey) {
+		if cache.PostCacheExists(cacheKey, constants.PIXIV) || cache.UgoiraCacheExists(ugoiraCacheKey) {
 			// either the artwork or the ugoira is already in the cache
 			return nil, nil, nil
 		}

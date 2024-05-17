@@ -121,7 +121,7 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 		post.CreatorId,
 		post.PostId,
 	)
-	if dlOptions.UseCacheDb && cache.PostCacheExists(url) {
+	if dlOptions.UseCacheDb && cache.PostCacheExists(url, constants.KEMONO) {
 		return nil, nil, nil
 	}
 

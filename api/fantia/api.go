@@ -111,7 +111,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 	var cacheKey string
 	if dlOptions.UseCacheDb {
 		cacheKey = constants.FANTIA_POST_API_URL + postId
-		if cache.PostCacheExists(cacheKey) {
+		if cache.PostCacheExists(cacheKey, constants.FANTIA) {
 			return false, nil, nil
 		}
 	}

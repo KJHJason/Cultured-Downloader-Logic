@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -61,8 +62,48 @@ func (db *DbWrapper) Delete(key string) error {
 	return nil
 }
 
-func (db *DbWrapper) ResetDbWithCond(checkCondToSkip func(key, val []byte) bool) error {
-	iter, err := db.Db.NewIter(nil)
+type CacheKeyValue struct {
+	Key []byte
+	Val []byte
+}
+
+func (ckv CacheKeyValue) GetKey() string {
+	return string(ckv.Key)
+}
+
+func (ckv CacheKeyValue) GetVal() []byte {
+	return ckv.Val
+}
+
+func (db *DbWrapper) GetCacheKeyValue(ctx context.Context, condition func(key, val []byte) bool) []*CacheKeyValue {
+	childCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	iter, err := db.Db.NewIterWithContext(childCtx, nil)
+	if err != nil {
+		handleErr(err, "Failed to create iterator")
+	}
+	defer iter.Close()
+
+	cacheKeyValues := make([]*CacheKeyValue, 0)
+	for iter.First(); iter.Valid(); iter.Next() {
+		key, val := iter.Key(), iter.Value()
+		if condition == nil || condition(key, val) {
+			cacheKeyValues = append(cacheKeyValues, &CacheKeyValue{Key: key, Val: val})
+		}
+	}
+	return cacheKeyValues
+}
+
+func (db *DbWrapper) GetAllCacheKeys(ctx context.Context) []*CacheKeyValue {
+	return db.GetCacheKeyValue(ctx, nil)
+}
+
+func (db *DbWrapper) ResetDbWithCond(ctx context.Context, checkCondToSkip func(key, val []byte) bool) error {
+	childCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	iter, err := db.Db.NewIterWithContext(childCtx, nil)
 	if err != nil {
 		return err
 	}
@@ -71,7 +112,7 @@ func (db *DbWrapper) ResetDbWithCond(checkCondToSkip func(key, val []byte) bool)
 	batch := db.Db.NewBatch()
 	for iter.First(); iter.Valid(); iter.Next() {
 		key, val := iter.Key(), iter.Value()
-		if checkCondToSkip != nil && !checkCondToSkip(key, val) {
+		if checkCondToSkip != nil && checkCondToSkip(key, val) {
 			continue
 		}
 
@@ -90,8 +131,8 @@ func (db *DbWrapper) ResetDbWithCond(checkCondToSkip func(key, val []byte) bool)
 	return nil
 }
 
-func (db *DbWrapper) ResetDb() error {
-	return db.ResetDbWithCond(nil)
+func (db *DbWrapper) ResetDb(ctx context.Context) error {
+	return db.ResetDbWithCond(ctx, nil)
 }
 
 func (db *DbWrapper) SetBatch(batch *pebble.Batch) error {
@@ -131,7 +172,7 @@ func (db *DbWrapper) SetInt(key string, value int) error {
 }
 
 func (db *DbWrapper) SetTime(key string, value time.Time) error {
-	return db.SetInt64(key, value.UTC().Unix())
+	return db.Set(key, ParseDateTimeToBytes(value))
 }
 
 func (db *DbWrapper) GetJson(key string, v any) error {
@@ -163,5 +204,9 @@ func (db *DbWrapper) GetInt(key string) int {
 }
 
 func (db *DbWrapper) GetTime(key string) time.Time {
-	return time.Unix(db.GetInt64(key), 0)
+	value := db.Get(key)
+	if value == nil {
+		return time.Time{}
+	}
+	return ParseBytesToDateTime(value)
 }
