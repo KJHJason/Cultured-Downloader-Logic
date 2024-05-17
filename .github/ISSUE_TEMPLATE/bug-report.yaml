@@ -11,15 +11,11 @@ body:
       value: |
         Thanks for taking the time to fill out this bug report! 
 
-  - type: dropdown
-    id: os
+  - type: input
+    id: operating_system
     attributes:
-      label: Which Operating System are you running the program on?
-      multiple: true
-      options:
-        - Windows
-        - Linux
-        - MacOS
+      label: Operating System
+      description: What operating system are you using? (e.g. Windows 10, Ubuntu 20.04, etc.)
     validations:
       required: true
 
