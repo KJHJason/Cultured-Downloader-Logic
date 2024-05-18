@@ -193,6 +193,17 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 		)
 	}
 
+	if k.Configs == nil {
+		return fmt.Errorf(
+			"kemono error %d, configs is nil",
+			cdlerrors.DEV_ERROR,
+		)
+	}
+
+	if k.UseCacheDb && k.Configs.OverwriteFiles {
+		k.UseCacheDb = false
+	}
+
 	if dlDirPath, err := api.ValidateDlDirPath(k.BaseDownloadDirPath, constants.KEMONO_TITLE); err != nil {
 		return err
 	} else {

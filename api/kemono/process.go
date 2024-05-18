@@ -21,16 +21,16 @@ func getInlineImages(content, postFolderPath string) []*httpfuncs.ToDownload {
 		return nil
 	}
 
-	toDownload := make([]*httpfuncs.ToDownload, 0, len(matches))
-	for _, match := range matches {
+	toDownload := make([]*httpfuncs.ToDownload, len(matches))
+	for idx, match := range matches {
 		imgSrc := match[constants.KEMONO_IMG_SRC_TAG_REGEX_IDX]
 		if imgSrc == "" {
 			continue
 		}
-		toDownload = append(toDownload, &httpfuncs.ToDownload{
+		toDownload[idx] = &httpfuncs.ToDownload{
 			Url:      constants.KEMONO_URL + imgSrc,
 			FilePath: filepath.Join(postFolderPath, constants.IMAGES_FOLDER, httpfuncs.GetLastPartOfUrl(imgSrc)),
-		})
+		}
 	}
 	return toDownload
 }

@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	DEFAULT_PATH            = filepath.Join(iofuncs.APP_PATH, "cache")
-	CacheDb      *DbWrapper = nil
+	DEFAULT_PATH = filepath.Join(iofuncs.APP_PATH, "cache")
+	CacheDb      *DbWrapper
 )
 
 func InitCacheDb(path string) error {

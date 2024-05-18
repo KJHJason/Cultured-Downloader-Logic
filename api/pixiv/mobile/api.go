@@ -79,13 +79,13 @@ func (pixiv *PixivMobile) getUgoiraMetadata(cacheKey, illustId, dlFilePath strin
 
 // Query Pixiv's API (mobile) to get the JSON of an artwork ID
 func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
-	var cacheKey string
+	var artworkCacheKey string
 	var ugoiraCacheKey string
 	params := map[string]string{"illust_id": artworkId}
 	if pixiv.useCacheDb {
-		cacheKey = fmt.Sprintf("%s?illust_id=%s", constants.PIXIV_MOBILE_ARTWORK_URL, artworkId)
-		ugoiraCacheKey = parseUgoiraCacheKey(artworkId)
-		if cache.PostCacheExists(cacheKey, constants.PIXIV) || cache.UgoiraCacheExists(ugoiraCacheKey) {
+		artworkCacheKey = fmt.Sprintf("%s?illust_id=%s", constants.PIXIV_MOBILE_ARTWORK_URL, artworkId)
+		ugoiraCacheKey = getUgoiraUrl(artworkId)
+		if cache.PostCacheExists(artworkCacheKey, constants.PIXIV) || cache.UgoiraCacheExists(ugoiraCacheKey) {
 			// either the artwork or the ugoira is already in the cache
 			return nil, nil, nil
 		}
@@ -118,8 +118,9 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 
 	artworkDetails, ugoiraToDl, err := pixiv.processArtworkJson(ugoiraCacheKey, artworkJson.Illust)
 	if pixiv.useCacheDb {
+		artworkCacheKey = cache.ParsePostKey(artworkCacheKey, constants.PIXIV)
 		for _, artwork := range artworkDetails {
-			artwork.CacheKey = cacheKey
+			artwork.CacheKey = artworkCacheKey
 		}
 	}
 	return artworkDetails, ugoiraToDl, err

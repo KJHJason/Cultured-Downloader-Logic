@@ -101,7 +101,7 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 	var cacheKey string
 	url := getArtworkDetailsApi(artworkId)
 	if dlOptions.UseCacheDb {
-		cacheKey = fmt.Sprintf("pixiv_%s", artworkId)
+		cacheKey = fmt.Sprintf("https://www.pixiv.net/artworks/%s", artworkId)
 		if cache.PostCacheExists(cacheKey, constants.PIXIV) || cache.UgoiraCacheExists(cacheKey) {
 			// either the artwork or the ugoira cache exists
 			return nil, nil, nil

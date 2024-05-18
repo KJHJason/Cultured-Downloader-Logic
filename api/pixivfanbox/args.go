@@ -125,6 +125,17 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 		)
 	}
 
+	if pf.Configs == nil {
+		return fmt.Errorf(
+			"pixiv fanbox error %d, configs is nil",
+			cdlerrors.DEV_ERROR,
+		)
+	}
+
+	if pf.UseCacheDb && pf.Configs.OverwriteFiles {
+		pf.UseCacheDb = false
+	}
+
 	if dlDirPath, err := api.ValidateDlDirPath(pf.BaseDownloadDirPath, constants.PIXIV_FANBOX_TITLE); err != nil {
 		return err
 	} else {

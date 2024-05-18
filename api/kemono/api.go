@@ -121,8 +121,12 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 		post.CreatorId,
 		post.PostId,
 	)
-	if dlOptions.UseCacheDb && cache.PostCacheExists(url, constants.KEMONO) {
-		return nil, nil, nil
+	var cacheKey string
+	if dlOptions.UseCacheDb {
+		cacheKey = cache.ParsePostKey(url, constants.KEMONO)
+		if cache.PostCacheExists(url, constants.KEMONO) {
+			return nil, nil, nil
+		}
 	}
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)
@@ -152,7 +156,7 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 	postsToDl, gdriveLinks := processMultipleJson(KemonoJson{&resJson}, dlOptions)
 	if dlOptions.UseCacheDb {
 		for _, post := range postsToDl {
-			post.CacheKey = url
+			post.CacheKey = cacheKey
 		}
 	}
 	return postsToDl, gdriveLinks, nil

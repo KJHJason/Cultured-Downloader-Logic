@@ -6,6 +6,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
@@ -89,6 +90,7 @@ func processArtworkJson(cacheKey string, res *http.Response, artworkType int64, 
 
 	var urlsToDownload []*httpfuncs.ToDownload
 	for _, artworkUrl := range artworkUrls.Body {
+		cacheKey = cache.ParsePostKey(cacheKey, constants.PIXIV)
 		urlsToDownload = append(urlsToDownload, &httpfuncs.ToDownload{
 			CacheKey: cacheKey,
 			Url:      artworkUrl.Urls.Original,

@@ -275,6 +275,14 @@
         "error": {
             "en": "Error",
             "jp": "エラー"
+        },
+        "saving...": {
+            "en": "Saving...",
+            "jp": "保存中..."
+        },
+        "please wait a moment": {
+            "en": "Please wait a moment",
+            "jp": "しばらくお待ちください"
         }
     },
     "program_info": {
@@ -675,9 +683,41 @@
         "save": {
             "en": "Save",
             "jp": "保存"
+        },
+        "cache database location has been updated and will take effect after a restarting the application.": {
+            "en": "Cache database location has been updated and will take effect after a restarting the application.",
+            "jp": "キャッシュデータベースの場所が更新され、アプリケーションを再起動した後に有効になります。"
+        },
+        "additionally, cache database location has been updated and will take effect after a restarting the application.": {
+            "en": "Additionally, cache database location has been updated and will take effect after a restarting the application.",
+            "jp": "さらに、キャッシュデータベースの場所が更新され、アプリケーションを再起動した後に有効になります。"
+        },
+        "an error occurred while selecting the new cache database location.": {
+            "en": "An error occurred while selecting the new cache database location.",
+            "jp": "新しいキャッシュデータベースの場所を選択する際にエラーが発生しました。"
+        },
+        "cache database location:": {
+            "en": "Cache Database Location:",
+            "jp": "キャッシュデータベースの場所："
+        },
+        "view cache": {
+            "en": "View Cache",
+            "jp": "キャッシュを表示"
+        },
+        "browse": {
+            "en": "Browse",
+            "jp": "参照"
         }
     },
     "advanced": {
+        "saving...": {
+            "en": "Saving...",
+            "jp": "保存中..."
+        },
+        "please wait a moment.": {
+            "en": "Please wait a moment.",
+            "jp": "しばらくお待ちください。"
+        },
         "advanced_submit": {
             "en": "Submit",
             "jp": "確認"
@@ -991,6 +1031,162 @@
         "next": {
             "en": "Next",
             "jp": "次"
+        }
+    },
+    "cache_details": {
+        "cache details": {
+            "en": "Cache Details",
+            "jp": "キャッシュの詳細"
+        },
+        "post cache": {
+            "en": "Post Cache",
+            "jp": "投稿キャッシュ"
+        },
+        "gdrive cache": {
+            "en": "GDrive Cache",
+            "jp": "GDriveキャッシュ"
+        },
+        "kemono creator cache": {
+            "en": "Kemono Creator Cache",
+            "jp": "けものクリエイターキャッシュ"
+        },
+        "pixiv ugoira cache": {
+            "en": "Pixiv Ugoira Cache",
+            "jp": "Pixivうごイラキャッシュ"
+        }
+    },
+    "cache_base": {
+        "this may take a while. please wait!": {
+            "en": "This may take a while. Please wait!",
+            "jp": "しばらくお待ちください！"
+        },
+        "actions": {
+            "en": "Actions",
+            "jp": "アクション"
+        },
+        "nothing here!": {
+            "en": "Nothing here!",
+            "jp": "ここには何もありません！"
+        }
+    },
+    "ugoira_cache": {
+        "deleting ugoira cache...": {
+            "en": "Deleting Ugoira Cache...",
+            "jp": "うごイラキャッシュを削除しています..."
+        },
+        "ugoira cache cleared!": {
+            "en": "Ugoira Cache Cleared!",
+            "jp": "うごイラキャッシュがクリアされました！"
+        },
+        "ugoira cache has been cleared!": {
+            "en": "Ugoira Cache has been cleared!",
+            "jp": "うごイラキャッシュがクリアされました！"
+        },
+        "delete all ugoira cache": {
+            "en": "Delete All Ugoira Cache",
+            "jp": "すべてのうごイラキャッシュを削除"
+        }
+    },
+    "post_cache": {
+        "deleting post cache...": {
+            "en": "Deleting Post Cache...",
+            "jp": "投稿キャッシュを削除しています..."
+        },
+        "this may take a while. please wait!": {
+            "en": "This may take a while. Please wait!",
+            "jp": "しばらくお待ちください！"
+        },
+        "post cache cleared!": {
+            "en": "Post Cache Cleared!",
+            "jp": "投稿キャッシュがクリアされました！"
+        },
+        "post cache has been cleared!": {
+            "en": "Post Cache has been cleared!",
+            "jp": "投稿キャッシュがクリアされました！"
+        },
+        "filter_comma": {
+            "en": ", ",
+            "jp": "、"
+        },
+        "filter_none": {
+            "en": "None",
+            "jp": "なし"
+        },
+        "showing cache_front": {
+            "en": "Showing cache for ",
+            "jp": ""
+        },
+        "showing cache_back": {
+            "en": ".",
+            "jp": "のキャッシュを表示"
+        },
+        "filter": {
+            "en": "Filter",
+            "jp": "フィルター"
+        },
+        "platform": {
+            "en": "Platform",
+            "jp": "ウェブサイト"
+        },
+        "url": {
+            "en": "URL",
+            "jp": "URL"
+        },
+        "date/time": {
+            "en": "Date/Time",
+            "jp": "日付/時間"
+        },
+        "actions": {
+            "en": "Actions",
+            "jp": "アクション"
+        },
+        "nothing here!": {
+            "en": "Nothing here!",
+            "jp": "ここには何もありません！"
+        },
+        "clear all post cache": {
+            "en": "Clear All Post Cache",
+            "jp": "すべての投稿キャッシュをクリア"
+        }
+    },
+    "kemono_cache": {
+        "creator name": {
+            "en": "Creator Name",
+            "jp": "クリエイター名"
+        },
+        "deleting creator name cache...": {
+            "en": "Deleting Creator Name Cache...",
+            "jp": "クリエイター名キャッシュを削除しています..."
+        },
+        "creator name cache cleared!": {
+            "en": "Creator Name Cache Cleared!",
+            "jp": "クリエイター名キャッシュがクリアされました！"
+        },
+        "creator name cache has been cleared!": {
+            "en": "Creator Name Cache has been cleared!",
+            "jp": "クリエイター名キャッシュがクリアされました！"
+        },
+        "delete all creator name cache": {
+            "en": "Delete All Creator Name Cache",
+            "jp": "すべてのクリエイター名キャッシュを削除"
+        }
+    },
+    "gdrive_cache": {
+        "deleting gdrive cache...": {
+            "en": "Deleting GDrive Cache...",
+            "jp": "GDriveキャッシュを削除しています..."
+        },
+        "gdrive cache cleared!": {
+            "en": "GDrive Cache Cleared!",
+            "jp": "GDriveキャッシュがクリアされました！"
+        },
+        "gdrive cache has been cleared!": {
+            "en": "GDrive Cache has been cleared!",
+            "jp": "GDriveキャッシュがクリアされました！"
+        },
+        "delete all gdrive cache": {
+            "en": "Delete All GDrive Cache",
+            "jp": "すべてのGDriveキャッシュを削除"
         }
     }
 }

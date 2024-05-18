@@ -397,7 +397,6 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 				wg.Done()
 				<-queue
 			}()
-			hasCacheKey := cacheKey != ""
 			err := downloadUrl(
 				filePath,
 				queue,
@@ -421,7 +420,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 			if hasErr {
 				errChan <- err
 			}
-			if hasCacheKey {
+			if cacheKey != "" {
 				cacheChan <- &cacheEl{
 					hasErr:   hasErr,
 					cacheKey: cacheKey,
@@ -458,8 +457,8 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 			hasSeenCacheKey[cacheEl.cacheKey] = !cacheEl.hasErr
 		}
 
-		for cacheKey, hasErr := range hasSeenCacheKey {
-			if hasErr {
+		for cacheKey, valid := range hasSeenCacheKey {
+			if !valid {
 				continue
 			}
 			cache.CachePost(cacheKey)

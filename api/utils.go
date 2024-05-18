@@ -14,31 +14,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
-// Returns a readable format of the website name for the user
-//
-// Will panic if the site string doesn't match one of its cases.
-func GetReadableSiteStr(site string) string {
-	switch site {
-	case constants.FANTIA:
-		return constants.FANTIA_TITLE
-	case constants.PIXIV_FANBOX:
-		return constants.PIXIV_FANBOX_TITLE
-	case constants.PIXIV:
-		return constants.PIXIV_TITLE
-	case constants.KEMONO:
-		return constants.KEMONO_TITLE
-	default:
-		// panic since this is a dev error
-		panic(
-			fmt.Errorf(
-				"error %d: invalid website, %q, in GetReadableSiteStr",
-				cdlerrors.DEV_ERROR,
-				site,
-			),
-		)
-	}
-}
-
 func ValidateDlDirPath(dlDirPath, targetDirName string) (validatedDirPath string, err error) {
 	if dlDirPath == "" {
 		return filepath.Join(iofuncs.DOWNLOAD_PATH, targetDirName), nil

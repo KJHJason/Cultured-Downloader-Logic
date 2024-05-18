@@ -200,6 +200,17 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		)
 	}
 
+	if f.Configs == nil {
+		return fmt.Errorf(
+			"fantia error %d, configs is nil",
+			cdlerrors.DEV_ERROR,
+		)
+	}
+
+	if f.UseCacheDb && f.Configs.OverwriteFiles {
+		f.UseCacheDb = false
+	}
+
 	if dlDirPath, err := api.ValidateDlDirPath(f.BaseDownloadDirPath, constants.FANTIA_TITLE); err != nil {
 		return err
 	} else {

@@ -16,6 +16,12 @@ type DbWrapper struct {
 	Db *pebble.DB
 }
 
+// HandleErr logs the error and exits the program
+// Override this function if you want to handle errors differently
+var HandleErr = func(err error, logMsg string) {
+	logger.MainLogger.Fatalf("%s: %s", logMsg, err)
+}
+
 func (db *DbWrapper) Close() error {
 	return db.Db.Close()
 }
@@ -29,17 +35,13 @@ func NewDb(path string) (*DbWrapper, error) {
 	return &DbWrapper{Db: db}, nil
 }
 
-func handleErr(err error, logMsg string) {
-	logger.MainLogger.Fatalf("%s: %s", logMsg, err)
-}
-
 func handleCloserErr(closer io.Closer) {
 	err := closer.Close()
 	if err == nil {
 		return
 	}
 	// Shouldn't happen but log it and exit(1) to avoid memory leaks
-	handleErr(err, "Failed to close cache value")
+	HandleErr(err, "Failed to close cache value")
 }
 
 func (db *DbWrapper) Get(key string) []byte {
@@ -48,7 +50,7 @@ func (db *DbWrapper) Get(key string) []byte {
 		if err == pebble.ErrNotFound {
 			return nil
 		}
-		handleErr(err, "Failed to get cache value") // will exit the program, hence no need to return
+		HandleErr(err, "Failed to get cache value") // will exit the program, hence no need to return
 	}
 	defer handleCloserErr(closer)
 	return value
@@ -71,8 +73,8 @@ func (ckv CacheKeyValue) GetKey() string {
 	return string(ckv.Key)
 }
 
-func (ckv CacheKeyValue) GetVal() []byte {
-	return ckv.Val
+func (ckv CacheKeyValue) GetVal() string {
+	return string(ckv.Val)
 }
 
 func (db *DbWrapper) GetCacheKeyValue(ctx context.Context, condition func(key, val []byte) bool) []*CacheKeyValue {
@@ -81,7 +83,7 @@ func (db *DbWrapper) GetCacheKeyValue(ctx context.Context, condition func(key, v
 
 	iter, err := db.Db.NewIterWithContext(childCtx, nil)
 	if err != nil {
-		handleErr(err, "Failed to create iterator")
+		HandleErr(err, "Failed to create iterator")
 	}
 	defer iter.Close()
 

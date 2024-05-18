@@ -116,6 +116,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 				)
 			} else {
 				if dlOptions.UseCacheDb {
+					cacheKey = cache.ParsePostKey(cacheKey, constants.PIXIV_FANBOX)
 					cache.CachePost(cacheKey)
 				}
 				resChan <- &resChanVal{cacheKey: cacheKey, response: res}

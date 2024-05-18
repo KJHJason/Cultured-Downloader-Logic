@@ -174,7 +174,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		return true, nil, errorSlice
 	}
 	if dlOptions.UseCacheDb {
-		cache.CachePost(cacheKey)
+		cache.CachePost(cache.ParsePostKey(cacheKey, constants.FANTIA))
 	}
 	return false, postGdriveUrls, nil
 }

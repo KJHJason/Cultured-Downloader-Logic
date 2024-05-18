@@ -66,6 +66,17 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		p.SetContext(context.Background())
 	}
 
+	if p.Configs == nil {
+		return fmt.Errorf(
+			"pixiv web error %d, configs is nil",
+			cdlerrors.DEV_ERROR,
+		)
+	}
+
+	if p.UseCacheDb && p.Configs.OverwriteFiles {
+		p.UseCacheDb = false
+	}
+
 	if len(p.SessionCookies) > 0 {
 		if err := api.VerifyCookies(constants.PIXIV, userAgent, p.SessionCookies); err != nil {
 			return err

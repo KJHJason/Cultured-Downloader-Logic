@@ -49,7 +49,7 @@ func needReseedDb() bool {
 }
 
 func InitLangDb(ctx context.Context, panicHandler func(msg string)) {
-	langDbPath := filepath.Join(iofuncs.APP_PATH, "language-db")
+	langDbPath := filepath.Join(iofuncs.APP_PATH, "translations-db")
 
 	var err error
 	langDb, err = cache.NewDb(langDbPath)

@@ -10,12 +10,12 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
-func parseUgoiraCacheKey(artworkId string) string {
+func getUgoiraUrl(artworkId string) string {
 	return fmt.Sprintf("%s?illust_id=%s", constants.PIXIV_MOBILE_UGOIRA_URL, artworkId)
 }
 
-func parseUgoiraCacheKeyFromInt(artworkId int) string {
-	return parseUgoiraCacheKey(strconv.Itoa(artworkId))
+func getUgoiraUrlFromInt(artworkId int) string {
+	return getUgoiraUrl(strconv.Itoa(artworkId))
 }
 
 // Process the artwork JSON and returns a slice of map that contains the urls of the images and the file path
@@ -76,7 +76,7 @@ func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *ArtworksJson) ([]*
 	var artworksToDl []*httpfuncs.ToDownload
 	for _, artwork := range artworksMaps {
 		artworks, ugoiraVal, err := pixiv.processArtworkJson(
-			parseUgoiraCacheKeyFromInt(artwork.Id), artwork,
+			getUgoiraUrlFromInt(artwork.Id), artwork,
 		)
 		if err != nil {
 			errSlice = append(errSlice, err)
