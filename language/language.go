@@ -19,5 +19,8 @@ func Translate(key, fallback, lang string) string {
 
 // IMPORTANT: PLEASE CLOSE THE DATABASE AFTER USE
 func CloseDb() error {
+	if langDb == nil {
+		return nil
+	}
 	return langDb.Close()
 }

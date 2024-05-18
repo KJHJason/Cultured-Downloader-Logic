@@ -1,6 +1,7 @@
 package language
 
 import (
+	"context"
 	"testing"
 
 	"github.com/cockroachdb/pebble"
@@ -9,6 +10,7 @@ import (
 func TestPrintAllKV(t *testing.T) {
 	defer CloseDb()
 
+	InitLangDb(context.Background(), nil)
 	iter, err := langDb.Db.NewIter(&pebble.IterOptions{})
 	if err != nil {
 		t.Fatal(err)

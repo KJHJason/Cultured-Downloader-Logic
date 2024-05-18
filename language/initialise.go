@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -47,21 +48,29 @@ func needReseedDb() bool {
 	return DEBUG || CURRENT_VERSION > version
 }
 
-func InitLangDb(ctx context.Context) {
+func InitLangDb(ctx context.Context, panicHandler func(msg string)) {
 	langDbPath := filepath.Join(iofuncs.APP_PATH, "language-db")
 
 	var err error
 	langDb, err = cache.NewDb(langDbPath)
 	if err != nil {
-		logger.MainLogger.Fatalf("failed to open language db: %v", err)
+		errMsg := fmt.Sprintf("failed to open language db: %v", err)
+		if panicHandler != nil {
+			panicHandler(errMsg)
+		}
+		logger.MainLogger.Fatal(errMsg)
 	}
 
 	if DEBUG || needReseedDb() {
 		if err := langDb.ResetDb(ctx); err != nil {
-			logger.MainLogger.Fatalf("failed to reset language db: %v", err)
+			errMsg := fmt.Sprintf("failed to reset language db: %v", err)
+			if panicHandler != nil {
+				panicHandler(errMsg)
+			}
+			logger.MainLogger.Fatal(errMsg)
 		}
 
-		initialiseDbData()
+		initialiseDbData(panicHandler)
 		logger.MainLogger.Info("Language database initialised")
 	}
 	translationsJson = nil
@@ -90,7 +99,7 @@ func (d *dataInitWrapper) addTranslations(key string, translations translations)
 	}
 }
 
-func initialiseDbData() {
+func initialiseDbData(panicHandler func(msg string)) {
 	db := &dataInitWrapper{batch: langDb.Db.NewBatch()}
 
 	currentVer := cache.ParseInt(CURRENT_VERSION)
@@ -99,7 +108,11 @@ func initialiseDbData() {
 	var translations map[string]map[string]translations
 	err := json.Unmarshal(translationsJson, &translations)
 	if err != nil {
-		logger.MainLogger.Fatalf("failed to unmarshal translations: %v", err)
+		errMsg := fmt.Sprintf("failed to unmarshal translations: %v", err)
+		if panicHandler != nil {
+			panicHandler(errMsg)
+		}
+		logger.MainLogger.Fatal(errMsg)
 	}
 
 	for _, section := range translations {
@@ -109,6 +122,10 @@ func initialiseDbData() {
 	}
 
 	if err := langDb.SetBatch(db.batch); err != nil {
-		logger.MainLogger.Fatalf("failed to apply translations batch: %v", err)
+		errMsg := fmt.Sprintf("failed to apply translations batch: %v", err)
+		if panicHandler != nil {
+			panicHandler(errMsg)
+		}
+		logger.MainLogger.Fatal(errMsg)
 	}
 }

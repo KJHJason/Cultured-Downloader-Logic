@@ -15,7 +15,11 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
-const LogSuffix = "\n\n"
+const (
+	LOG_SUFFIX    = "\n\n"
+	LOG_PERMS     = 0644
+	LOG_THRESHOLD = 15 * 24 * time.Hour
+)
 
 var (
 	MainLogger  Logger
@@ -32,7 +36,7 @@ var (
 
 func init() {
 	// create the logs directory if it does not exist
-	os.MkdirAll(logFolder, 0755)
+	os.MkdirAll(logFolder, LOG_PERMS)
 
 	// will be opened throughout the program's runtime
 	// hence, there is no need to call f.Close() at the end of this function
@@ -50,25 +54,29 @@ func init() {
 		panic(fileErr)
 	}
 	MainLogger = NewLogger(f)
+	DeleteEmptyAndOldLogs()
 }
 
-// Delete all empty log files and log files
-// older than 30 days except for the current day's log file.
-func DeleteEmptyAndOldLogs() error {
+func DeleteLogsOnCond(condToSkip func(os.FileInfo) bool) error {
 	return filepath.Walk(logFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if info.IsDir() || path == logFilePath {
+		if info.IsDir() || path == logFilePath || (condToSkip != nil && condToSkip(info)) {
 			return nil
 		}
 
-		if info.Size() == 0 || info.ModTime().Before(time.Now().AddDate(0, 0, -30)) {
-			return os.Remove(path)
-		}
+		return os.Remove(path)
+	})
+}
 
-		return nil
+// Delete all empty log files and log files
+// older than the log threshold except for the current day's log file.
+func DeleteEmptyAndOldLogs() error {
+	return DeleteLogsOnCond(func(info os.FileInfo) bool {
+		isNewerThan7Days := time.Since(info.ModTime()) < LOG_THRESHOLD
+		return isNewerThan7Days
 	})
 }
 
@@ -78,7 +86,7 @@ func LogError(err error, level int) {
 		return
 	}
 
-	MainLogger.LogBasedOnLvl(level, err.Error()+LogSuffix)
+	MainLogger.LogBasedOnLvl(level, err.Error()+LOG_SUFFIX)
 }
 
 // Uses the thread-safe LogError() function to log multiple errors
@@ -124,7 +132,7 @@ func LogMessageToPath(message, filePath string, level int) {
 	logToPathMux.Lock()
 	defer logToPathMux.Unlock()
 
-	os.MkdirAll(filepath.Dir(filePath), 0755)
+	os.MkdirAll(filepath.Dir(filePath), LOG_PERMS)
 	if iofuncs.PathExists(filePath) {
 		logFileContents, err := os.ReadFile(filePath)
 		if err != nil {
@@ -148,7 +156,7 @@ func LogMessageToPath(message, filePath string, level int) {
 	logFile, err := os.OpenFile(
 		filePath,
 		os.O_RDWR|os.O_CREATE|os.O_APPEND,
-		0666,
+		LOG_PERMS,
 	)
 	if err != nil {
 		err = fmt.Errorf(
