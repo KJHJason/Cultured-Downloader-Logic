@@ -29,19 +29,6 @@ func ParsePostKey(url, platform string) string {
 	return url + PLATFORM_SUFFIX + platform + POST
 }
 
-func parseKey(key, category string) string {
-	switch category {
-	case UGOIRA:
-		return key + UGOIRA
-	case GDRIVE:
-		return key + GDRIVE
-	case KEMONO_CREATOR:
-		return key + KEMONO_CREATOR
-	default:
-		return key
-	}
-}
-
 func SeparatePostKey(keyBytes []byte) (url string, platform string) {
 	key := string(keyBytes)
 
@@ -77,15 +64,15 @@ func PostCacheExists(key, platform string) bool {
 }
 
 func GDriveCacheExists(key string) bool {
-	return len(Get(parseKey(key, GDRIVE))) > 0
+	return len(Get(key + GDRIVE)) > 0
 }
 
 func UgoiraCacheExists(key string) bool {
-	return len(Get(parseKey(key, UGOIRA))) > 0
+	return len(Get(key + UGOIRA)) > 0
 }
 
 func GetKemonoCreatorCache(key string) string {
-	return GetString(parseKey(key, KEMONO_CREATOR))
+	return GetString(key + KEMONO_CREATOR)
 }
 
 // Note: the setter functions below do not handle errors and will continue as usual
@@ -95,15 +82,15 @@ func CachePost(parsedKey string) {
 }
 
 func CacheGDrive(key string) {
-	SetTime(parseKey(key, GDRIVE), time.Now())
+	SetTime(key + GDRIVE, time.Now())
 }
 
 func CacheUgoira(key string) {
-	SetTime(parseKey(key, UGOIRA), time.Now())
+	SetTime(key + UGOIRA, time.Now())
 }
 
-func CacheKemonoCreatorName(key string, creatorName string) {
-	SetString(parseKey(key, KEMONO_CREATOR), creatorName)
+func CacheKemonoCreatorName(key, creatorName string) {
+	SetString(key + KEMONO_CREATOR, creatorName)
 }
 
 type PostCache struct {
@@ -150,31 +137,26 @@ func GetReadableSiteStr(site string) string {
 }
 
 func GetAllCacheForPlatform(ctx context.Context, platforms ...string) []*PostCache {
-	keys := CacheDb.GetCacheKeyValue(ctx, func(key, _ []byte) bool {
+	var caches []*PostCache
+	CacheDb.TraverseDb(ctx, func(key, value []byte) {
 		url, keyPlatform := SeparatePostKey(key)
 		if url == "" || keyPlatform == "" {
-			return false
+			return
 		}
 		for _, p := range platforms {
 			if keyPlatform == p {
-				return true
+				caches = append(caches, &PostCache{
+					Url:      url,
+					Platform: GetReadableSiteStrSafely(keyPlatform),
+					Datetime: ParseBytesToDateTime(value),
+					CacheKey: string(key),
+				})
+				return
 			}
 		}
-		return false
 	})
-	if len(keys) == 0 {
+	if len(caches) == 0 {
 		return make([]*PostCache, 0)
-	}
-
-	caches := make([]*PostCache, len(keys))
-	for i, key := range keys {
-		url, platform := SeparatePostKey(key.Key)
-		caches[i] = &PostCache{
-			Url:      url,
-			Platform: GetReadableSiteStrSafely(platform),
-			Datetime: ParseBytesToDateTime(key.Val),
-			CacheKey: key.GetKey(),
-		}
 	}
 	return caches
 }
@@ -206,9 +188,13 @@ func DeletePostCacheForAllPlatforms(ctx context.Context) error {
 }
 
 func GetAllGdriveCache(ctx context.Context) []*CacheKeyValue {
-	return CacheDb.GetCacheKeyValue(ctx, func(key, _ []byte) bool {
-		return strings.HasSuffix(string(key), GDRIVE)
+	var cacheKeys []*CacheKeyValue
+	CacheDb.TraverseDb(ctx, func(key, val []byte) {
+		if strings.HasSuffix(string(key), GDRIVE) {
+			cacheKeys = append(cacheKeys, &CacheKeyValue{Key: key, Val: val})
+		}
 	})
+	return cacheKeys
 }
 
 func DeleteAllGdriveCache(ctx context.Context) error {
@@ -218,9 +204,13 @@ func DeleteAllGdriveCache(ctx context.Context) error {
 }
 
 func GetAllUgoiraCache(ctx context.Context) []*CacheKeyValue {
-	return CacheDb.GetCacheKeyValue(ctx, func(key, _ []byte) bool {
-		return strings.HasSuffix(string(key), UGOIRA)
+	var cacheKeys []*CacheKeyValue
+	CacheDb.TraverseDb(ctx, func(key, val []byte) {
+		if strings.HasSuffix(string(key), UGOIRA) {
+			cacheKeys = append(cacheKeys, &CacheKeyValue{Key: key, Val: val})
+		}
 	})
+	return cacheKeys
 }
 
 func DeleteAllUgoiraCache(ctx context.Context) error {
@@ -230,9 +220,13 @@ func DeleteAllUgoiraCache(ctx context.Context) error {
 }
 
 func GetAllKemonoCreatorCache(ctx context.Context) []*CacheKeyValue {
-	return CacheDb.GetCacheKeyValue(ctx, func(key, _ []byte) bool {
-		return strings.HasSuffix(string(key), KEMONO_CREATOR)
+	var cacheKeys []*CacheKeyValue
+	CacheDb.TraverseDb(ctx, func(key, val []byte) {
+		if strings.HasSuffix(string(key), KEMONO_CREATOR) {
+			cacheKeys = append(cacheKeys, &CacheKeyValue{Key: key, Val: val})
+		}
 	})
+	return cacheKeys
 }
 
 func DeleteAllKemonoCreatorCache(ctx context.Context) error {

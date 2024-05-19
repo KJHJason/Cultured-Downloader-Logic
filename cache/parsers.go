@@ -7,7 +7,7 @@ import (
 
 func ParseInt64(value int64) []byte {
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, uint64(value))
+	binary.NativeEndian.PutUint64(buf, uint64(value))
 	return buf
 }
 
@@ -16,7 +16,10 @@ func ParseInt(value int) []byte {
 }
 
 func ParseBytesToInt64(value []byte) int64 {
-	return int64(binary.LittleEndian.Uint64(value))
+	if len(value) != 8 {
+		return -1
+	}
+	return int64(binary.NativeEndian.Uint64(value))
 }
 
 func ParseBytesToInt(value []byte) int {
@@ -24,9 +27,20 @@ func ParseBytesToInt(value []byte) int {
 }
 
 func ParseDateTimeToBytes(datetime time.Time) []byte {
-	return ParseInt64(datetime.UTC().Unix())
+	sec := datetime.Unix()
+	nSec := datetime.Nanosecond()
+
+	buf := make([]byte, 16)
+	binary.NativeEndian.PutUint64(buf, uint64(sec))
+	binary.NativeEndian.PutUint64(buf[8:], uint64(nSec))
+	return buf
 }
 
 func ParseBytesToDateTime(value []byte) time.Time {
-	return time.Unix(ParseBytesToInt64(value), 0)
+	if len(value) != 16 {
+		return time.Time{}
+	}
+	sec := int64(binary.NativeEndian.Uint64(value))
+	nSec := int64(binary.NativeEndian.Uint64(value[8:]))
+	return time.Unix(sec, nSec)
 }

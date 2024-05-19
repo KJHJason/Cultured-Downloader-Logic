@@ -77,7 +77,11 @@ func (ckv CacheKeyValue) GetVal() string {
 	return string(ckv.Val)
 }
 
-func (db *DbWrapper) GetCacheKeyValue(ctx context.Context, condition func(key, val []byte) bool) []*CacheKeyValue {
+func (db *DbWrapper) TraverseDb(ctx context.Context, funcToCall func(key, val []byte)) {
+	if funcToCall == nil {
+		return
+	}
+
 	childCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -87,18 +91,17 @@ func (db *DbWrapper) GetCacheKeyValue(ctx context.Context, condition func(key, v
 	}
 	defer iter.Close()
 
-	cacheKeyValues := make([]*CacheKeyValue, 0)
 	for iter.First(); iter.Valid(); iter.Next() {
-		key, val := iter.Key(), iter.Value()
-		if condition == nil || condition(key, val) {
-			cacheKeyValues = append(cacheKeyValues, &CacheKeyValue{Key: key, Val: val})
-		}
+		funcToCall(iter.Key(), iter.Value())
 	}
-	return cacheKeyValues
 }
 
 func (db *DbWrapper) GetAllCacheKeys(ctx context.Context) []*CacheKeyValue {
-	return db.GetCacheKeyValue(ctx, nil)
+	var cacheKeys []*CacheKeyValue
+	db.TraverseDb(ctx, func(key, val []byte) {
+		cacheKeys = append(cacheKeys, &CacheKeyValue{Key: key, Val: val})
+	})
+	return cacheKeys
 }
 
 func (db *DbWrapper) ResetDbWithCond(ctx context.Context, checkCondToSkip func(key, val []byte) bool) error {
