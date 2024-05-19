@@ -157,6 +157,7 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 	if dlOptions.UseCacheDb {
 		for _, post := range postsToDl {
 			post.CacheKey = cacheKey
+			post.CacheFn = database.CachePost
 		}
 	}
 	return postsToDl, gdriveLinks, nil

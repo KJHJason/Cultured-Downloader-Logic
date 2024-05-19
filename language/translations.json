@@ -550,9 +550,13 @@
             "en": "Detect Other URL(s) Like Mega",
             "jp": "Megaなどの他のURLを検出"
         },
-        "use cache db": {
+        "use cache database": {
             "en": "Use Cache Database",
             "jp": "キャッシュデータベースを使用"
+        },
+        "view cache": {
+            "en": "View Cache",
+            "jp": "キャッシュを表示"
         }
     },
     "general": {
@@ -683,30 +687,6 @@
         "save": {
             "en": "Save",
             "jp": "保存"
-        },
-        "cache database location has been updated and will take effect after a restarting the application.": {
-            "en": "Cache database location has been updated and will take effect after a restarting the application.",
-            "jp": "キャッシュデータベースの場所が更新され、アプリケーションを再起動した後に有効になります。"
-        },
-        "additionally, cache database location has been updated and will take effect after a restarting the application.": {
-            "en": "Additionally, cache database location has been updated and will take effect after a restarting the application.",
-            "jp": "さらに、キャッシュデータベースの場所が更新され、アプリケーションを再起動した後に有効になります。"
-        },
-        "an error occurred while selecting the new cache database location.": {
-            "en": "An error occurred while selecting the new cache database location.",
-            "jp": "新しいキャッシュデータベースの場所を選択する際にエラーが発生しました。"
-        },
-        "cache database location:": {
-            "en": "Cache Database Location:",
-            "jp": "キャッシュデータベースの場所："
-        },
-        "view cache": {
-            "en": "View Cache",
-            "jp": "キャッシュを表示"
-        },
-        "browse": {
-            "en": "Browse",
-            "jp": "参照"
         }
     },
     "advanced": {
@@ -1048,7 +1028,7 @@
         },
         "kemono creator cache": {
             "en": "Kemono Creator Cache",
-            "jp": "けものクリエイターキャッシュ"
+            "jp": "Kemonoクリエイターキャッシュ"
         },
         "pixiv ugoira cache": {
             "en": "Pixiv Ugoira Cache",
@@ -1114,7 +1094,7 @@
         },
         "showing cache_front": {
             "en": "Showing cache for ",
-            "jp": ""
+            "jp": " "
         },
         "showing cache_back": {
             "en": ".",

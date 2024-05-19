@@ -6,18 +6,19 @@ import (
 )
 
 const (
-	DEBUG_MODE            = false // Will save a copy of all JSON response from the API
-	DEFAULT_PERMS         = 0755  // Owner: rwx, Group: rx, Others: rx
-	VERSION               = "1.1.2"
-	MAX_RETRY_DELAY       = 3
-	MIN_RETRY_DELAY       = 1
-	RETRY_COUNTER         = 4
-	GITHUB_API_URL_FORMAT = "https://api.github.com/repos/%s/releases/latest"
-	MAIN_REPO_NAME        = "KJHJason/Cultured-Downloader"
-	CLI_REPO_NAME         = "KJHJason/Cultured-Downloader-CLI"
-	LOGIC_REPO_NAME       = "KJHJason/Cultured-Downloader-Logic"
-	EN                    = "en"
-	JP                    = "ja"
+	DEBUG_MODE             = false // Will save a copy of all JSON response from the API
+	DEFAULT_PERMS          = 0755  // Owner: rwx, Group: rx, Others: rx
+	VERSION                = "1.1.2"
+	MAX_RETRY_DELAY        = 3
+	MIN_RETRY_DELAY        = 1
+	RETRY_COUNTER          = 4
+	GITHUB_API_URL_FORMAT  = "https://api.github.com/repos/%s/releases/latest"
+	MAIN_REPO_NAME         = "KJHJason/Cultured-Downloader"
+	CLI_REPO_NAME          = "KJHJason/Cultured-Downloader-CLI"
+	LOGIC_REPO_NAME        = "KJHJason/Cultured-Downloader-Logic"
+	EN                     = "en"
+	JP                     = "ja"
+	FFMPEG_MAX_CONCURRENCY = 2
 
 	ERR_RECAPTCHA_STR = "recaptcha detected for the current session"
 

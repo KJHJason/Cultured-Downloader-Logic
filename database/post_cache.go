@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	bolt "go.etcd.io/bbolt"
+
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
@@ -76,16 +78,40 @@ func CachePost(parsedKey string) {
 	AppDb.SetTime(POST_BUCKET, parsedKey, time.Now())
 }
 
+func batchCacheLogic(tx *bolt.Tx, bucketName string, key string) error {
+	b, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+	if err != nil {
+		return err
+	}
+	return b.Put([]byte(key), ParseDateTimeToBytes(time.Now()))
+}
+
+func CachePostViaBatch(parsedKey string) {
+	AppDb.Db.Batch(func(tx *bolt.Tx) error {
+		return batchCacheLogic(tx, POST_BUCKET, parsedKey)
+	})
+}
+
 func CacheGDrive(key string) {
-	AppDb.SetTime(GDRIVE_BUCKET, key, time.Now())
+	AppDb.Db.Batch(func(tx *bolt.Tx) error {
+		return batchCacheLogic(tx, GDRIVE_BUCKET, key)
+	})
 }
 
 func CacheUgoira(key string) {
-	AppDb.SetTime(UGOIRA_BUCKET, key, time.Now())
+	AppDb.Db.Batch(func(tx *bolt.Tx) error {
+		return batchCacheLogic(tx, UGOIRA_BUCKET, key)
+	})
 }
 
 func CacheKemonoCreatorName(key, creatorName string) {
-	AppDb.SetString(KEMONO_CREATOR_BUCKET, key, creatorName)
+	AppDb.Db.Batch(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists([]byte(KEMONO_CREATOR_BUCKET))
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(key), []byte(creatorName))
+	})
 }
 
 type PostCache struct {

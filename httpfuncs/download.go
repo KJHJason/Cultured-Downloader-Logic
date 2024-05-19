@@ -20,7 +20,6 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -339,6 +338,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 type cacheEl struct {
 	hasErr   bool
 	cacheKey string
+	cacheFn  func(key string) // Note: no need to use batch call as the update is done sequentially
 }
 
 // DownloadUrls is used to download multiple files from URLs concurrently
@@ -444,24 +444,24 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	// 	{url: "https://example.com/post/123456/image2.jpg", cacheKey: "https://example.com/post/123456"},
 	// ]
 	// we have to make sure all the request for that particular cache key has no errors to assume that the download was successful
-	var hasSeenCacheKey map[string]bool
+	var hasSeenCacheKey map[string]*cacheEl
 	if len(cacheChan) > 0 {
-		hasSeenCacheKey = make(map[string]bool)
+		hasSeenCacheKey = make(map[string]*cacheEl)
 		for cacheEl := range cacheChan {
 			if _, ok := hasSeenCacheKey[cacheEl.cacheKey]; ok {
 				if cacheEl.hasErr {
-					hasSeenCacheKey[cacheEl.cacheKey] = false
+					hasSeenCacheKey[cacheEl.cacheKey].hasErr = true
 				}
 				continue
 			}
-			hasSeenCacheKey[cacheEl.cacheKey] = !cacheEl.hasErr
+			hasSeenCacheKey[cacheEl.cacheKey] = cacheEl
 		}
 
-		for cacheKey, valid := range hasSeenCacheKey {
-			if !valid {
+		for cacheKey, el := range hasSeenCacheKey {
+			if el.hasErr {
 				continue
 			}
-			database.CachePost(cacheKey)
+			el.cacheFn(cacheKey)
 		}
 	}
 

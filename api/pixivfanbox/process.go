@@ -10,6 +10,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -320,6 +321,7 @@ func processMultiplePostJson(resChan chan *resChanVal, dlOptions *PixivFanboxDlO
 			if dlOptions.UseCacheDb && res.cacheKey != "" {
 				for _, url := range postUrls {
 					url.CacheKey = res.cacheKey
+					url.CacheFn = database.CachePost
 				}
 			}
 			urlsSlice = append(urlsSlice, postUrls...)

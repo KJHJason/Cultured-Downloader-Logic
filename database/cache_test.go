@@ -48,42 +48,42 @@ func initTestDataConcurrently(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		CachePost(ParsePostKey("https://fantia.jp/posts/123456", constants.FANTIA))
+		CachePostViaBatch(ParsePostKey("https://fantia.jp/posts/123456", constants.FANTIA))
 	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		CachePost(ParsePostKey("https://fantia.jp/posts/654321", constants.FANTIA))
+		CachePostViaBatch(ParsePostKey("https://fantia.jp/posts/654321", constants.FANTIA))
 	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		CachePost(ParsePostKey("https://www.pixiv.net/artworks/118849705", constants.PIXIV))
+		CachePostViaBatch(ParsePostKey("https://www.pixiv.net/artworks/118849705", constants.PIXIV))
 	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		CachePost(ParsePostKey("https://www.pixiv.net/artworks/118849706", constants.PIXIV))
+		CachePostViaBatch(ParsePostKey("https://www.pixiv.net/artworks/118849706", constants.PIXIV))
 	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		CachePost(ParsePostKey("https://www.fanbox.cc/@creator/posts/1234567", constants.PIXIV_FANBOX))
+		CachePostViaBatch(ParsePostKey("https://www.fanbox.cc/@creator/posts/1234567", constants.PIXIV_FANBOX))
 	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		CachePost(ParsePostKey("https://creator.fanbox.cc/posts/7654321", constants.PIXIV_FANBOX))
+		CachePostViaBatch(ParsePostKey("https://creator.fanbox.cc/posts/7654321", constants.PIXIV_FANBOX))
 	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		CachePost(ParsePostKey("https://kemono.su/fanbox/user/1234567/post/1234567", constants.KEMONO))
+		CachePostViaBatch(ParsePostKey("https://kemono.su/fanbox/user/1234567/post/1234567", constants.KEMONO))
 	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		CachePost(ParsePostKey("https://kemono.su/fanbox/user/1234567/post/7654321", constants.KEMONO))
+		CachePostViaBatch(ParsePostKey("https://kemono.su/fanbox/user/1234567/post/7654321", constants.KEMONO))
 	}()
 	wg.Add(1)
 	go func() {

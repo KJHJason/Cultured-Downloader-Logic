@@ -28,6 +28,50 @@ type resChanVal struct {
 	response *http.Response
 }
 
+func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOptions, useHttp3 bool) (*resChanVal, error) {
+	header := GetPixivFanboxHeaders()
+	params := map[string]string{"postId": postId}
+	res, err := httpfuncs.CallRequest(
+		&httpfuncs.RequestArgs{
+			Method:    "GET",
+			Url:       url,
+			Cookies:   dlOptions.SessionCookies,
+			Headers:   header,
+			Params:    params,
+			UserAgent: dlOptions.Configs.UserAgent,
+			Http2:     !useHttp3,
+			Http3:     useHttp3,
+			Context:   dlOptions.ctx,
+		},
+	)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
+		return nil, fmt.Errorf(
+			"pixiv fanbox error %d: failed to get post details for %s, more info => %w",
+			cdlerrors.CONNECTION_ERROR,
+			url,
+			err,
+		)
+	}
+
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf(
+			"pixiv fanbox error %d: failed to get post details for %s due to a %s response",
+			cdlerrors.CONNECTION_ERROR,
+			url,
+			res.Status,
+		)
+	}
+
+	if dlOptions.UseCacheDb {
+		cacheKey = database.ParsePostKey(cacheKey, constants.PIXIV_FANBOX)
+		database.CachePostViaBatch(cacheKey)
+	}
+	return &resChanVal{cacheKey: cacheKey, response: res}, nil
+}
+
 // Query Pixiv Fanbox's API based on the slice of post IDs and
 // returns a map of urls and a map of GDrive urls to download from.
 func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, []error) {
@@ -81,45 +125,11 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 			}()
 
 			queue <- struct{}{}
-			header := GetPixivFanboxHeaders()
-			params := map[string]string{"postId": postId}
-			res, err := httpfuncs.CallRequest(
-				&httpfuncs.RequestArgs{
-					Method:    "GET",
-					Url:       url,
-					Cookies:   dlOptions.SessionCookies,
-					Headers:   header,
-					Params:    params,
-					UserAgent: dlOptions.Configs.UserAgent,
-					Http2:     !useHttp3,
-					Http3:     useHttp3,
-					Context:   dlOptions.ctx,
-				},
-			)
+			res, err := getPostDetails(cacheKey, postId, url, dlOptions, useHttp3)
 			if err != nil {
-				if errors.Is(err, context.Canceled) {
-					errChan <- err
-				} else {
-					errChan <- fmt.Errorf(
-						"pixiv fanbox error %d: failed to get post details for %s, more info => %w",
-						cdlerrors.CONNECTION_ERROR,
-						url,
-						err,
-					)
-				}
-			} else if res.StatusCode != 200 {
-				errChan <- fmt.Errorf(
-					"pixiv fanbox error %d: failed to get post details for %s due to a %s response",
-					cdlerrors.CONNECTION_ERROR,
-					url,
-					res.Status,
-				)
+				errChan <- err
 			} else {
-				if dlOptions.UseCacheDb {
-					cacheKey = database.ParsePostKey(cacheKey, constants.PIXIV_FANBOX)
-					database.CachePost(cacheKey)
-				}
-				resChan <- &resChanVal{cacheKey: cacheKey, response: res}
+				resChan <- res
 			}
 			progress.Increment()
 		}(postId, cacheKey)
@@ -129,11 +139,10 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	close(resChan)
 	close(errChan)
 
-	hasErr := false
+	hasErr := len(errChan) > 0
 	hasCancelled := false
 	var errSlice []error
-	if len(errChan) > 0 {
-		hasErr = true
+	if hasErr {
 		var errCtxCancelled bool
 		if errCtxCancelled, errSlice = logger.LogChanErrors(logger.ERROR, errChan); errCtxCancelled {
 			hasCancelled = true
@@ -208,6 +217,43 @@ type resStruct struct {
 	err  error
 }
 
+func getFanboxPostsLogic(reqUrl string, headers map[string]string, dlOptions *PixivFanboxDlOptions, useHttp3 bool) *resStruct {
+	res, err := httpfuncs.CallRequest(
+		&httpfuncs.RequestArgs{
+			Method:    "GET",
+			Url:       reqUrl,
+			Cookies:   dlOptions.SessionCookies,
+			Headers:   headers,
+			UserAgent: dlOptions.Configs.UserAgent,
+			Http2:     !useHttp3,
+			Http3:     useHttp3,
+			Context:   dlOptions.GetContext(),
+		},
+	)
+	if err != nil || res.StatusCode != 200 {
+		if err == nil {
+			res.Body.Close()
+		}
+		if !errors.Is(err, context.Canceled) {
+			logger.LogError(
+				fmt.Errorf(
+					"failed to get post for %s\n%w",
+					reqUrl,
+					err,
+				),
+				logger.ERROR,
+			)
+		}
+		return nil
+	}
+
+	var resJson *FanboxCreatorPostsJson
+	if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
+		return &resStruct{err: err}
+	}
+	return &resStruct{json: resJson}
+}
+
 // GetFanboxCreatorPosts returns a slice of post IDs for a given creator
 func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) (postIds []string, errSlice []error, hasCancelled bool) {
 	paginatedUrls, err := getCreatorPaginatedPosts(creatorId, dlOptions)
@@ -248,41 +294,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 				<-queue
 			}()
 			queue <- struct{}{}
-			res, err := httpfuncs.CallRequest(
-				&httpfuncs.RequestArgs{
-					Method:    "GET",
-					Url:       reqUrl,
-					Cookies:   dlOptions.SessionCookies,
-					Headers:   headers,
-					UserAgent: dlOptions.Configs.UserAgent,
-					Http2:     !useHttp3,
-					Http3:     useHttp3,
-					Context:   dlOptions.GetContext(),
-				},
-			)
-			if err != nil || res.StatusCode != 200 {
-				if err == nil {
-					res.Body.Close()
-				}
-				if !errors.Is(err, context.Canceled) {
-					logger.LogError(
-						fmt.Errorf(
-							"failed to get post for %s\n%w",
-							reqUrl,
-							err,
-						),
-						logger.ERROR,
-					)
-				}
-				return
-			}
-
-			var resJson *FanboxCreatorPostsJson
-			if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
-				resChan <- &resStruct{err: err}
-			} else {
-				resChan <- &resStruct{json: resJson}
-			}
+			resChan <- getFanboxPostsLogic(reqUrl, headers, dlOptions, useHttp3)
 		}(paginatedUrl)
 	}
 	wg.Wait()

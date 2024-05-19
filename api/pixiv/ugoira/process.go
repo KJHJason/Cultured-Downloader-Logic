@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"syscall"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
@@ -105,6 +106,51 @@ func GetUgoiraFilePaths(ugoireFilePath, ugoiraUrl, outputFormat string) (string,
 	return filePath, outputFilePath
 }
 
+func convertUgoira(ctx context.Context, ugoira *Ugoira, ugoiraOptions *UgoiraOptions, config *configs.Config) error {
+	zipFilePath, outputPath := GetUgoiraFilePaths(ugoira.FilePath, ugoira.Url, ugoiraOptions.OutputFormat)
+	if iofuncs.PathExists(outputPath) || !iofuncs.PathExists(zipFilePath) {
+		return nil
+	}
+
+	unzipFolderPath := filepath.Join(
+		filepath.Dir(zipFilePath),
+		"unzipped",
+	)
+	err := extractor.ExtractFiles(ctx, zipFilePath, unzipFolderPath, true)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return err
+		}
+		err := fmt.Errorf(
+			"pixiv error %d: failed to unzip file %s, more info => %w",
+			cdlerrors.OS_ERROR,
+			zipFilePath,
+			err,
+		)
+		return err
+	}
+
+	err = ConvertUgoira(
+		ugoira,
+		unzipFolderPath,
+		&UgoiraFfmpegArgs{
+			context:       ctx,
+			ffmpegPath:    config.FfmpegPath,
+			outputPath:    outputPath,
+			ugoiraQuality: ugoiraOptions.Quality,
+		},
+	)
+	if err == nil {
+		if ugoiraOptions.DeleteZip {
+			os.Remove(zipFilePath)
+		}
+		if ugoiraOptions.UseCacheDb {
+			database.CacheUgoira(ugoira.CacheKey)
+		}
+	}
+	return err
+}
+
 func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config) []error {
 	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
 	ctx, cancel := context.WithCancel(ugoiraArgs.context)
@@ -119,8 +165,18 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	}()
 	defer signal.Stop(sigs)
 
-	var errSlice []error
 	downloadInfoLen := len(ugoiraArgs.ToDownload)
+	maxConcurrency := config.FfmpegWorkers
+	if maxConcurrency <= 0 {
+		maxConcurrency = constants.FFMPEG_MAX_CONCURRENCY
+	}
+	if downloadInfoLen < maxConcurrency {
+		maxConcurrency = downloadInfoLen
+	}
+	var wg sync.WaitGroup
+	queue := make(chan struct{}, maxConcurrency)
+	errChan := make(chan error, downloadInfoLen)
+
 	baseMsg := fmt.Sprintf("Converting Ugoira to %s ", ugoiraOptions.OutputFormat) + "[%d/" + fmt.Sprintf("%d]...", downloadInfoLen)
 	prog := ugoiraArgs.MainProgBar
 	prog.UpdateBaseMsg(baseMsg)
@@ -143,65 +199,29 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	defer prog.SnapshotTask()
 	prog.Start()
 	for i, ugoira := range ugoiraArgs.ToDownload {
-		zipFilePath, outputPath := GetUgoiraFilePaths(ugoira.FilePath, ugoira.Url, ugoiraOptions.OutputFormat)
-		if iofuncs.PathExists(outputPath) {
-			prog.Increment()
-			continue
-		}
-		if !iofuncs.PathExists(zipFilePath) {
-			prog.Increment()
-			continue
-		}
-
-		unzipFolderPath := filepath.Join(
-			filepath.Dir(zipFilePath),
-			"unzipped",
-		)
-		err := extractor.ExtractFiles(ctx, zipFilePath, unzipFolderPath, true)
-		if err != nil {
-			if errors.Is(err, context.Canceled) {
-				prog.StopInterrupt(
-					fmt.Sprintf(
-						"Stopped converting ugoira to %s [%d/%d]!",
-						ugoiraOptions.OutputFormat,
-						i,
-						len(ugoiraArgs.ToDownload),
-					),
-				)
+		wg.Add(1)
+		go func(ugoira *Ugoira, i int) {
+			defer func() {
+				wg.Done()
+				<-queue
+			}()
+			queue <- struct{}{}
+			err := convertUgoira(ctx, ugoira, ugoiraOptions, config)
+			if err != nil {
+				errChan <- err
 			}
-			err := fmt.Errorf(
-				"pixiv error %d: failed to unzip file %s, more info => %w",
-				cdlerrors.OS_ERROR,
-				zipFilePath,
-				err,
-			)
-			errSlice = append(errSlice, err)
 			prog.Increment()
-			continue
-		}
-
-		err = ConvertUgoira(
-			ugoira,
-			unzipFolderPath,
-			&UgoiraFfmpegArgs{
-				context:       ctx,
-				ffmpegPath:    config.FfmpegPath,
-				outputPath:    outputPath,
-				ugoiraQuality: ugoiraOptions.Quality,
-			},
-		)
-		if err != nil {
-			errSlice = append(errSlice, err)
-		} else if ugoiraOptions.DeleteZip {
-			os.Remove(zipFilePath)
-		}
-		prog.Increment()
+		}(ugoira, i)
 	}
+	wg.Wait()
+	close(queue)
+	close(errChan)
 
-	hasErr := false
-	if len(errSlice) > 0 {
-		hasErr = true
-		if hasCancelled := logger.LogErrors(logger.ERROR, errSlice...); hasCancelled {
+	var errSlice []error
+	hasErr := len(errChan) > 0
+	if hasErr {
+		var hasCancelled bool
+		if hasCancelled, errSlice = logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
 			prog.StopInterrupt(
 				fmt.Sprintf("Stopped converting ugoira to %s!", ugoiraOptions.OutputFormat),
 			)

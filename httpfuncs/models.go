@@ -22,6 +22,7 @@ type RetryDelay struct {
 
 type ToDownload struct {
 	CacheKey string
+	CacheFn  func(key string)
 	Url      string
 	FilePath string
 }

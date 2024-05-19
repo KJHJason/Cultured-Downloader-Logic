@@ -174,6 +174,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		return true, nil, errorSlice
 	}
 	if dlOptions.UseCacheDb {
+		// No need to use batch since posts are downloaded sequentially
 		database.CachePost(database.ParsePostKey(cacheKey, constants.FANTIA))
 	}
 	return false, postGdriveUrls, nil

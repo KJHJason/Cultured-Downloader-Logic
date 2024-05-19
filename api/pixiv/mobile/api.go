@@ -121,6 +121,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 		artworkCacheKey = database.ParsePostKey(artworkCacheKey, constants.PIXIV)
 		for _, artwork := range artworkDetails {
 			artwork.CacheKey = artworkCacheKey
+			artwork.CacheFn = database.CachePost
 		}
 	}
 	return artworkDetails, ugoiraToDl, err
