@@ -45,60 +45,60 @@ func initTestDataConcurrently(t *testing.T) {
 
 	// Add some data to the cache
 	wg := sync.WaitGroup{}
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CachePost(ParsePostKey("https://fantia.jp/posts/123456", constants.FANTIA))
+		CachePost(ParsePostKey("https://fantia.jp/posts/123456", constants.FANTIA))
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CachePost(ParsePostKey("https://fantia.jp/posts/654321", constants.FANTIA))
+		CachePost(ParsePostKey("https://fantia.jp/posts/654321", constants.FANTIA))
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CachePost(ParsePostKey("https://www.pixiv.net/artworks/118849705", constants.PIXIV))
+		CachePost(ParsePostKey("https://www.pixiv.net/artworks/118849705", constants.PIXIV))
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CachePost(ParsePostKey("https://www.pixiv.net/artworks/118849706", constants.PIXIV))
+		CachePost(ParsePostKey("https://www.pixiv.net/artworks/118849706", constants.PIXIV))
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CachePost(ParsePostKey("https://www.fanbox.cc/@creator/posts/1234567", constants.PIXIV_FANBOX))
+		CachePost(ParsePostKey("https://www.fanbox.cc/@creator/posts/1234567", constants.PIXIV_FANBOX))
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CachePost(ParsePostKey("https://creator.fanbox.cc/posts/7654321", constants.PIXIV_FANBOX))
+		CachePost(ParsePostKey("https://creator.fanbox.cc/posts/7654321", constants.PIXIV_FANBOX))
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CachePost(ParsePostKey("https://kemono.su/fanbox/user/1234567/post/1234567", constants.KEMONO))
+		CachePost(ParsePostKey("https://kemono.su/fanbox/user/1234567/post/1234567", constants.KEMONO))
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CachePost(ParsePostKey("https://kemono.su/fanbox/user/1234567/post/7654321", constants.KEMONO))
+		CachePost(ParsePostKey("https://kemono.su/fanbox/user/1234567/post/7654321", constants.KEMONO))
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CacheGDrive("https://drive.google.com/file/d/<file_id>/view?usp=drive_link")
+		CacheGDrive("https://drive.google.com/file/d/<file_id>/view?usp=drive_link")
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CacheUgoira("https://www.pixiv.net/artworks/118849705")
+		CacheUgoira("https://www.pixiv.net/artworks/118849705")
 	}()
-	func() {
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
 		defer wg.Done()
-		go CacheKemonoCreatorName("https://kemono.su/fanbox/user/1234567", "Kemono Creator")
+		CacheKemonoCreatorName("https://kemono.su/fanbox/user/1234567", "Kemono Creator")
 	}()
 	wg.Wait()
 }

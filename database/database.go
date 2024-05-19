@@ -95,17 +95,20 @@ func (db *DbWrapper) DeleteBucket(bucket string) error {
 	})
 }
 
-type CacheKeyValue struct {
+type KeyValue struct {
 	Key    []byte
 	Val    []byte
 	Bucket string
+
+	KeyStr string
+	ValStr string
 }
 
-func (ckv CacheKeyValue) GetKey() string {
+func (ckv KeyValue) GetKey() string {
 	return string(ckv.Key)
 }
 
-func (ckv CacheKeyValue) GetVal() string {
+func (ckv KeyValue) GetVal() string {
 	return string(ckv.Val)
 }
 
@@ -137,8 +140,8 @@ func (db *DbWrapper) Get(bucket, key string) []byte {
 	return value
 }
 
-func (db *DbWrapper) GetKeyValueOnPrefix(bucket, prefix string) []*CacheKeyValue {
-	var cacheKeys []*CacheKeyValue
+func (db *DbWrapper) GetKeyValueOnPrefix(bucket, prefix string) []*KeyValue {
+	var cacheKeys []*KeyValue
 	err := db.Db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
@@ -146,9 +149,11 @@ func (db *DbWrapper) GetKeyValueOnPrefix(bucket, prefix string) []*CacheKeyValue
 		}
 
 		return iterateOnPrefix(b, prefix, func(k, v []byte) error {
-			cacheKeys = append(cacheKeys, &CacheKeyValue{
+			cacheKeys = append(cacheKeys, &KeyValue{
 				Key:    k,
 				Val:    v,
+				KeyStr: string(k),
+				ValStr: string(v),
 				Bucket: bucket,
 			})
 			return nil
@@ -161,8 +166,8 @@ func (db *DbWrapper) GetKeyValueOnPrefix(bucket, prefix string) []*CacheKeyValue
 	return cacheKeys
 }
 
-func (db *DbWrapper) GetAllKeyValue(bucket string) []*CacheKeyValue {
-	var cacheKeys []*CacheKeyValue
+func (db *DbWrapper) GetAllKeyValue(bucket string) []*KeyValue {
+	var cacheKeys []*KeyValue
 	err := db.Db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
@@ -170,9 +175,11 @@ func (db *DbWrapper) GetAllKeyValue(bucket string) []*CacheKeyValue {
 		}
 
 		return b.ForEach(func(k, v []byte) error {
-			cacheKeys = append(cacheKeys, &CacheKeyValue{
+			cacheKeys = append(cacheKeys, &KeyValue{
 				Key:    k,
 				Val:    v,
+				KeyStr: string(k),
+				ValStr: string(v),
 				Bucket: bucket,
 			})
 			return nil

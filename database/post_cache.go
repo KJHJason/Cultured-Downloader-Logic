@@ -133,7 +133,7 @@ func GetReadableSiteStr(site string) string {
 }
 
 func GetAllCacheForPlatform(platforms ...string) []*PostCache {
-	var caches []*CacheKeyValue
+	var caches []*KeyValue
 	for _, platform := range platforms {
 		caches = append(caches, AppDb.GetKeyValueOnPrefix(POST_BUCKET, platform)...)
 	}
@@ -176,12 +176,36 @@ func GetAllCacheForAllPlatforms() []*PostCache {
 	return allCache
 }
 
+type CacheKeyValue struct {
+	Key      string
+	Val      time.Time
+	Bucket   string
+	CacheKey string
+}
+
+func newCacheKeyValues(cache []*KeyValue) []*CacheKeyValue {
+	if len(cache) == 0 {
+		return make([]*CacheKeyValue, 0)
+	}
+
+	newCache := make([]*CacheKeyValue, 0, len(cache))
+	for _, c := range cache {
+		newCache = append(newCache, &CacheKeyValue{
+			Key:      c.GetKey(),
+			Val:      ParseBytesToDateTime([]byte(c.GetVal())),
+			Bucket:   c.Bucket,
+			CacheKey: c.GetKey(),
+		})
+	}
+	return newCache
+}
+
 func DeletePostCacheForAllPlatforms() error {
 	return AppDb.DeleteBucket(POST_BUCKET)
 }
 
 func GetAllGdriveCache() []*CacheKeyValue {
-	return AppDb.GetAllKeyValue(GDRIVE_BUCKET)
+	return newCacheKeyValues(AppDb.GetAllKeyValue(GDRIVE_BUCKET))
 }
 
 func DeleteAllGdriveCache() error {
@@ -189,14 +213,14 @@ func DeleteAllGdriveCache() error {
 }
 
 func GetAllUgoiraCache() []*CacheKeyValue {
-	return AppDb.GetAllKeyValue(UGOIRA_BUCKET)
+	return newCacheKeyValues(AppDb.GetAllKeyValue(UGOIRA_BUCKET))
 }
 
 func DeleteAllUgoiraCache() error {
 	return AppDb.DeleteBucket(UGOIRA_BUCKET)
 }
 
-func GetAllKemonoCreatorCache() []*CacheKeyValue {
+func GetAllKemonoCreatorCache() []*KeyValue {
 	return AppDb.GetAllKeyValue(KEMONO_CREATOR_BUCKET)
 }
 
