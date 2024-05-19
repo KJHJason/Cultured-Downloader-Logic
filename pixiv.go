@@ -254,12 +254,14 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 		}
 	}
 	if len(ugoiraToDl) > 0 && pixivDlOptions.CtxIsActive() {
+		ugoiraArgs := &ugoira.UgoiraArgs{
+			UseMobileApi: true,
+			ToDownload:   ugoiraToDl,
+			Cookies:      nil,
+		}
+		ugoiraArgs.SetContext(pixivDlOptions.GetContext())
 		err := ugoira.DownloadMultipleUgoira(
-			&ugoira.UgoiraArgs{
-				UseMobileApi: true,
-				ToDownload:   ugoiraToDl,
-				Cookies:      nil,
-			},
+			ugoiraArgs,
 			pixivUgoiraOptions,
 			pixivDlOptions.Configs,
 			pixivDlOptions.MobileClient.SendRequest,
