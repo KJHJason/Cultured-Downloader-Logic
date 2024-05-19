@@ -65,7 +65,8 @@ func (pixiv *PixivMobile) getUgoiraMetadata(cacheKey, illustId, dlFilePath strin
 
 	ugoiraMetadata := ugoiraJson.Metadata
 	ugoiraDlUrl := ugoiraMetadata.ZipUrls.Medium
-	ugoiraDlUrl = strings.Replace(ugoiraDlUrl, "600x600", "1920x1080", 1)
+	ugoiraDlUrl = strings.TrimSuffix(ugoiraDlUrl, "600x600.zip")
+	ugoiraDlUrl += "1920x1080.zip"
 
 	// map the files to their delay
 	frameInfoMap := ugoira.MapDelaysToFilename(ugoiraMetadata.Frames)
