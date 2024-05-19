@@ -11,6 +11,7 @@ const (
 	VERSION                = "1.1.2"
 	MAX_RETRY_DELAY        = 3
 	MIN_RETRY_DELAY        = 1
+	HTTP3_MAX_RETRY        = 2
 	RETRY_COUNTER          = 4
 	GITHUB_API_URL_FORMAT  = "https://api.github.com/repos/%s/releases/latest"
 	MAIN_REPO_NAME         = "KJHJason/Cultured-Downloader"

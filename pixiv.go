@@ -230,7 +230,7 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 	}
 
 	if len(artworksToDl) > 0 && pixivDlOptions.CtxIsActive() {
-		cancelled, err := httpfuncs.DownloadUrls(
+		cancelled, err := httpfuncs.DownloadUrlsWithHandler(
 			artworksToDl,
 			&httpfuncs.DlOptions{
 				Context:        pixivDlOptions.GetContext(),
@@ -245,6 +245,7 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 				},
 			},
 			pixivDlOptions.Configs,
+			pixivDlOptions.MobileClient.SendRequest,
 		)
 		if len(err) > 0 {
 			errSlice = append(errSlice, err...)
@@ -258,6 +259,7 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 			UseMobileApi: true,
 			ToDownload:   ugoiraToDl,
 			Cookies:      nil,
+			MainProgBar:  pixivDlOptions.MainProgBar,
 		}
 		ugoiraArgs.SetContext(pixivDlOptions.GetContext())
 		err := ugoira.DownloadMultipleUgoira(

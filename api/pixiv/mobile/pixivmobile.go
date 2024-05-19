@@ -2,6 +2,7 @@ package pixivmobile
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -127,17 +128,37 @@ func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*http.Res
 	httpfuncs.AddParams(reqArgs.Params, req)
 
 	var res *http.Response
+	retryCount := 1
+	failedHttp3Req := 0
+	isUsingHttp3 := reqArgs.Http3
 	client := httpfuncs.GetHttpClient(reqArgs)
-	client.Timeout = time.Duration(reqArgs.Timeout) * time.Second
-	for i := 1; i <= constants.RETRY_COUNTER; i++ {
+	for retryCount <= constants.RETRY_COUNTER {
 		res, err = client.Do(req)
+		if errors.Is(err, context.Canceled) {
+			return nil, context.Canceled
+		}
+
 		if err == nil {
 			if refreshed {
 				continue
-			} else if res.StatusCode == 200 || !reqArgs.CheckStatus {
+			}
+			if res.StatusCode == 200 || !reqArgs.CheckStatus {
 				return res, nil
 			}
+			retryCount++
+			goto retry
 		}
+
+		httpfuncs.Http2FallbackLogic(
+			&isUsingHttp3,
+			&failedHttp3Req,
+			&retryCount,
+			err,
+			reqArgs,
+			client,
+		)
+
+	retry:
 		time.Sleep(httpfuncs.GetDefaultRandomDelay())
 	}
 	return nil, fmt.Errorf(

@@ -11,23 +11,30 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/quic-go/quic-go/http3"
 )
 
+func GetHttp2Client(reqArgs *RequestArgs) *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{},
+		Timeout:   time.Duration(reqArgs.Timeout) * time.Second,
+	}
+}
+
+func GetHttp3Client(reqArgs *RequestArgs) *http.Client {
+	return &http.Client{
+		Transport: &http3.RoundTripper{},
+		Timeout:   time.Duration(reqArgs.Timeout) * time.Second,
+	}
+}
+
 // Get a new HTTP/2 or HTTP/3 client based on the request arguments
 func GetHttpClient(reqArgs *RequestArgs) *http.Client {
-	if reqArgs.Http2 {
-		return &http.Client{
-			Transport: &http.Transport{
-				DisableCompression: reqArgs.DisableCompression,
-			},
-		}
+	if reqArgs.Http3 {
+		return GetHttp3Client(reqArgs)
 	}
-	return &http.Client{
-		Transport: &http3.RoundTripper{
-			DisableCompression: reqArgs.DisableCompression,
-		},
-	}
+	return GetHttp2Client(reqArgs)
 }
 
 // add headers to the request
@@ -71,6 +78,29 @@ func AddParams(params map[string]string, req *http.Request) {
 	req.URL.RawQuery = query.Encode()
 }
 
+func Http2FallbackLogic(isUsingHttp3 *bool, failedHttp3Req *int, retryCount *int, err error, reqArgs *RequestArgs, client *http.Client) {
+	if *isUsingHttp3 {
+		if *failedHttp3Req < constants.HTTP3_MAX_RETRY {
+			*failedHttp3Req++
+		} else {
+			// if the request failed too many times,
+			// switch to HTTP/2 in the event that the server does not support HTTP/3
+			*client = *GetHttp2Client(reqArgs)
+			*isUsingHttp3 = false
+		}
+	} else {
+		// only start incrementing the retry count
+		// if the request failed and is not using HTTP/3
+		*retryCount++
+	}
+	logger.MainLogger.Errorf(
+		"error %d: request to %s failed, more info => %v",
+		cdlerrors.CONNECTION_ERROR,
+		reqArgs.Url,
+		err,
+	)
+}
+
 // send the request to the target URL and retries if the request was not successful
 func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error) {
 	reqArgs.EditMu.Lock()
@@ -82,24 +112,36 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error
 	var err error
 	var res *http.Response
 
+	retryCount := 1
+	failedHttp3Req := 0
+	isUsingHttp3 := reqArgs.Http3
 	client := GetHttpClient(reqArgs)
-	client.Timeout = time.Duration(reqArgs.Timeout) * time.Second
-	for i := 1; i <= constants.RETRY_COUNTER; i++ {
+	for retryCount <= constants.RETRY_COUNTER {
 		res, err = client.Do(req)
+		if errors.Is(err, context.Canceled) {
+			return nil, context.Canceled
+		}
+
 		if err == nil {
-			if !reqArgs.CheckStatus {
-				return res, nil
-			} else if res.StatusCode == 200 {
+			if res.StatusCode == 200 || !reqArgs.CheckStatus {
 				return res, nil
 			}
 			res.Body.Close()
-		} else if errors.Is(err, context.Canceled) {
-			return nil, context.Canceled
-		} else {
-			break
+			retryCount++
+			goto retry
 		}
 
-		if i < constants.RETRY_COUNTER {
+		Http2FallbackLogic(
+			&isUsingHttp3,
+			&failedHttp3Req,
+			&retryCount,
+			err,
+			reqArgs,
+			client,
+		)
+
+	retry:
+		if retryCount < constants.RETRY_COUNTER {
 			time.Sleep(GetRandomDelay(reqArgs.RetryDelay))
 		}
 	}

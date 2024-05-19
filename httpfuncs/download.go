@@ -241,16 +241,17 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 	// as the Content-Length header may not present due to chunked encoding.
 	headRes, err := reqArgs.RequestHandler(
 		&RequestArgs{
-			Url:         reqArgs.Url,
 			Method:      "HEAD",
+			Url:         reqArgs.Url,
 			Timeout:     dlOptions.HeadReqTimeout,
-			Cookies:     reqArgs.Cookies,
 			Headers:     reqArgs.Headers,
+			Params:      reqArgs.Params,
+			Cookies:     reqArgs.Cookies,
 			UserAgent:   reqArgs.UserAgent,
-			CheckStatus: true,
-			RetryDelay:  reqArgs.RetryDelay,
 			Http3:       reqArgs.Http3,
 			Http2:       reqArgs.Http2,
+			CheckStatus: true,
+			RetryDelay:  reqArgs.RetryDelay,
 			Context:     reqArgs.Context,
 		},
 	)
@@ -401,11 +402,11 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 				filePath,
 				queue,
 				&RequestArgs{
-					Url:            fileUrl,
 					Method:         "GET",
+					Url:            fileUrl,
 					Timeout:        constants.DOWNLOAD_TIMEOUT,
-					Cookies:        dlOptions.Cookies,
 					Headers:        dlOptions.Headers,
+					Cookies:        dlOptions.Cookies,
 					Http2:          !dlOptions.UseHttp3,
 					Http3:          dlOptions.UseHttp3,
 					RetryDelay:     dlOptions.RetryDelay,
