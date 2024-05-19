@@ -51,6 +51,10 @@ func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, cance
 	return pixivMobile, nil
 }
 
+func (pixiv *PixivMobile) SetMainProgBar(mainProgBar progress.ProgressBar) {
+	pixiv.MainProgBar = mainProgBar
+}
+
 func (pixiv *PixivMobile) SetBaseDlDirPath(dlDirPath string) {
 	pixiv.baseDownloadDirPath = dlDirPath
 }

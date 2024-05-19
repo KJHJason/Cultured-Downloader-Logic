@@ -169,6 +169,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 		if err != nil {
 			return err
 		}
+		p.MobileClient.SetMainProgBar(p.MainProgBar)
 		p.MobileClient.SetBaseDlDirPath(p.BaseDownloadDirPath)
 		p.MobileClient.SetUseCacheDb(p.UseCacheDb)
 
