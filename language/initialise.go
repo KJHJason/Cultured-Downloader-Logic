@@ -43,15 +43,24 @@ func needReseedDb() bool {
 	return DEBUG || CURRENT_VERSION > version
 }
 
+func handleInitErr(errMsg string, panicHandler func(msg string)) {
+	if panicHandler != nil {
+		panicHandler(errMsg)
+	}
+	logger.MainLogger.Fatal(errMsg)
+}
+
 func InitLangDb(panicHandler func(msg string)) {
-	database.InitAppDb()
+	err := database.InitAppDb()
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to initialise language db: %v", err)
+		handleInitErr(errMsg, panicHandler)
+	}
+
 	if DEBUG || needReseedDb() {
 		if err := database.AppDb.DeleteBucket(BUCKET); err != nil {
 			errMsg := fmt.Sprintf("failed to reset language db: %v", err)
-			if panicHandler != nil {
-				panicHandler(errMsg)
-			}
-			logger.MainLogger.Fatal(errMsg)
+			handleInitErr(errMsg, panicHandler)
 		}
 
 		initialiseDbData(panicHandler)
@@ -62,13 +71,6 @@ func InitLangDb(panicHandler func(msg string)) {
 
 func parseKey(key, lang string) string {
 	return key + "_" + lang
-}
-
-func handleInitErr(errMsg string, panicHandler func(msg string)) {
-	if panicHandler != nil {
-		panicHandler(errMsg)
-	}
-	logger.MainLogger.Fatal(errMsg)
 }
 
 func initialiseDbData(panicHandler func(msg string)) {
