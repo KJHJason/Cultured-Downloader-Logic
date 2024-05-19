@@ -14,9 +14,9 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/extractor"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -230,7 +230,7 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 	if ugoiraOptions.UseCacheDb {
 		filteredUgoira := make([]*Ugoira, 0, len(ugoiraArgs.ToDownload))
 		for _, ugoira := range ugoiraArgs.ToDownload {
-			if ugoira.CacheKey != "" && cache.UgoiraCacheExists(ugoira.CacheKey) {
+			if ugoira.CacheKey != "" && database.UgoiraCacheExists(ugoira.CacheKey) {
 				continue
 			}
 			filteredUgoira = append(filteredUgoira, ugoira)

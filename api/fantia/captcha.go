@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
@@ -32,7 +32,7 @@ type CaptchaOptions interface {
 
 // Automatically try to solve the reCAPTCHA for Fantia.
 func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
-	readableSite := cache.GetReadableSiteStr(constants.FANTIA)
+	readableSite := database.GetReadableSiteStr(constants.FANTIA)
 	notifier := captchaOptions.GetNotifier()
 	notifier.Alert(
 		fmt.Sprintf("reCAPTCHA detected for the current %s session! Trying to solve it automatically...", readableSite),

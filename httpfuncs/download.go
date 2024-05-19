@@ -18,9 +18,9 @@ import (
 
 	ctxio "github.com/jbenet/go-context/io"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -461,7 +461,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 			if !valid {
 				continue
 			}
-			cache.CachePost(cacheKey)
+			database.CachePost(cacheKey)
 		}
 	}
 

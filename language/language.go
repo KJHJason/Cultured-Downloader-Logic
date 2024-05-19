@@ -2,12 +2,15 @@ package language
 
 import (
 	"strings"
+
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 )
 
 func Translate(key, fallback, lang string) string {
 	fmtKey := strings.ToLower(key)
 	fmtKey = strings.TrimSpace(fmtKey)
-	if val := langDb.GetString(parseKey(fmtKey, lang)); val != "" {
+	fmtKey = parseKey(fmtKey, lang)
+	if val := database.AppDb.GetString(BUCKET, fmtKey); val != "" {
 		return val
 	}
 
@@ -15,12 +18,4 @@ func Translate(key, fallback, lang string) string {
 		return fallback
 	}
 	return key
-}
-
-// IMPORTANT: PLEASE CLOSE THE DATABASE AFTER USE
-func CloseDb() error {
-	if langDb == nil {
-		return nil
-	}
-	return langDb.Close()
 }

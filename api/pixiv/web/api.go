@@ -10,8 +10,8 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -102,7 +102,7 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 	url := getArtworkDetailsApi(artworkId)
 	if dlOptions.UseCacheDb {
 		cacheKey = fmt.Sprintf("https://www.pixiv.net/artworks/%s", artworkId)
-		if cache.PostCacheExists(cacheKey, constants.PIXIV) || cache.UgoiraCacheExists(cacheKey) {
+		if database.PostCacheExists(cacheKey, constants.PIXIV) || database.UgoiraCacheExists(cacheKey) {
 			// either the artwork or the ugoira cache exists
 			return nil, nil, nil
 		}

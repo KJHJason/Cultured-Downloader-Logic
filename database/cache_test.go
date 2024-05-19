@@ -1,19 +1,25 @@
-package cache
+package database
 
 import (
-	"context"
 	"sync"
 	"testing"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 )
 
-func initTestData(t *testing.T, ctx context.Context) {
-	err := InitCacheDb("")
+func resetBuckets() {
+	AppDb.DeleteBucket(POST_BUCKET)
+	AppDb.DeleteBucket(GDRIVE_BUCKET)
+	AppDb.DeleteBucket(UGOIRA_BUCKET)
+	AppDb.DeleteBucket(KEMONO_CREATOR_BUCKET)
+}
+
+func initTestData(t *testing.T) {
+	err := InitAppDb()
 	if err != nil {
 		t.Fatalf("Failed to initialise cache db: %v", err)
 	}
-	CacheDb.ResetDb(ctx)
+	resetBuckets()
 
 	// Add some data to the cache
 	CachePost(ParsePostKey("https://fantia.jp/posts/123456", constants.FANTIA))
@@ -30,12 +36,12 @@ func initTestData(t *testing.T, ctx context.Context) {
 	CacheKemonoCreatorName("https://kemono.su/fanbox/user/1234567", "Kemono Creator")
 }
 
-func initTestDataConcurrently(t *testing.T, ctx context.Context) {
-	err := InitCacheDb("")
+func initTestDataConcurrently(t *testing.T) {
+	err := InitAppDb()
 	if err != nil {
 		t.Fatalf("Failed to initialise cache db: %v", err)
 	}
-	CacheDb.ResetDb(ctx)
+	resetBuckets()
 
 	// Add some data to the cache
 	wg := sync.WaitGroup{}
@@ -84,10 +90,10 @@ func initTestDataConcurrently(t *testing.T, ctx context.Context) {
 		defer wg.Done()
 		go CacheGDrive("https://drive.google.com/file/d/<file_id>/view?usp=drive_link")
 	}()
-	func() { 
-		wg.Add(1); 
-		defer wg.Done(); 
-		go CacheUgoira("https://www.pixiv.net/artworks/118849705") 
+	func() {
+		wg.Add(1)
+		defer wg.Done()
+		go CacheUgoira("https://www.pixiv.net/artworks/118849705")
 	}()
 	func() {
 		wg.Add(1)
@@ -98,9 +104,7 @@ func initTestDataConcurrently(t *testing.T, ctx context.Context) {
 }
 
 func TestCachePost(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	initTestData(t, ctx)
+	initTestData(t)
 
 	// Test getting the post key
 	key := "https://fantia.jp/posts/123456"
@@ -109,7 +113,7 @@ func TestCachePost(t *testing.T) {
 	}
 
 	// Test getting the post key
-	val := GetTime(ParsePostKey(key, constants.FANTIA))
+	val := getPostCache(key, constants.FANTIA)
 	if val.IsZero() {
 		t.Errorf("Expected key to have a time value")
 	}
@@ -120,23 +124,27 @@ func checkCacheValue(t *testing.T, expected []string, value ...*PostCache) {
 		t.Errorf("Expected 2 values, got %d", len(value))
 	}
 
-	if value[0].Url != expected[0] {
-		t.Errorf("Expected %s, got %s", expected[0], value[0])
+	count := 0
+	for _, v := range value {
+		for _, e := range expected {
+			if v.Url == e {
+				count++
+				break
+			}
+		}
 	}
-	if value[1].Url != expected[1] {
-		t.Errorf("Expected %s, got %s", expected[1], value[1])
+	if count != 2 {
+		t.Errorf("Expected 2 values to match the expected values")
 	}
 }
 
 func TestGetAllCacheForPlatform(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	initTestData(t, ctx)
+	initTestData(t)
 
 	// Test getting all cache for a platform
-	cache := GetAllCacheForPlatform(ctx, constants.FANTIA)
+	cache := GetAllCacheForPlatform(constants.FANTIA)
 	if len(cache) != 2 {
-		t.Errorf("Expected 2 cache entries for Fantia")
+		t.Fatalf("Expected 2 cache entries for Fantia, got %d", len(cache))
 	}
 	checkCacheValue(
 		t,
@@ -144,9 +152,9 @@ func TestGetAllCacheForPlatform(t *testing.T) {
 		cache...,
 	)
 
-	cache = GetAllCacheForPlatform(ctx, constants.PIXIV)
+	cache = GetAllCacheForPlatform(constants.PIXIV)
 	if len(cache) != 2 {
-		t.Errorf("Expected 2 cache entries for Pixiv")
+		t.Fatalf("Expected 2 cache entries for Pixiv, got %d", len(cache))
 	}
 	checkCacheValue(
 		t,
@@ -154,9 +162,9 @@ func TestGetAllCacheForPlatform(t *testing.T) {
 		cache...,
 	)
 
-	cache = GetAllCacheForPlatform(ctx, constants.PIXIV_FANBOX)
+	cache = GetAllCacheForPlatform(constants.PIXIV_FANBOX)
 	if len(cache) != 2 {
-		t.Errorf("Expected 2 cache entries for Pixiv Fanbox")
+		t.Fatalf("Expected 2 cache entries for Pixiv Fanbox, got %d", len(cache))
 	}
 	checkCacheValue(
 		t,
@@ -164,9 +172,9 @@ func TestGetAllCacheForPlatform(t *testing.T) {
 		cache...,
 	)
 
-	cache = GetAllCacheForPlatform(ctx, constants.KEMONO)
+	cache = GetAllCacheForPlatform(constants.KEMONO)
 	if len(cache) != 2 {
-		t.Errorf("Expected 2 cache entries for Kemono")
+		t.Fatalf("Expected 2 cache entries for Kemono, got %d", len(cache))
 	}
 	checkCacheValue(
 		t,
@@ -176,9 +184,7 @@ func TestGetAllCacheForPlatform(t *testing.T) {
 }
 
 func TestConcurrency(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	initTestDataConcurrently(t, ctx)
+	initTestDataConcurrently(t)
 
 	// Test getting the post key
 	key := "https://fantia.jp/posts/123456"
@@ -187,55 +193,30 @@ func TestConcurrency(t *testing.T) {
 	}
 
 	// Test getting the post key
-	val := GetTime(ParsePostKey(key, constants.FANTIA))
+	val := getPostCache(key, constants.FANTIA)
 	if val.IsZero() {
 		t.Errorf("Expected key to have a time value")
 	}
 }
 
 func TestDeletion(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	initTestData(t, ctx)
+	initTestData(t)
 
 	// Test getting all cache for all platforms
-	cache := GetAllCacheForAllPlatforms(ctx)
+	cache := GetAllCacheForAllPlatforms()
 	if len(cache) != 8 {
 		t.Errorf("Expected 8 cache entries")
 	}
 
 	// Test deleting all cache for all platforms
-	err := DeletePostCacheForAllPlatforms(ctx)
+	err := DeletePostCacheForAllPlatforms()
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
 
 	// Test getting all cache for all platforms
-	cache = GetAllCacheForAllPlatforms(ctx)
+	cache = GetAllCacheForAllPlatforms()
 	if len(cache) != 0 {
 		t.Errorf("Expected 0 cache entries")
-	}
-}
-
-func TestListAllCache(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	initTestData(t, ctx)
-
-	// Test getting all cache
-	var cache []*CacheKeyValue
-	CacheDb.TraverseDb(ctx, func(key, val []byte) {
-		cache = append(cache, &CacheKeyValue{Key: key, Val: val})
-	})
-
-	for _, c := range cache {
-		var val string
-		datetime := ParseBytesToDateTime(c.Val)
-		if !datetime.IsZero() {
-			val = datetime.String()
-		} else {
-			val = string(c.Val)
-		}
-		t.Logf("Key: %s, Val: %s", c.Key, val)
 	}
 }

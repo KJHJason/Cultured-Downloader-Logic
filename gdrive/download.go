@@ -14,8 +14,8 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -258,7 +258,7 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 			var cacheKey string
 			if gdrive.useCacheDb {
 				cacheKey = file.GetUrl()
-				if cache.GDriveCacheExists(cacheKey) {
+				if database.GDriveCacheExists(cacheKey) {
 					prog.Increment()
 					return
 				}
@@ -284,7 +284,7 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 			}
 
 			if !hasErr && gdrive.useCacheDb {
-				cache.CacheGDrive(cacheKey)
+				database.CacheGDrive(cacheKey)
 			}
 
 			prog.Increment()

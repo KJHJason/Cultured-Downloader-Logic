@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -70,7 +70,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 
 	var cacheKey string
 	if dlOptions.UseCacheDb {
-		if name := cache.GetKemonoCreatorCache(url); name != "" {
+		if name := database.GetKemonoCreatorCache(url); name != "" {
 			return name, nil
 		}
 	} else {
@@ -106,7 +106,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 	}
 
 	if dlOptions.UseCacheDb {
-		cache.CacheKemonoCreatorName(url, creatorName)
+		database.CacheKemonoCreatorName(url, creatorName)
 	} else {
 		creatorNameCache[cacheKey] = creatorName
 	}
@@ -123,8 +123,8 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 	)
 	var cacheKey string
 	if dlOptions.UseCacheDb {
-		cacheKey = cache.ParsePostKey(url, constants.KEMONO)
-		if cache.PostCacheExists(url, constants.KEMONO) {
+		cacheKey = database.ParsePostKey(url, constants.KEMONO)
+		if database.PostCacheExists(url, constants.KEMONO) {
 			return nil, nil, nil
 		}
 	}

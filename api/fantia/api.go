@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -111,7 +111,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 	var cacheKey string
 	if dlOptions.UseCacheDb {
 		cacheKey = constants.FANTIA_POST_API_URL + postId
-		if cache.PostCacheExists(cacheKey, constants.FANTIA) {
+		if database.PostCacheExists(cacheKey, constants.FANTIA) {
 			return false, nil, nil
 		}
 	}
@@ -174,7 +174,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		return true, nil, errorSlice
 	}
 	if dlOptions.UseCacheDb {
-		cache.CachePost(cache.ParsePostKey(cacheKey, constants.FANTIA))
+		database.CachePost(database.ParsePostKey(cacheKey, constants.FANTIA))
 	}
 	return false, postGdriveUrls, nil
 }

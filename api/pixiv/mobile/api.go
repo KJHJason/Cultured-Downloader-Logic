@@ -10,8 +10,8 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -33,7 +33,7 @@ func (pixiv *PixivMobile) getUgoiraMetadata(cacheKey, illustId, dlFilePath strin
 	)
 
 	if pixiv.useCacheDb {
-		if cache.UgoiraCacheExists(cacheKey) {
+		if database.UgoiraCacheExists(cacheKey) {
 			return nil, nil
 		}
 	}
@@ -85,7 +85,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 	if pixiv.useCacheDb {
 		artworkCacheKey = fmt.Sprintf("%s?illust_id=%s", constants.PIXIV_MOBILE_ARTWORK_URL, artworkId)
 		ugoiraCacheKey = getUgoiraUrl(artworkId)
-		if cache.PostCacheExists(artworkCacheKey, constants.PIXIV) || cache.UgoiraCacheExists(ugoiraCacheKey) {
+		if database.PostCacheExists(artworkCacheKey, constants.PIXIV) || database.UgoiraCacheExists(ugoiraCacheKey) {
 			// either the artwork or the ugoira is already in the cache
 			return nil, nil, nil
 		}
@@ -118,7 +118,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 
 	artworkDetails, ugoiraToDl, err := pixiv.processArtworkJson(ugoiraCacheKey, artworkJson.Illust)
 	if pixiv.useCacheDb {
-		artworkCacheKey = cache.ParsePostKey(artworkCacheKey, constants.PIXIV)
+		artworkCacheKey = database.ParsePostKey(artworkCacheKey, constants.PIXIV)
 		for _, artwork := range artworkDetails {
 			artwork.CacheKey = artworkCacheKey
 		}

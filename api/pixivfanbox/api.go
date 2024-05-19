@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -67,7 +67,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 		var cacheKey string
 		if dlOptions.UseCacheDb {
 			cacheKey = fmt.Sprintf("%s?postId=%s", url, postId)
-			if cache.PostCacheExists(cacheKey, constants.PIXIV_FANBOX) {
+			if database.PostCacheExists(cacheKey, constants.PIXIV_FANBOX) {
 				progress.Increment()
 				continue
 			}
@@ -116,8 +116,8 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 				)
 			} else {
 				if dlOptions.UseCacheDb {
-					cacheKey = cache.ParsePostKey(cacheKey, constants.PIXIV_FANBOX)
-					cache.CachePost(cacheKey)
+					cacheKey = database.ParsePostKey(cacheKey, constants.PIXIV_FANBOX)
+					database.CachePost(cacheKey)
 				}
 				resChan <- &resChanVal{cacheKey: cacheKey, response: res}
 			}

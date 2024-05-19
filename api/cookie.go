@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/cache"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -137,13 +137,13 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 func processCookieVerification(website string, err error) error {
 	if err != nil {
 		logger.LogError(
-			fmt.Errorf("error occurred when trying to verify %s cookie...\n%w", cache.GetReadableSiteStr(website), err),
+			fmt.Errorf("error occurred when trying to verify %s cookie...\n%w", database.GetReadableSiteStr(website), err),
 			logger.ERROR,
 		)
 		return fmt.Errorf(
 			"error %d: could not verify %s cookie.\nPlease refer to the log file for more details",
 			cdlerrors.INPUT_ERROR,
-			cache.GetReadableSiteStr(website),
+			database.GetReadableSiteStr(website),
 		)
 	}
 	return nil
@@ -162,7 +162,7 @@ func VerifyAndGetCookie(website, cookieValue, userAgent string) (*http.Cookie, e
 		return nil, fmt.Errorf(
 			"error %d: %s cookie is invalid",
 			cdlerrors.INPUT_ERROR,
-			cache.GetReadableSiteStr(website),
+			database.GetReadableSiteStr(website),
 		)
 	}
 	return cookie, nil
@@ -181,7 +181,7 @@ func VerifyCookies(website, userAgent string, cookies []*http.Cookie) error {
 			return fmt.Errorf(
 				"error %d: %s cookie is invalid",
 				cdlerrors.INPUT_ERROR,
-				cache.GetReadableSiteStr(website),
+				database.GetReadableSiteStr(website),
 			)
 		}
 		return nil
@@ -190,6 +190,6 @@ func VerifyCookies(website, userAgent string, cookies []*http.Cookie) error {
 	return fmt.Errorf(
 		"error %d: %s cookie not found",
 		cdlerrors.INPUT_ERROR,
-		cache.GetReadableSiteStr(website),
+		database.GetReadableSiteStr(website),
 	)
 }

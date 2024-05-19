@@ -1,35 +1,34 @@
 package language
 
 import (
-	"context"
 	"testing"
 
-	"github.com/cockroachdb/pebble"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 )
 
 func TestPrintAllKV(t *testing.T) {
-	defer CloseDb()
+	defer database.CloseDb()
 
-	InitLangDb(context.Background(), nil)
-	iter, err := langDb.Db.NewIter(&pebble.IterOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer iter.Close()
-
-	for iter.First(); iter.Valid(); iter.Next() {
-		t.Logf("%s: %s", iter.Key(), iter.Value())
+	InitLangDb(func(msg string) {
+		t.Error(msg)
+	})
+	for _, kv := range database.AppDb.GetAllKeyValue(BUCKET) {
+		t.Log(kv.GetKey(), kv.GetVal())
 	}
 }
 
 func TestTranslationLogic(t *testing.T) {
-	defer CloseDb()
+	defer database.CloseDb()
 
-	if Translate("home", EN, "") != "Home" {
-		t.Error("expected: Home")
+	InitLangDb(func(msg string) {
+		t.Error(msg)
+	})
+	t.Log(parseKey("home", EN))
+	if val := Translate("home", "", EN); val != "Home" {
+		t.Errorf("got: %v, expected: Home", val)
 	}
 
-	if Translate("home", JP, "") != "ホーム" {
-		t.Error("expected: ホーム")
+	if val := Translate("home", "", JP); val != "ホーム" {
+		t.Errorf("got: %v, expected: ホーム", val)
 	}
 }
