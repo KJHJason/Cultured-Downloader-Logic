@@ -34,7 +34,7 @@ var (
 	)
 )
 
-func init() {
+func InitLogger() {
 	// create the logs directory if it does not exist
 	os.MkdirAll(logFolder, LOG_PERMS)
 
