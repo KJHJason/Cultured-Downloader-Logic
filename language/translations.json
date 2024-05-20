@@ -1036,6 +1036,10 @@
         }
     },
     "cache_base": {
+        "search": {
+            "en": "Search",
+            "jp": "検索"
+        },
         "this may take a while. please wait!": {
             "en": "This may take a while. Please wait!",
             "jp": "しばらくお待ちください！"
@@ -1090,7 +1094,7 @@
         },
         "filter_none": {
             "en": "None",
-            "jp": "なし"
+            "jp": "何も"
         },
         "showing cache_front": {
             "en": "Showing cache for ",
@@ -1098,7 +1102,7 @@
         },
         "showing cache_back": {
             "en": ".",
-            "jp": "のキャッシュを表示"
+            "jp": "のキャッシュを表示しています"
         },
         "filter": {
             "en": "Filter",
