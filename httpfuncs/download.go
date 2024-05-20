@@ -58,6 +58,13 @@ func getFullFilePath(res *http.Response, filePath string) (string, error) {
 // check if the file size matches the content length
 // if not, then the file does not exist or is corrupted and should be re-downloaded
 func checkIfCanSkipDl(fileSize, contentLength int64, forceOverwrite, supportRange bool) bool {
+	if forceOverwrite {
+		return false
+	}
+	if fileSize == -1 {
+		return false // file does not exist
+	}
+
 	if fileSize == contentLength {
 		// If the file already exists and the file size
 		// matches the expected file size in the Content-Length header,
@@ -65,10 +72,10 @@ func checkIfCanSkipDl(fileSize, contentLength int64, forceOverwrite, supportRang
 		return true
 	}
 
-	if !forceOverwrite && (!supportRange && fileSize > 0) {
+	if fileSize > 0 && !supportRange {
 		// If the file already exists and have more than 0 bytes
-		// but the Content-Length header does not exist in the response,
-		// we will assume that the file is already downloaded
+		// but the server doesn't have Content-Length headers or doesn't
+		// support range requests, we will assume that the file is already downloaded
 		// and skip the download process if the overwrite flag is false.
 		return true
 	}

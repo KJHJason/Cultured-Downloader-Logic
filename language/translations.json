@@ -283,6 +283,10 @@
         "please wait a moment": {
             "en": "Please wait a moment",
             "jp": "しばらくお待ちください"
+        },
+        "do not know where to obtain your session cookie? Check the guide using the link below!": {
+            "en": "Do not know where to obtain your session cookie? Check the guide using the link below!",
+            "jp": "セッションクッキーをどこで取得すればよいかわからない場合は、以下のリンクを使用してガイドを確認してください！"
         }
     },
     "program_info": {
@@ -407,36 +411,36 @@
             "jp": "タイトルとキャプション"
         },
         "by date": {
-            "en": "By Oldest Date",
+            "en": "By Oldest Posts",
             "jp": "古い順"
         },
         "by date (descending)": {
-            "en": "By Newest Date",
+            "en": "By Newest Posts",
             "jp": "新しい順"
         },
         "by popularity": {
-            "en": "By Least Popular",
-            "jp": "全体の人気のない順"
+            "en": "By Least Popular (Pixiv Premium Required)",
+            "jp": "全体の人気のない順（pixivプレミアが必要）"
         },
         "by popularity (descending)": {
-            "en": "By Most Popular",
-            "jp": "全体の人気順"
+            "en": "By Most Popular (Pixiv Premium Required)",
+            "jp": "全体の人気順（pixivプレミアが必要）"
         },
         "by popularity (male)": {
-            "en": "By Least Popular to Male Users",
-            "jp": "男性の人気のない順"
+            "en": "By Least Popular to Male Users (Pixiv Premium Required)",
+            "jp": "男性の人気のない順（pixivプレミアが必要）"
         },
         "by popularity (descending/male)": {
-            "en": "By Most Popular to Male Users",
-            "jp": "男性の人気順"
+            "en": "By Most Popular to Male Users (Pixiv Premium Required)",
+            "jp": "男性の人気順（pixivプレミアが必要）"
         },
         "by popularity (female)": {
-            "en": "By Least Popular to Female Users",
-            "jp": "女性の人気のない順"
+            "en": "By Least Popular to Female Users (Pixiv Premium Required)",
+            "jp": "女性の人気のない順（pixivプレミアが必要）"
         },
         "by popularity (descending/female)": {
-            "en": "By Most Popular to Female Users",
-            "jp": "女性の人気順"
+            "en": "By Most Popular to Female Users (Pixiv Premium Required)",
+            "jp": "女性の人気順（pixivプレミアが必要）"
         },
         "display ai works": {
             "en": "Display AI Works",
@@ -486,9 +490,13 @@
             "en": "Ugoira Quality:",
             "jp": "うごイラ品質："
         },
-        "Lower values mean better quality but longer conversion times!": {
-            "en": "Lower values mean better quality but longer conversion times!",
-            "jp": "値が小さいほど品質が向上しますが、変換時間が長くなります！"
+        "delete the downloaded ugoira zip file containing the original image frames after converting it into a usable format via ffmpeg.": {
+            "en": "Delete the downloaded Ugoira zip file containing the original image frames after converting it into a usable format via FFmpeg.",
+            "jp": "FFmpegを使用して使用可能な形式に変換した後、元の画像フレームを含むダウンロードしたうごイラZIPファイルを削除します。"
+        },
+        "a lower value would result in better quality but longer conversion times. the range is 0-51 for mp4 and 0-63 for webm. the recommended value is around 10 to balance between quality and conversion time.": {
+            "en": "A lower value would result in better quality but longer conversion times. The range is 0-51 for mp4 and 0-63 for webm. The recommended value is around 10 to balance between quality and conversion time.",
+            "jp": "低い値は品質が向上しますが、変換時間が長くなります。範囲はmp4の場合0-51、webmの場合0-63です。品質と変換時間のバランスを取るために、お勧めの値は約10です。"
         },
         "Loading the rest of the form...": {
             "en": "Loading the rest of the form...",
@@ -557,6 +565,22 @@
         "view cache": {
             "en": "View Cache",
             "jp": "キャッシュを表示"
+        },
+        "organise downloaded images into numbered folders and image files.": {
+            "en": "Organise downloaded images into numbered folders and image files.",
+            "jp": "ダウンロードした画像を番号付きのフォルダと画像ファイルに整理します。"
+        },
+        "this should not be turned on as the program will check the expected file size with your local/downloaded files and resume downloading if it's incomplete except for pixiv fanbox where it will skip if the file exists. hence, this is not recommended unless you have corrupted files or incomplete pixiv fanbox files because your anti-virus software may flag the program as a ransomware!": {
+            "en": "This should not be turned on as the program will check the expected file size with your local/downloaded files and resume downloading if it's incomplete except for Pixiv Fanbox where it will skip if the file exists. Hence, this is not recommended unless you have corrupted files or incomplete Pixiv Fanbox files because your anti-virus software may flag the program as a ransomware!",
+            "jp": "この設定は、プログラムが期待されるファイルサイズをローカル/ダウンロードしたファイルとチェックし、不完全な場合はダウンロードを再開します。Pixivファンボックスの場合は、ファイルが存在する場合はスキップします。したがって、これは、破損したファイルや不完全なPixivファンボックスファイルがある場合を除いてはお勧めしません。なぜなら、あなたのウイルス対策ソフトウェアがプログラムをランサムウェアとしてフラグ付けする可能性があるからです！"
+        },
+        "detects other url(s) like mega and logs them in the respective post folder.": {
+            "en": "Detects other URL(s) like MEGA and logs them in the respective post folder.",
+            "jp": "MEGAなどの他のURLを検出し、それらを該当する投稿フォルダにログします。"
+        },
+        "store downloaded post url(s) to prevent re-downloading the same post to speed up future downloads. you should only turn this off if you want to download the post again either due to updated content or downloading with a different settings like downloading GDrive links. alternatively, you can manage the cache database by clicking the \"view cache\" button below.": {
+            "en": "Store downloaded post URL(s) to prevent re-downloading the same post to speed up future downloads. You should only turn this off if you want to download the post again either due to updated content or downloading with a different settings like downloading GDrive links. Alternatively, you can manage the cache database by clicking the \"View Cache\" button below.",
+            "jp": "同じ投稿を再ダウンロードして将来のダウンロードを高速化するために、ダウンロードした投稿URLを保存します。更新されたコンテンツのために投稿を再ダウンロードするか、GDriveリンクをダウンロードするなど、異なる設定で投稿をダウンロードする場合にのみ、これをオフにする必要があります。または、下の「キャッシュを表示」ボタンをクリックしてキャッシュデータベースを管理できます。"
         }
     },
     "general": {
