@@ -127,12 +127,12 @@ var (
 		fmt.Sprintf(`^%s$`, PAGE_NUM_REGEX_STR),
 	)
 	NUMBER_REGEX     = regexp.MustCompile(`^\d+$`)
-	PASSWORD_TEXTS   = []string{"パス", "Pass", "pass", "密码"}
-	PASSWORD_REGEXES = []*regexp.Regexp{
+	PASSWORD_TEXTS   = [...]string{"パス", "Pass", "pass", "密码"}
+	PASSWORD_REGEXES = [...]*regexp.Regexp{
 		regexp.MustCompile(`ダウンロード(?:<\/span>)?<\/a><\/p><p>[\w-]+<\/p>`),
 		regexp.MustCompile(`ダウンロード\n([\w-]+)\n`),
 	}
-	EXTERNAL_DOWNLOAD_PLATFORMS = []string{"mega", "gigafile", "dropbox", "mediafire"}
+	EXTERNAL_DOWNLOAD_PLATFORMS = [...]string{"mega", "gigafile", "dropbox", "mediafire"}
 
 	// For GDrive
 	GDRIVE_URL_REGEX = regexp.MustCompile(
