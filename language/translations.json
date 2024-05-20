@@ -295,11 +295,11 @@
             "jp": "更新を確認中..."
         },
         "outdated, last checked at": {
-            "en": "Outdated, last checked at",
+            "en": "Outdated, last checked at ",
             "jp": "古い、最後に確認した日時"
         },
         "up-to-date, last checked at": {
-            "en": "Up-to-date, last checked at",
+            "en": "Up-to-date, last checked at ",
             "jp": "最新、最後に確認した日時"
         },
         "if you like using Cultured Downloader, please consider giving it a star on": {
