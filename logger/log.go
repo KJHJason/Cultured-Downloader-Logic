@@ -17,43 +17,59 @@ import (
 
 const (
 	LOG_SUFFIX    = "\n\n"
-	LOG_PERMS     = 0644
+	LOG_PERMS     = 0644 // rw-r--r--
 	LOG_THRESHOLD = 15 * 24 * time.Hour
 )
 
 var (
 	MainLogger  Logger
 	logFolder   = filepath.Join(iofuncs.APP_PATH, "logs")
-	logFilePath = filepath.Join(
-		logFolder,
-		fmt.Sprintf(
-			"cultured_downloader-logic_v%s_%s.log",
-			constants.VERSION,
-			time.Now().Format("2006-01-02"),
-		),
-	)
+	logFilePath = filepath.Join(logFolder, getLogFileName())
 )
 
-func InitLogger() {
+func getLogFileName() string {
+	return fmt.Sprintf(
+		"cultured_downloader-logic_v%s_%s.log",
+		constants.VERSION,
+		time.Now().Format("2006-01-02"),
+	)
+}
+
+func init() {
 	// create the logs directory if it does not exist
 	os.MkdirAll(logFolder, LOG_PERMS)
 
 	// will be opened throughout the program's runtime
 	// hence, there is no need to call f.Close() at the end of this function
+	logFlags := os.O_WRONLY | os.O_CREATE | os.O_APPEND
 	f, fileErr := os.OpenFile(
 		logFilePath,
-		os.O_WRONLY|os.O_CREATE|os.O_APPEND,
-		0666,
+		logFlags,
+		LOG_PERMS,
 	)
-	if fileErr != nil {
+	if fileErr == nil {
+		MainLogger = NewLogger(f)
+	} else {
 		fileErr = fmt.Errorf(
 			"error opening log file: %w\nlog file path: %s",
 			fileErr,
 			logFilePath,
 		)
-		panic(fileErr)
+
+		// fallback to cwd if the logs directory cannot be created
+		var fallbackFileErr error
+		f, fallbackFileErr = os.OpenFile(
+			getLogFileName(),
+			logFlags,
+			LOG_PERMS,
+		)
+		if fallbackFileErr != nil {
+			panic(fileErr)
+		}
+
+		MainLogger = NewLogger(f)
+		LogError(fileErr, ERROR)
 	}
-	MainLogger = NewLogger(f)
 	DeleteEmptyAndOldLogs()
 }
 
