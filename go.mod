@@ -6,7 +6,7 @@ retract v1.0.2 // old unstable ver
 
 require (
 	github.com/PuerkitoBio/goquery v1.9.2
-	github.com/chromedp/cdproto v0.0.0-20240512230644-b3296df1660c
+	github.com/chromedp/cdproto v0.0.0-20240519224452-66462be74baa
 	github.com/chromedp/chromedp v0.9.5
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/joho/godotenv v1.5.1
