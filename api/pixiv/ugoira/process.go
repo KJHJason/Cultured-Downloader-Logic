@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"syscall"
 
@@ -73,9 +72,7 @@ func ConvertUgoira(ugoiraInfo *Ugoira, imagesFolderPath string, ugoiraFfmpeg *Ug
 
 	// convert the frames to a gif or a video
 	cmd := exec.CommandContext(ugoiraFfmpeg.context, ugoiraFfmpeg.ffmpegPath, args...)
-	if runtime.GOOS == "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	}
+	configs.PrepareCmdForBgTask(cmd)
 	// cmd.Stderr = os.Stderr
 	// cmd.Stdout = os.Stdout
 

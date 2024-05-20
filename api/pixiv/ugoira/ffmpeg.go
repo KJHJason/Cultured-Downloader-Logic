@@ -7,11 +7,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
-	"syscall"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -135,9 +134,7 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 		"-vf", "palettegen",
 		palettePath,
 	)
-	if runtime.GOOS == "windows" {
-		imagePaletteCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	}
+	configs.PrepareCmdForBgTask(imagePaletteCmd)
 	if constants.DEBUG_MODE {
 		imagePaletteCmd.Stdout = os.Stdout
 		imagePaletteCmd.Stderr = os.Stderr
