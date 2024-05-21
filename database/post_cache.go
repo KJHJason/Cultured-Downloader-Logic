@@ -203,10 +203,10 @@ func GetAllCacheForAllPlatforms() []*PostCache {
 }
 
 type CacheKeyValue struct {
-	Key      string
-	Val      time.Time
-	Bucket   string
-	CacheKey string
+	Key      string    `json:"Key"`
+	Val      time.Time `json:"Val"`
+	Bucket   string    `json:"Bucket"`
+	CacheKey string    `json:"CacheKey"`
 }
 
 func newCacheKeyValues(cache []*KeyValue) []*CacheKeyValue {
