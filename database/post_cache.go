@@ -202,44 +202,20 @@ func GetAllCacheForAllPlatforms() []*PostCache {
 	return allCache
 }
 
-type CacheKeyValue struct {
-	Key      string    `json:"Key"`
-	Val      time.Time `json:"Val"`
-	Bucket   string    `json:"Bucket"`
-	CacheKey string    `json:"CacheKey"`
-}
-
-func newCacheKeyValues(cache []*KeyValue) []*CacheKeyValue {
-	if len(cache) == 0 {
-		return make([]*CacheKeyValue, 0)
-	}
-
-	newCache := make([]*CacheKeyValue, 0, len(cache))
-	for _, c := range cache {
-		newCache = append(newCache, &CacheKeyValue{
-			Key:      c.GetKey(),
-			Val:      ParseBytesToDateTime([]byte(c.GetVal())),
-			Bucket:   c.Bucket,
-			CacheKey: c.GetKey(),
-		})
-	}
-	return newCache
-}
-
 func DeletePostCacheForAllPlatforms() error {
 	return AppDb.DeleteBucket(POST_BUCKET)
 }
 
-func GetAllGdriveCache() []*CacheKeyValue {
-	return newCacheKeyValues(AppDb.GetAllKeyValue(GDRIVE_BUCKET))
+func GetAllGdriveCache() []*KeyValue {
+	return AppDb.GetAllKeyValue(GDRIVE_BUCKET)
 }
 
 func DeleteAllGdriveCache() error {
 	return AppDb.DeleteBucket(GDRIVE_BUCKET)
 }
 
-func GetAllUgoiraCache() []*CacheKeyValue {
-	return newCacheKeyValues(AppDb.GetAllKeyValue(UGOIRA_BUCKET))
+func GetAllUgoiraCache() []*KeyValue {
+	return AppDb.GetAllKeyValue(UGOIRA_BUCKET)
 }
 
 func DeleteAllUgoiraCache() error {
