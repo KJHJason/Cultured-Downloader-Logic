@@ -115,11 +115,11 @@ func CacheKemonoCreatorName(key, creatorName string) {
 }
 
 type PostCache struct {
-	Url      string
-	Platform string
-	Datetime time.Time
-	CacheKey string
-	Bucket   string
+	Url      string    `json:"Url"`
+	Platform string    `json:"Platform"`
+	Datetime time.Time `json:"Datetime"`
+	CacheKey string    `json:"CacheKey"`
+	Bucket   string    `json:"Bucket"`
 }
 
 // Returns a readable format of the website name for the user

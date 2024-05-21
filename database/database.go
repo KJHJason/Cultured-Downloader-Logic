@@ -96,12 +96,12 @@ func (db *DbWrapper) DeleteBucket(bucket string) error {
 }
 
 type KeyValue struct {
-	Key    []byte
-	Val    []byte
-	Bucket string
+	Key    []byte `json:"Key"`
+	Val    []byte `json:"Val"`
+	Bucket string `json:"Bucket"`
 
-	KeyStr string
-	ValStr string
+	KeyStr string `json:"KeyStr"`
+	ValStr string `json:"ValStr"`
 }
 
 func (ckv KeyValue) GetKey() string {
