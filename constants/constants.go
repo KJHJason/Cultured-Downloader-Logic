@@ -8,7 +8,7 @@ import (
 const (
 	DEBUG_MODE             = false // Will save a copy of all JSON response from the API
 	DEFAULT_PERMS          = 0755  // Owner: rwx, Group: rx, Others: rx
-	VERSION                = "1.1.5"
+	VERSION                = "1.1.6"
 	MAX_RETRY_DELAY        = 3
 	MIN_RETRY_DELAY        = 1
 	HTTP3_MAX_RETRY        = 2
@@ -153,8 +153,8 @@ var (
 		// Note: the "original_url" field points to the "url" field in the JSON response
 		`"url":"(?P<url>https://cc\.fantia\.jp/uploads/album_image/file/[\d]+/[\w-]+\.(?P<ext>[a-z]+)\?[^"]+)"`,
 	)
-	FANTIA_COMMENT_REGEX_EXT_IDX = FANTIA_IMAGE_URL_REGEX.SubexpIndex("ext")
-	FANTIA_COMMENT_REGEX_URL_IDX = FANTIA_IMAGE_URL_REGEX.SubexpIndex("url")
+	FANTIA_COMMENT_REGEX_EXT_IDX = FANTIA_COMMENT_IMAGE_URL_REGEX.SubexpIndex("ext")
+	FANTIA_COMMENT_REGEX_URL_IDX = FANTIA_COMMENT_IMAGE_URL_REGEX.SubexpIndex("url")
 
 	FANTIA_IMAGE_URL_REGEX = regexp.MustCompile(
 		`^https://cc\.fantia\.jp/uploads/post_content_photo/file/[\d]+/[\w-]+\.(?P<ext>[a-z]+)\?`,
