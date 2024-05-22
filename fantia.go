@@ -2,6 +2,7 @@ package cdlogic
 
 import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/fantia"
+	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
@@ -30,6 +31,42 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 			gdriveLinks = append(gdriveLinks, gdriveUrls...)
 		}
 		downloadedPosts = true
+	}
+
+	if len(fantiaDl.ProductFanclubIds) > 0 && fantiaDlOptions.CtxIsActive() {
+		if errSlice := fantiaDl.GetCreatorsProducts(fantiaDlOptions); len(errSlice) > 0 {
+			errorSlice = append(errorSlice, errSlice...)
+		}
+	}
+
+	if len(fantiaDl.ProductIds) > 0 && fantiaDlOptions.CtxIsActive() {
+		productContents, errSlice := fantiaDl.GetProducts(fantiaDlOptions)
+		if len(errSlice) > 0 {
+			errorSlice = append(errorSlice, errSlice...)
+		}
+
+		cancelled, errSlice := httpfuncs.DownloadUrls(
+			productContents,
+			&httpfuncs.DlOptions{
+				Context:        fantiaDlOptions.GetContext(),
+				MaxConcurrency: constants.FANTIA_MAX_CONCURRENCY,
+				Cookies:        fantiaDlOptions.SessionCookies,
+				UseHttp3:       constants.FANTIA_PRODUCT_USE_HTTP3,
+				SupportRange:   constants.FANTIA_RANGE_SUPPORTED,
+				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
+				ProgressBarInfo: &progress.ProgressBarInfo{
+					MainProgressBar:      fantiaDlOptions.MainProgBar,
+					DownloadProgressBars: fantiaDlOptions.DownloadProgressBars,
+				},
+			},
+			fantiaDlOptions.Configs,
+		)
+		if cancelled {
+			return nil
+		}
+		if len(errSlice) > 0 {
+			errorSlice = append(errorSlice, errSlice...)
+		}
 	}
 
 	if fantiaDlOptions.GdriveClient != nil && len(gdriveLinks) > 0 && fantiaDlOptions.CtxIsActive() {

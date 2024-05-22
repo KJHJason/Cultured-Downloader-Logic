@@ -1,11 +1,14 @@
 package fantia
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
@@ -13,6 +16,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/PuerkitoBio/goquery"
 )
 
 type postContentId struct {
@@ -230,4 +234,189 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 	}
 	progress.Stop(false)
 	return urlsToDownload, gdriveLinks, nil
+}
+
+func getAndProcessProductPaidContent(purchaseRelativeUrl, productId string, dlOptions *FantiaDlOptions) ([]string, error) {
+	res, err := getFantiaProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		err = fmt.Errorf(
+			"fantia error %d: failed to parse response body when getting paid content from Fantia: %w",
+			cdlerrors.HTML_ERROR,
+			err,
+		)
+		logger.LogError(err, logger.ERROR)
+		return nil, nil
+	}
+
+	paidContentUrls := make([]string, 0)
+	doc.Find("a.btn.btn-primary").Each(func(i int, s *goquery.Selection) {
+		href, exists := s.Attr("href")
+		if exists && strings.HasPrefix(href, "/products") && strings.HasSuffix(href, "/content_download") {
+			paidContentUrls = append(paidContentUrls, constants.FANTIA_URL+href)
+		}
+	})
+	return paidContentUrls, nil
+}
+
+func getCreatorNameAndProductName(wg *sync.WaitGroup, productId string, doc *goquery.Document) (creatorName, productName string) {
+	defer wg.Done()
+	creatorName = doc.Find(".fanclub-show-header h1.fanclub-name a").Text()
+	productName = doc.Find("h1.product-title").Text()
+
+	if creatorName == "" {
+		htmlContent, err := doc.Html()
+		if err != nil {
+			htmlContent = "failed to get HTML"
+		}
+		//lint:ignore ST1005 Since the html content is long, it's better to have it on a new line for readability
+		errMsg := fmt.Errorf(
+			"fantia error %d: failed to get creator name from product id %q, please report this issue with the html content below;\n%s\n",
+			cdlerrors.HTML_ERROR,
+			productId,
+			htmlContent,
+		)
+		logger.LogError(errMsg, logger.ERROR)
+		creatorName = constants.FANTIA_UNKNOWN_CREATOR
+	}
+	if productName == "" {
+		htmlContent, err := doc.Html()
+		if err != nil {
+			htmlContent = "failed to get HTML"
+		}
+		//lint:ignore ST1005 Since the html content is long, it's better to have it on a new line for readability
+		errMsg := fmt.Errorf(
+			"fantia error %d: failed to get product name from product id %q, please report this issue with the html content below;\n%s\n",
+			cdlerrors.HTML_ERROR,
+			productId,
+			htmlContent,
+		)
+		logger.LogError(errMsg, logger.ERROR)
+	}
+	return creatorName, productName
+}
+
+func getProductPreviewContent(wg *sync.WaitGroup, productId string, doc *goquery.Document) (thumbnailUrl string, previewContentUrls []string) {
+	defer wg.Done()
+	doc.Find(".product-gallery-nav img").Each(func(i int, s *goquery.Selection) {
+		src, exists := s.Attr("src")
+		if !exists {
+			return
+		}
+
+		if strings.HasPrefix(src, "https://c.fantia.jp/uploads/product_image/file/") {
+			previewContentUrls = append(previewContentUrls, src)
+		} else {
+			thumbnailUrl = src // the first image in the gallery is usually the thumbnail and has the prefix https://c.fantia.jp/uploads/product/image/
+		}
+	})
+
+	if thumbnailUrl == "" { // shouldn't happen but log it just in case
+		errMsg := fmt.Errorf(
+			"fantia error %d: failed to get thumbnail from product id %q",
+			cdlerrors.HTML_ERROR,
+			productId,
+		)
+		logger.LogError(errMsg, logger.ERROR)
+	}
+	return thumbnailUrl, previewContentUrls
+}
+
+func getProductPaidContent(wg *sync.WaitGroup, productId string, doc *goquery.Document, dlOptions *FantiaDlOptions) ([]string, error) {
+	defer wg.Done()
+	var purchaseRelativeUrl string
+
+	// Could have just used .First() but for future-proofing, we'll use .Each() and check the Text() content.
+	doc.Find("a.alert-link").Each(func(i int, s *goquery.Selection) {
+		if purchaseRelativeUrl != "" {
+			return
+		}
+		if s.Text() != "注文詳細・商品ダウンロード" {
+			return
+		}
+		if href, exists := s.Attr("href"); exists && purchaseRelativeUrl == "" {
+			purchaseRelativeUrl = href
+		}
+	})
+
+	if purchaseRelativeUrl == "" { // not purchased
+		return make([]string, 0), nil
+	}
+	return getAndProcessProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
+}
+
+// Note: response body is closed in this function
+// errors returned are usually due to parsing error or context cancellation
+func processProductPage(productId string, dlOptions *FantiaDlOptions, res *http.Response) ([]*httpfuncs.ToDownload, error) {
+	defer res.Body.Close()
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"fantia error %d: failed to parse response body when getting product page from Fantia: %w",
+			cdlerrors.HTML_ERROR,
+			err,
+		)
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+	var creatorName, productName string
+	go func() {
+		creatorName, productName = getCreatorNameAndProductName(&wg, productId, doc)
+	}()
+
+	var thumbnailUrl string
+	var previewContentUrls []string
+	go func() {
+		thumbnailUrl, previewContentUrls = getProductPreviewContent(&wg, productId, doc)
+	}()
+
+	// Check if the user has purchased the product so that we can get and download the paid content as well.
+	var paidContentErr error
+	var paidContent []string
+	go func() {
+		paidContent, paidContentErr = getProductPaidContent(&wg, productId, doc, dlOptions)
+	}()
+	wg.Wait()
+
+	if paidContentErr != nil {
+		if errors.Is(paidContentErr, context.Canceled) {
+			return nil, paidContentErr
+		}
+		logger.LogError(paidContentErr, logger.ERROR)
+	}
+
+	numOfEl := len(previewContentUrls) + 1 + len(paidContent) // +1 for the thumbnail
+	toDownload := make([]*httpfuncs.ToDownload, 0, numOfEl)
+	dirPath := iofuncs.GetPostFolder(dlOptions.BaseDownloadDirPath, creatorName, productId, productName)
+	toDownload = append(toDownload, &httpfuncs.ToDownload{
+		Url:      thumbnailUrl,
+		FilePath: dirPath,
+	})
+	for i, url := range previewContentUrls {
+		dlFilePath := filepath.Join(dirPath, constants.FANTIA_PRODUCT_PREVIEW_DIR_NAME)
+		if dlOptions.OrganiseImages {
+			fileExt := filepath.Ext(url)
+			dlFilePath = filepath.Join(dlFilePath, fmt.Sprintf("%d.%s", i+1, fileExt))
+		}
+		toDownload = append(toDownload, &httpfuncs.ToDownload{
+			Url:      url,
+			FilePath: dlFilePath,
+		})
+	}
+	for i, url := range paidContent {
+		dlFilePath := filepath.Join(dirPath, constants.FANTIA_PRODUCT_PAID_DIR_NAME)
+		if dlOptions.OrganiseImages {
+			fileExt := filepath.Ext(url)
+			dlFilePath = filepath.Join(dlFilePath, fmt.Sprintf("%d.%s", i+1, fileExt))
+		}
+		toDownload = append(toDownload, &httpfuncs.ToDownload{
+			Url:      url,
+			FilePath: dlFilePath,
+		})
+	}
+	return toDownload, nil
 }

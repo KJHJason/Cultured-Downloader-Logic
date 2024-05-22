@@ -20,9 +20,12 @@ import (
 // FantiaDl is the struct that contains the
 // IDs of the Fantia fanclubs and posts to download.
 type FantiaDl struct {
-	FanclubIds      []string
-	FanclubPageNums []string
-	PostIds         []string
+	FanclubIds             []string
+	FanclubPageNums        []string
+	PostIds                []string
+	ProductIds             []string
+	ProductFanclubIds      []string
+	ProductFanclubPageNums []string
 }
 
 // ValidateArgs validates the IDs of the Fantia fanclubs and posts to download.
@@ -41,7 +44,14 @@ func (f *FantiaDl) ValidateArgs() error {
 		return err
 	}
 
+	err = api.ValidateIds(f.ProductIds)
+	if err != nil {
+		return err
+	}
+
+	f.ProductIds = api.RemoveSliceDuplicates(f.ProductIds)
 	f.PostIds = api.RemoveSliceDuplicates(f.PostIds)
+
 	if len(f.FanclubPageNums) > 0 {
 		err = api.ValidatePageNumInput(
 			len(f.FanclubIds),
@@ -57,9 +67,28 @@ func (f *FantiaDl) ValidateArgs() error {
 		f.FanclubPageNums = make([]string, len(f.FanclubIds))
 	}
 
+	if len(f.ProductFanclubPageNums) > 0 {
+		err = api.ValidatePageNumInput(
+			len(f.ProductFanclubIds),
+			f.ProductFanclubPageNums,
+			[]string{
+				"Number of Fantia Fanclub ID(s) for downloading Products and page numbers must be equal.",
+			},
+		)
+		if err != nil {
+			return err
+		}
+	} else {
+		f.ProductFanclubPageNums = make([]string, len(f.ProductFanclubIds))
+	}
+
 	f.FanclubIds, f.FanclubPageNums = api.RemoveDuplicateIdAndPageNum(
 		f.FanclubIds,
 		f.FanclubPageNums,
+	)
+	f.ProductFanclubIds, f.ProductFanclubPageNums = api.RemoveDuplicateIdAndPageNum(
+		f.ProductFanclubIds,
+		f.ProductFanclubPageNums,
 	)
 	return err
 }

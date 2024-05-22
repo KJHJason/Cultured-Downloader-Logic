@@ -65,7 +65,7 @@ func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDl
 			toDownload,
 			&httpfuncs.DlOptions{
 				Context:        dlOptions.GetContext(),
-				MaxConcurrency: constants.KEMONO_MAX_CONCURRENT,
+				MaxConcurrency: constants.KEMONO_MAX_CONCURRENCY,
 				Cookies:        dlOptions.SessionCookies,
 				UseHttp3:       httpfuncs.IsHttp3Supported(constants.KEMONO, false),
 				SupportRange:   constants.KEMONO_RANGE_SUPPORTED,

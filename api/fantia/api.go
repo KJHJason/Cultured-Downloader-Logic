@@ -155,7 +155,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		urlsToDownload,
 		&httpfuncs.DlOptions{
 			Context:        dlOptions.GetContext(),
-			MaxConcurrency: constants.FANTIA_MAX_CONCURRENT,
+			MaxConcurrency: constants.FANTIA_MAX_CONCURRENCY,
 			Headers:        nil,
 			Cookies:        dlOptions.SessionCookies,
 			UseHttp3:       false,
@@ -211,15 +211,162 @@ func (f *FantiaDl) DlFantiaPosts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDow
 	return gdriveLinks, errSlice
 }
 
-// Parse the HTML response from the creator's page to get the post IDs.
-func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
+func getFantiaProductPaidContent(purchaseRelativeUrl, productId string, dlOptions *FantiaDlOptions) (*http.Response, error) {
+	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
+	purchaseUrl := constants.FANTIA_URL + purchaseRelativeUrl // https://fantia.jp/mypage/users/purchases/123456
+	res, err := httpfuncs.CallRequest(
+		&httpfuncs.RequestArgs{
+			Method:    "GET",
+			Url:       purchaseUrl,
+			Cookies:   dlOptions.SessionCookies,
+			Http2:     !useHttp3,
+			Http3:     useHttp3,
+			UserAgent: dlOptions.Configs.UserAgent,
+			Context:   dlOptions.GetContext(),
+		},
+	)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
+		return nil, fmt.Errorf(
+			"fantia error %d: failed to get purchase details at %s for product %s, more info => %w",
+			cdlerrors.CONNECTION_ERROR,
+			purchaseUrl,
+			productId,
+			err,
+		)
+	}
+	return res, nil
+}
+
+func getProduct(productId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, error) {
+	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
+	productUrl := fmt.Sprintf("%s/products/%s", constants.FANTIA_URL, productId)
+	res, err := httpfuncs.CallRequest(
+		&httpfuncs.RequestArgs{
+			Method:    "GET",
+			Url:       productUrl,
+			Cookies:   dlOptions.SessionCookies,
+			Http2:     !useHttp3,
+			Http3:     useHttp3,
+			UserAgent: dlOptions.Configs.UserAgent,
+			Context:   dlOptions.GetContext(),
+		},
+	)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
+		return nil, fmt.Errorf(
+			"fantia error %d: failed to get product details for %s, more info => %w",
+			cdlerrors.CONNECTION_ERROR,
+			productUrl,
+			err,
+		)
+	}
+	return processProductPage(productId, dlOptions, res)
+}
+
+func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []error) {
+	productFanclubIdsLen := len(f.ProductFanclubIds)
+	if productFanclubIdsLen == 0 {
+		return nil, nil
+	}
+
+	if productFanclubIdsLen != len(f.ProductFanclubPageNums) {
+		return nil, []error{
+			fmt.Errorf(
+				"fantia error %d: fanclubs IDs and page numbers slices are not the same length",
+				cdlerrors.DEV_ERROR,
+			),
+		}
+	}
+
+	// Now that we have the post ID, we can query Fantia's API
+	// to get the post's contents from the JSON response.
+	progress := dlOptions.MainProgBar
+	progress.SetToSpinner()
+	progress.UpdateBaseMsg(
+		"Getting product contents from Fanclubs(s) on Fantia [%d/" + fmt.Sprintf("%d]...", productFanclubIdsLen),
+	)
+	progress.UpdateSuccessMsg(
+		fmt.Sprintf(
+			"Finished getting product contents from %d Fanclubs(s) on Fantia!",
+			productFanclubIdsLen,
+		),
+	)
+	progress.UpdateErrorMsg(
+		fmt.Sprintf(
+			"Something went wrong while getting product contents from %d Fanclubs(s) on Fantia.\nPlease refer to the logs for more details.",
+			productFanclubIdsLen,
+		),
+	)
+	progress.Start()
+	defer progress.SnapshotTask()
+
+	var wg sync.WaitGroup
+	maxConcurrency := constants.FANTIA_PRODUCT_MAX_CONCURRENCY
+	if productFanclubIdsLen < maxConcurrency {
+		maxConcurrency = productFanclubIdsLen
+	}
+	queue := make(chan struct{}, maxConcurrency)
+	resChan := make(chan []*httpfuncs.ToDownload, productFanclubIdsLen)
+	errChan := make(chan error, productFanclubIdsLen)
+
+	for idx, productId := range f.ProductFanclubIds {
+		wg.Add(1)
+		go func(productId string, pageNumIdx int) {
+			defer func() {
+				wg.Done()
+				<-queue
+			}()
+
+			queue <- struct{}{}
+			productToDownload, err := getProduct(productId, dlOptions)
+			if err != nil {
+				errChan <- err
+			} else {
+				resChan <- productToDownload
+			}
+
+			progress.Increment()
+		}(productId, idx)
+	}
+	wg.Wait()
+	close(queue)
+	close(resChan)
+	close(errChan)
+
+	var errorSlice []error
+	hasErr := len(errChan) > 0
+	if hasErr {
+		var hasCancelled bool
+		if hasCancelled, errorSlice = logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
+			dlOptions.CancelCtx()
+			progress.StopInterrupt("Stopped getting product(s) from Fantia...")
+			return nil, nil
+		}
+	}
+	progress.Stop(hasErr)
+
+	var productUrls []*httpfuncs.ToDownload
+	for productToDownload := range resChan {
+		productUrls = append(productUrls, productToDownload...)
+	}
+	return productUrls, errorSlice
+}
+
+// Parse the HTML response from the creator's page to get the post or product IDs.
+func parseCreatorHtml(res *http.Response, creatorId, contentType string) ([]string, error) {
 	// parse the response
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	res.Body.Close()
 	if err != nil {
 		err = fmt.Errorf(
-			"fantia error %d, failed to parse response body when getting posts for Fantia Fanclub %s, more info => %w",
+			"fantia error %d, failed to parse response body when getting %s for Fantia Fanclub %s, more info => %w",
 			cdlerrors.HTML_ERROR,
+			contentType, // posts or products
 			creatorId,
 			err,
 		)
@@ -247,23 +394,42 @@ func parseCreatorHtml(res *http.Response, creatorId string) ([]string, error) {
 	return postIds, nil
 }
 
+const (
+	POSTS    = "posts"
+	PRODUCTS = "products"
+)
+
 // Get all the creator's posts by using goquery to parse the HTML response to get the post IDs
-func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]string, error) {
-	var postIds []string
+func getCreatorContent(creatorId, pageNum string, dlOptions *FantiaDlOptions, contentType string) ([]string, error) {
+	var contentIds []string
 	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/fanclubs/%s/posts", constants.FANTIA_URL, creatorId)
+	var url string
+	if contentType == PRODUCTS {
+		url = fmt.Sprintf("%s/fanclubs/%s/products", constants.FANTIA_URL, creatorId)
+	} else {
+		url = fmt.Sprintf("%s/fanclubs/%s/posts", constants.FANTIA_URL, creatorId)
+	}
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	curPage := minPage
 	for {
-		params := map[string]string{
-			"page":   strconv.Itoa(curPage),
-			"q[s]":   "newer",
-			"q[tag]": "",
+		var params map[string]string
+		if contentType == PRODUCTS {
+			params = map[string]string{
+				"q[name_cont]": "",      // query string
+				"q[s]":         "newer", // sort by newest
+				"q[tag]":       "",      // #tag
+			}
+		} else {
+			params = map[string]string{
+				"q[s]":   "newer",
+				"q[tag]": "",
+			}
 		}
+		params["page"] = strconv.Itoa(curPage)
 
 		// note that even if the max page is more than
 		// the actual number of pages, the response will still be 200 OK.
@@ -283,8 +449,9 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
 				err = fmt.Errorf(
-					"fantia error %d: failed to get creator's pages for %s, more info => %w",
+					"fantia error %d: failed to get fanclub's %s pages for %s, more info => %w",
 					cdlerrors.CONNECTION_ERROR,
+					contentType,
 					url,
 					err,
 				)
@@ -292,39 +459,51 @@ func getCreatorPosts(creatorId, pageNum string, dlOptions *FantiaDlOptions) ([]s
 			return nil, err
 		}
 
-		creatorPostIds, err := parseCreatorHtml(res, creatorId)
+		creatorContentIds, err := parseCreatorHtml(res, creatorId, contentType)
 		if err != nil {
 			return nil, err
 		}
-		postIds = append(postIds, creatorPostIds...)
+		contentIds = append(contentIds, creatorContentIds...)
 
 		// if there are no more posts, break
-		if len(creatorPostIds) == 0 || (hasMax && curPage >= maxPage) {
+		if len(creatorContentIds) == 0 || (hasMax && curPage >= maxPage) {
 			break
 		}
 		curPage++
 	}
-	return postIds, nil
+	return contentIds, nil
 }
 
 // Retrieves all the posts based on the slice of creator IDs and updates its PostIds slice
-func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
-	creatorIdsLen := len(f.FanclubIds)
+func (f *FantiaDl) GetCreatorsContents(creatorIds []string, pageNums []string, contentType string, dlOptions *FantiaDlOptions) []error {
+	if contentType != POSTS && contentType != PRODUCTS {
+		return []error{
+			fmt.Errorf(
+				"fantia error %d: invalid content type %s, must be either %q or %q",
+				cdlerrors.DEV_ERROR,
+				contentType,
+				POSTS,
+				PRODUCTS,
+			),
+		}
+	}
+
+	creatorIdsLen := len(creatorIds)
 	if creatorIdsLen == 0 {
 		return nil
 	}
 
-	if creatorIdsLen != len(f.FanclubPageNums) {
+	if creatorIdsLen != len(pageNums) {
 		return []error{
 			fmt.Errorf(
-				"fantia error %d: creator IDs and page numbers slices are not the same length",
+				"fantia error %d: fanclubs IDs and page numbers slices are not the same length",
 				cdlerrors.DEV_ERROR,
 			),
 		}
 	}
 
 	var wg sync.WaitGroup
-	maxConcurrency := constants.FANTIA_MAX_CONCURRENT
+	maxConcurrency := constants.FANTIA_MAX_CONCURRENCY
 	if creatorIdsLen < maxConcurrency {
 		maxConcurrency = creatorIdsLen
 	}
@@ -334,18 +513,18 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 
 	progress := dlOptions.MainProgBar
 	if creatorIdsLen > 1 {
-		baseMsg := "Getting post ID(s) from Fanclubs(s) on Fantia [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
+		baseMsg := "Getting " + contentType + " ID(s) from Fanclubs(s) on Fantia [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
 		progress.SetToProgressBar()
 		progress.UpdateBaseMsg(baseMsg)
 		progress.UpdateSuccessMsg(
 			fmt.Sprintf(
-				"Finished getting post ID(s) from %d Fanclubs(s) on Fantia!",
+				"Finished getting "+contentType+" ID(s) from %d Fanclubs(s) on Fantia!",
 				creatorIdsLen,
 			),
 		)
 		progress.UpdateErrorMsg(
 			fmt.Sprintf(
-				"Something went wrong while getting post IDs from %d Fanclubs(s) on Fantia.\nPlease refer to the logs for more details.",
+				"Something went wrong while getting "+contentType+" IDs from %d Fanclubs(s) on Fantia.\nPlease refer to the logs for more details.",
 				creatorIdsLen,
 			),
 		)
@@ -353,9 +532,9 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 	} else {
 		progress.SetToSpinner()
 		fanclubId := f.FanclubIds[0]
-		progress.UpdateBaseMsg("Getting post ID(s) from Fanclub, " + fanclubId + ", on Fantia...")
-		progress.UpdateSuccessMsg("Finished getting post ID(s) from Fanclub, " + fanclubId + ", on Fantia!")
-		progress.UpdateErrorMsg("Something went wrong while getting post ID(s) from Fanclub, " + fanclubId + ", on Fantia.\nPlease refer to the logs for more details.")
+		progress.UpdateBaseMsg("Getting " + contentType + " ID(s) from Fanclub, " + fanclubId + ", on Fantia...")
+		progress.UpdateSuccessMsg("Finished getting " + contentType + " ID(s) from Fanclub, " + fanclubId + ", on Fantia!")
+		progress.UpdateErrorMsg("Something went wrong while getting " + contentType + " ID(s) from Fanclub, " + fanclubId + ", on Fantia.\nPlease refer to the logs for more details.")
 	}
 
 	progress.Start()
@@ -368,15 +547,16 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 			}()
 
 			queue <- struct{}{}
-			postIds, err := getCreatorPosts(
+			contentIds, err := getCreatorContent(
 				creatorId,
 				f.FanclubPageNums[pageNumIdx],
 				dlOptions,
+				contentType,
 			)
 			if err != nil {
 				errChan <- err
 			} else {
-				resChan <- postIds
+				resChan <- contentIds
 			}
 
 			progress.Increment()
@@ -399,16 +579,32 @@ func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
 	}
 	if hasCancelled {
 		dlOptions.CancelCtx()
-		progress.StopInterrupt("Stopped getting post ID(s) from Fanclub(s) on Fantia...")
+		progress.StopInterrupt("Stopped getting " + contentType + " ID(s) from Fanclub(s) on Fantia...")
 		progress.SnapshotTask()
 		return nil
 	}
 	progress.Stop(hasErr)
 	progress.SnapshotTask()
 
-	for postIdsRes := range resChan {
-		f.PostIds = append(f.PostIds, postIdsRes...)
+	for contentIdsRes := range resChan {
+		if contentType == PRODUCTS {
+			f.ProductIds = append(f.ProductIds, contentIdsRes...)
+		} else {
+			f.PostIds = append(f.PostIds, contentIdsRes...)
+		}
 	}
-	f.PostIds = api.RemoveSliceDuplicates(f.PostIds)
+	if contentType == PRODUCTS {
+		f.ProductIds = api.RemoveSliceDuplicates(f.ProductIds)
+	} else {
+		f.PostIds = api.RemoveSliceDuplicates(f.PostIds)
+	}
 	return errorSlice
+}
+
+func (f *FantiaDl) GetCreatorsPosts(dlOptions *FantiaDlOptions) []error {
+	return f.GetCreatorsContents(f.FanclubIds, f.FanclubPageNums, POSTS, dlOptions)
+}
+
+func (f *FantiaDl) GetCreatorsProducts(dlOptions *FantiaDlOptions) []error {
+	return f.GetCreatorsContents(f.ProductFanclubIds, f.ProductFanclubPageNums, PRODUCTS, dlOptions)
 }

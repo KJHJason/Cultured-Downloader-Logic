@@ -75,7 +75,7 @@ func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOption
 // Query Pixiv Fanbox's API based on the slice of post IDs and
 // returns a map of urls and a map of GDrive urls to download from.
 func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, []error) {
-	maxConcurrency := constants.PIXIV_FANBOX_MAX_CONCURRENT
+	maxConcurrency := constants.PIXIV_FANBOX_MAX_CONCURRENCY
 	postIdsLen := len(pf.PostIds)
 	if postIdsLen < maxConcurrency {
 		maxConcurrency = postIdsLen
@@ -272,7 +272,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_FANBOX, true)
 	headers := GetPixivFanboxHeaders()
 	var wg sync.WaitGroup
-	maxConcurrency := constants.PIXIV_FANBOX_MAX_CONCURRENT
+	maxConcurrency := constants.PIXIV_FANBOX_MAX_CONCURRENCY
 	if len(paginatedUrls) < maxConcurrency {
 		maxConcurrency = len(paginatedUrls)
 	}

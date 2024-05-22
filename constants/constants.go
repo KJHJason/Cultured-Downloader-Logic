@@ -8,7 +8,7 @@ import (
 const (
 	DEBUG_MODE             = false // Will save a copy of all JSON response from the API
 	DEFAULT_PERMS          = 0755  // Owner: rwx, Group: rx, Others: rx
-	VERSION                = "1.1.6"
+	VERSION                = "1.2.0"
 	MAX_RETRY_DELAY        = 3
 	MIN_RETRY_DELAY        = 1
 	HTTP3_MAX_RETRY        = 2
@@ -33,16 +33,22 @@ const (
 	// However, the average max file size on these platforms is around 300MB.
 	// Note: Fantia do have a max file size per post of 3GB if one paid extra for it.
 
-	FANTIA                      = "fantia"
-	FANTIA_TITLE                = "Fantia"
-	FANTIA_URL                  = "https://fantia.jp"
-	FANTIA_RECAPTCHA_URL        = "https://fantia.jp/recaptcha"
-	FANTIA_RANGE_SUPPORTED      = true
-	FANTIA_MAX_CONCURRENT       = 5
-	FANTIA_POST_API_URL         = "https://fantia.jp/api/v1/posts/"
-	FANTIA_CAPTCHA_BTN_SELECTOR = `//input[@name='commit']`
-	FANTIA_CAPTCHA_TIMEOUT      = 45
-	FANTIA_POST_BLOG_DIR_NAME   = "blog_contents"
+	FANTIA                          = "fantia"
+	FANTIA_TITLE                    = "Fantia"
+	FANTIA_URL                      = "https://fantia.jp"
+	FANTIA_RECAPTCHA_URL            = "https://fantia.jp/recaptcha"
+	FANTIA_RANGE_SUPPORTED          = true
+	FANTIA_MAX_CONCURRENCY          = 5
+	FANTIA_POST_API_URL             = "https://fantia.jp/api/v1/posts/"
+	FANTIA_CAPTCHA_BTN_SELECTOR     = `//input[@name='commit']`
+	FANTIA_CAPTCHA_TIMEOUT          = 45
+	FANTIA_POST_BLOG_DIR_NAME       = "blog_contents"
+	FANTIA_PRODUCT_PREVIEW_DIR_NAME = "previews"
+	FANTIA_PRODUCT_PAID_DIR_NAME    = "paid_content"
+	FANTIA_UNKNOWN_CREATOR          = "Unknown" // caused when the html content changes and the creator name cannot be found when obtaining the product content.
+	FANTIA_UNKNOWN_PRODUCT          = "Unknown" // caused when the html content changes and the product name cannot be found when obtaining the product content.
+	FANTIA_PRODUCT_MAX_CONCURRENCY  = 2
+	FANTIA_PRODUCT_USE_HTTP3        = false
 
 	PIXIV                          = "pixiv"
 	PIXIV_MOBILE                   = "pixiv_mobile"
@@ -76,7 +82,7 @@ const (
 	PIXIV_FANBOX_URL                  = "https://www.fanbox.cc"
 	PIXIV_FANBOX_API_URL              = "https://api.fanbox.cc"
 	PIXIV_FANBOX_RANGE_SUPPORTED      = false
-	PIXIV_FANBOX_MAX_CONCURRENT       = 2 // Pixiv Fanbox throttles the download speed
+	PIXIV_FANBOX_MAX_CONCURRENCY      = 2 // Pixiv Fanbox throttles the download speed
 
 	KEMONO                       = "kemono"
 	KEMONO_TITLE                 = "Kemono"
@@ -90,7 +96,7 @@ const (
 	KEMONO_SERVICE_GROUP_NAME    = "service"
 	KEMONO_CREATOR_ID_GROUP_NAME = "creatorId"
 	KEMONO_POST_ID_GROUP_NAME    = "postId"
-	KEMONO_MAX_CONCURRENT        = 1 // Since Kemono server is very slow as of April 2024
+	KEMONO_MAX_CONCURRENCY       = 1 // Since Kemono server is very slow as of April 2024
 
 	PASSWORD_FILENAME = "detected_passwords.txt"
 	ATTACHMENT_FOLDER = "attachments"

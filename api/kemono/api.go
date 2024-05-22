@@ -166,8 +166,8 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 func GetMultiplePosts(posts []*KemonoPostToDl, dlOptions *KemonoDlOptions) (urlsToDownload []*httpfuncs.ToDownload, gdriveLinks []*httpfuncs.ToDownload, errSlice []error) {
 	var maxConcurrency int
 	postLen := len(posts)
-	if postLen > constants.KEMONO_MAX_CONCURRENT {
-		maxConcurrency = constants.KEMONO_MAX_CONCURRENT
+	if postLen > constants.KEMONO_MAX_CONCURRENCY {
+		maxConcurrency = constants.KEMONO_MAX_CONCURRENCY
 	} else {
 		maxConcurrency = postLen
 	}
