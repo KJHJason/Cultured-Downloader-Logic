@@ -55,11 +55,13 @@ func IsHttp3Supported(site string, isApi bool) bool {
 	}
 }
 
-// Returns the last part of the given URL string
+// Returns the last part of the given URL string (without the query string)
 func GetLastPartOfUrl(url string) string {
-	removedParams := strings.SplitN(url, "?", 2)
-	splittedUrl := strings.Split(removedParams[0], "/")
-	return splittedUrl[len(splittedUrl)-1]
+	if strings.Contains(url, "?") {
+		url = strings.SplitN(url, "?", 2)[0]
+	}
+	splitted := strings.Split(url, "/")
+	return splitted[len(splitted)-1]
 }
 
 // Converts a map of string back to a string

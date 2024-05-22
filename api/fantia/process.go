@@ -253,11 +253,27 @@ func getAndProcessProductPaidContent(purchaseRelativeUrl, productId string, dlOp
 	}
 
 	paidContentUrls := make([]string, 0)
-	doc.Find("a.btn.btn-primary").Each(func(i int, s *goquery.Selection) {
-		href, exists := s.Attr("href")
-		if exists && strings.HasPrefix(href, "/products") && strings.HasSuffix(href, "/content_download") {
-			paidContentUrls = append(paidContentUrls, constants.FANTIA_URL+href)
+	// get all divs with the class "row row-packed"
+	doc.Find("div.row.row-packed").Each(func(i int, s *goquery.Selection) {
+		// find the anchor tag with the class "module-thumbnail"
+		productUrl, exists := s.Find("a.module-thumbnail").Attr("href")
+		if !exists {
+			return
 		}
+
+		// since an order can have multiple products, check if the product
+		// id in the url matches the product id we are looking for to download
+		docProductId := httpfuncs.GetLastPartOfUrl(productUrl)
+		if docProductId != productId {
+			return
+		}
+
+		s.Find("a.btn.btn-primary").Each(func(i int, s *goquery.Selection) {
+			href, exists := s.Attr("href")
+			if exists && strings.HasPrefix(href, "/products") && strings.HasSuffix(href, "/content_download") {
+				paidContentUrls = append(paidContentUrls, constants.FANTIA_URL+href)
+			}
+		})
 	})
 	return paidContentUrls, nil
 }
