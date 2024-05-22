@@ -20,6 +20,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -400,17 +401,17 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	defer progress.SnapshotTask()
 	for _, urlInfo := range urlInfoSlice {
 		wg.Add(1)
-		go func(fileUrl, filePath, cacheKey string) {
+		go func(urlInfo *ToDownload) {
 			defer func() {
 				wg.Done()
 				<-queue
 			}()
 			err := downloadUrl(
-				filePath,
+				urlInfo.FilePath,
 				queue,
 				&RequestArgs{
 					Method:         "GET",
-					Url:            fileUrl,
+					Url:            urlInfo.Url,
 					Timeout:        constants.DOWNLOAD_TIMEOUT,
 					Headers:        dlOptions.Headers,
 					Cookies:        dlOptions.Cookies,
@@ -428,17 +429,18 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 			if hasErr {
 				errChan <- err
 			}
-			if cacheKey != "" {
+			if urlInfo.CacheKey != "" {
 				cacheChan <- &cacheEl{
 					hasErr:   hasErr,
-					cacheKey: cacheKey,
+					cacheKey: urlInfo.CacheKey,
+					cacheFn:  urlInfo.CacheFn,
 				}
 			}
 
 			if !errors.Is(err, context.Canceled) {
 				progress.Increment()
 			}
-		}(urlInfo.Url, urlInfo.FilePath, urlInfo.CacheKey)
+		}(urlInfo)
 	}
 	wg.Wait()
 	close(queue)
@@ -469,7 +471,11 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 			if el.hasErr {
 				continue
 			}
-			el.cacheFn(cacheKey)
+			if el.cacheFn != nil {
+				el.cacheFn(cacheKey)
+			} else { // default to database.CachePost
+				database.CachePost(cacheKey)
+			}
 		}
 	}
 

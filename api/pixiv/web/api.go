@@ -98,14 +98,17 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 		return nil, nil, nil
 	}
 
-	var cacheKey string
-	url := getArtworkDetailsApi(artworkId)
+	var artworkCacheKey string
+	var ugoiraCacheKey string
+	url := getArtworkDetailsApi(artworkId) // API URL
 	if dlOptions.UseCacheDb {
-		cacheKey = fmt.Sprintf("https://www.pixiv.net/artworks/%s", artworkId)
-		if database.PostCacheExists(cacheKey, constants.PIXIV) || database.UgoiraCacheExists(cacheKey) {
+		webUrl := fmt.Sprintf("https://www.pixiv.net/artworks/%s", artworkId)
+		if database.PostCacheExists(webUrl, constants.PIXIV) || database.UgoiraCacheExists(webUrl) {
 			// either the artwork or the ugoira cache exists
 			return nil, nil, nil
 		}
+		ugoiraCacheKey = webUrl
+		artworkCacheKey = database.ParsePostKey(webUrl, constants.PIXIV)
 	}
 
 	headers := pixivcommon.GetPixivRequestHeaders()
@@ -150,7 +153,8 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 	}
 
 	urlsToDl, ugoiraInfo, err := processArtworkJson(
-		cacheKey,
+		ugoiraCacheKey,
+		artworkCacheKey,
 		artworkUrlsRes,
 		artworkType,
 		artworkPostDir,

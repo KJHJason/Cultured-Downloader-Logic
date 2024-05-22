@@ -123,10 +123,10 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 	)
 	var cacheKey string
 	if dlOptions.UseCacheDb {
-		cacheKey = database.ParsePostKey(url, constants.KEMONO)
 		if database.PostCacheExists(url, constants.KEMONO) {
 			return nil, nil, nil
 		}
+		cacheKey = database.ParsePostKey(url, constants.KEMONO)
 	}
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)

@@ -110,11 +110,12 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	for _, postId := range pf.PostIds {
 		var cacheKey string
 		if dlOptions.UseCacheDb {
-			cacheKey = fmt.Sprintf("%s?postId=%s", url, postId)
-			if database.PostCacheExists(cacheKey, constants.PIXIV_FANBOX) {
+			fullUrl := fmt.Sprintf("%s?postId=%s", url, postId)
+			if database.PostCacheExists(fullUrl, constants.PIXIV_FANBOX) {
 				progress.Increment()
 				continue
 			}
+			cacheKey = database.ParsePostKey(fullUrl, constants.PIXIV_FANBOX)
 		}
 
 		wg.Add(1)

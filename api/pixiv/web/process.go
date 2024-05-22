@@ -65,7 +65,7 @@ func processIllustratorPostJson(resJson *IllustratorJson, pageNum string, pixivD
 
 // Process the artwork details JSON and returns a map of urls
 // with its file path or a Ugoira struct (One of them will be null depending on the artworkType)
-func processArtworkJson(cacheKey string, res *http.Response, artworkType int64, postDownloadDir string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
+func processArtworkJson(ugoiraCacheKey, artworkCacheKey string, res *http.Response, artworkType int64, postDownloadDir string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
 	if artworkType == UGOIRA {
 		var ugoiraJson ArtworkUgoiraJson
 		if err := httpfuncs.LoadJsonFromResponse(res, &ugoiraJson); err != nil {
@@ -75,7 +75,7 @@ func processArtworkJson(cacheKey string, res *http.Response, artworkType int64, 
 		ugoiraMap := ugoiraJson.Body
 		originalUrl := ugoiraMap.OriginalSrc
 		ugoiraInfo := &ugoira.Ugoira{
-			CacheKey: cacheKey,
+			CacheKey: ugoiraCacheKey,
 			Url:      originalUrl,
 			FilePath: postDownloadDir,
 			Frames:   ugoira.MapDelaysToFilename(ugoiraMap.Frames),
@@ -90,9 +90,9 @@ func processArtworkJson(cacheKey string, res *http.Response, artworkType int64, 
 
 	var urlsToDownload []*httpfuncs.ToDownload
 	for _, artworkUrl := range artworkUrls.Body {
-		cacheKey = database.ParsePostKey(cacheKey, constants.PIXIV)
 		urlsToDownload = append(urlsToDownload, &httpfuncs.ToDownload{
-			CacheKey: cacheKey,
+			CacheKey: artworkCacheKey,
+			CacheFn:  database.CachePost,
 			Url:      artworkUrl.Urls.Original,
 			FilePath: postDownloadDir,
 		})

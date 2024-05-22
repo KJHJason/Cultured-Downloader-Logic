@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -366,7 +367,7 @@ func getProductPaidContent(wg *sync.WaitGroup, productId string, doc *goquery.Do
 
 // Note: response body is closed in this function
 // errors returned are usually due to parsing error or context cancellation
-func processProductPage(productId string, dlOptions *FantiaDlOptions, res *http.Response) ([]*httpfuncs.ToDownload, error) {
+func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, res *http.Response) ([]*httpfuncs.ToDownload, error) {
 	defer res.Body.Close()
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
@@ -421,6 +422,8 @@ func processProductPage(productId string, dlOptions *FantiaDlOptions, res *http.
 		toDownload = append(toDownload, &httpfuncs.ToDownload{
 			Url:      url,
 			FilePath: dlFilePath,
+			CacheKey: cacheKey,
+			CacheFn:  database.CachePost,
 		})
 	}
 	for i, url := range paidContent {
@@ -432,6 +435,8 @@ func processProductPage(productId string, dlOptions *FantiaDlOptions, res *http.
 		toDownload = append(toDownload, &httpfuncs.ToDownload{
 			Url:      url,
 			FilePath: dlFilePath,
+			CacheKey: cacheKey,
+			CacheFn:  database.CachePost,
 		})
 	}
 	return toDownload, nil

@@ -110,10 +110,11 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 
 	var cacheKey string
 	if dlOptions.UseCacheDb {
-		cacheKey = constants.FANTIA_POST_API_URL + postId
-		if database.PostCacheExists(cacheKey, constants.FANTIA) {
+		url := constants.FANTIA_POST_API_URL + postId
+		if database.PostCacheExists(url, constants.FANTIA) {
 			return false, nil, nil
 		}
+		cacheKey = database.ParsePostKey(url, constants.FANTIA)
 	}
 
 	res, err := getFantiaPostDetails(
@@ -151,6 +152,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 	}
 
 	// Download the urls
+	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	cancelled, errorSlice := httpfuncs.DownloadUrls(
 		urlsToDownload,
 		&httpfuncs.DlOptions{
@@ -158,7 +160,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 			MaxConcurrency: constants.FANTIA_MAX_CONCURRENCY,
 			Headers:        nil,
 			Cookies:        dlOptions.SessionCookies,
-			UseHttp3:       false,
+			UseHttp3:       useHttp3,
 			HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
 			SupportRange:   constants.FANTIA_RANGE_SUPPORTED,
 			ProgressBarInfo: &progress.ProgressBarInfo{
@@ -175,7 +177,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 	}
 	if dlOptions.UseCacheDb {
 		// No need to use batch since posts are downloaded sequentially
-		database.CachePost(database.ParsePostKey(cacheKey, constants.FANTIA))
+		database.CachePost(cacheKey)
 	}
 	return false, postGdriveUrls, nil
 }
@@ -241,8 +243,16 @@ func getFantiaProductPaidContent(purchaseRelativeUrl, productId string, dlOption
 }
 
 func getProduct(productId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, error) {
-	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
+	var cacheKey string
 	productUrl := fmt.Sprintf("%s/products/%s", constants.FANTIA_URL, productId)
+	if dlOptions.UseCacheDb {
+		if database.PostCacheExists(productUrl, constants.FANTIA) {
+			return nil, nil
+		}
+		cacheKey = database.ParsePostKey(productUrl, constants.FANTIA)
+	}
+
+	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
 			Method:    "GET",
@@ -265,7 +275,7 @@ func getProduct(productId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDo
 			err,
 		)
 	}
-	return processProductPage(productId, dlOptions, res)
+	return processProductPage(cacheKey, productId, dlOptions, res)
 }
 
 func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []error) {
