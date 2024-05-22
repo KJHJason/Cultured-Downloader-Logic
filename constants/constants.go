@@ -241,6 +241,23 @@ var (
 	)
 	FANTIA_POST_ID_IDX = FANTIA_POST_URL_REGEX.SubexpIndex("id")
 
+	// https://fantia.jp/products/477123
+	FANTIA_PRODUCT_URL_REGEX = regexp.MustCompile(
+		`^https://fantia.jp/products/(?P<id>\d+)$`,
+	)
+	FANTIA_PRODUCT_ID_IDX = FANTIA_PRODUCT_URL_REGEX.SubexpIndex("id")
+
+	// https://fantia.jp/fanclubs/5744/posts
+	FANTIA_FANCLUB_PRODUCT_URL_REGEX = regexp.MustCompile(
+		fmt.Sprintf(
+			// ^https://fantia\.jp/fanclubs/(?P<id>\d+)/products(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?$
+			`^https://fantia\.jp/fanclubs/(?P<id>\d+)/products%s$`,
+			PAGE_NUM_WITH_INPUT_REGEX_STR,
+		),
+	)
+	FANTIA_FANCLUB_PRODUCT_ID_IDX       = FANTIA_FANCLUB_PRODUCT_URL_REGEX.SubexpIndex("id")
+	FANTIA_FANCLUB_PRODUCT_PAGE_NUM_IDX = FANTIA_FANCLUB_PRODUCT_URL_REGEX.SubexpIndex(PAGE_NUM_IDX_NAME)
+
 	FANTIA_CREATOR_URL_REGEX = regexp.MustCompile(
 		fmt.Sprintf(
 			// ^https://fantia\.jp/fanclubs/(?P<id>\d+)(?:/posts)?(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?$
