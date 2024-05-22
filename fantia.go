@@ -45,6 +45,7 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 			errorSlice = append(errorSlice, errSlice...)
 		}
 
+		downloadedPosts = true
 		cancelled, errSlice := httpfuncs.DownloadUrls(
 			productContents,
 			&httpfuncs.DlOptions{

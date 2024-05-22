@@ -35,9 +35,31 @@ type FantiaPost struct {
 			User struct {
 				Name string `json:"name"`
 			} `json:"user"`
+			FanclubNameWithCreatorName string `json:"fanclub_name_with_creator_name"`
 		} `json:"fanclub"`
 		Status       string          `json:"status"`
 		PostContents []FantiaContent `json:"post_contents"`
 	} `json:"post"`
 	Redirect string `json:"redirect"` // if get flagged by the system, it will redirect to this recaptcha url
+}
+
+// found in the head HTML tag.
+// Although it's a slice, it should only contains one element.
+type ProductInfo []struct {
+	Type        string   `json:"@type"`
+	Context     string   `json:"@context"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Image       []string `json:"image"`
+	Brand       struct {
+		Type string `json:"@type"`
+		Name string `json:"name"`
+	} `json:"brand"`
+	Offers struct {
+		Type          string `json:"@type"`
+		Price         int    `json:"price"`
+		PriceCurrency string `json:"priceCurrency"`
+		URL           string `json:"url"`
+		Availability  string `json:"availability"`
+	} `json:"offers"`
 }

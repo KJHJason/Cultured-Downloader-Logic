@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -158,6 +159,12 @@ func GetReadableSiteStr(site string) string {
 	}
 }
 
+func sortPostCacheByDatetime(caches []*PostCache) {
+	sort.Slice(caches, func(i, j int) bool {
+		return caches[i].Datetime.After(caches[j].Datetime)
+	})
+}
+
 func GetAllCacheForPlatform(platforms ...string) []*PostCache {
 	var caches []*KeyValue
 	for _, platform := range platforms {
@@ -179,6 +186,7 @@ func GetAllCacheForPlatform(platforms ...string) []*PostCache {
 			Bucket:   POST_BUCKET,
 		})
 	}
+	sortPostCacheByDatetime(postCache)
 	return postCache
 }
 
@@ -199,6 +207,7 @@ func GetAllCacheForAllPlatforms() []*PostCache {
 			Bucket:   POST_BUCKET,
 		})
 	}
+	sortPostCacheByDatetime(allCache)
 	return allCache
 }
 

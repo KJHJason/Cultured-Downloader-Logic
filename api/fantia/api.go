@@ -279,52 +279,44 @@ func getProduct(productId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDo
 }
 
 func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []error) {
-	productFanclubIdsLen := len(f.ProductFanclubIds)
-	if productFanclubIdsLen == 0 {
+	productIdsLen := len(f.ProductIds)
+	if productIdsLen == 0 {
 		return nil, nil
-	}
-
-	if productFanclubIdsLen != len(f.ProductFanclubPageNums) {
-		return nil, []error{
-			fmt.Errorf(
-				"fantia error %d: fanclubs IDs and page numbers slices are not the same length",
-				cdlerrors.DEV_ERROR,
-			),
-		}
 	}
 
 	// Now that we have the post ID, we can query Fantia's API
 	// to get the post's contents from the JSON response.
 	progress := dlOptions.MainProgBar
-	progress.SetToSpinner()
+	progress.SetToProgressBar()
 	progress.UpdateBaseMsg(
-		"Getting product contents from Fanclubs(s) on Fantia [%d/" + fmt.Sprintf("%d]...", productFanclubIdsLen),
+		"Getting product contents from Fantia [%d/" + fmt.Sprintf("%d]...", productIdsLen),
 	)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
-			"Finished getting product contents from %d Fanclubs(s) on Fantia!",
-			productFanclubIdsLen,
+			"Finished getting %d products from Fantia!",
+			productIdsLen,
 		),
 	)
 	progress.UpdateErrorMsg(
 		fmt.Sprintf(
-			"Something went wrong while getting product contents from %d Fanclubs(s) on Fantia.\nPlease refer to the logs for more details.",
-			productFanclubIdsLen,
+			"Something went wrong while getting %d product contents from Fantia.\nPlease refer to the logs for more details.",
+			productIdsLen,
 		),
 	)
+	progress.UpdateMax(productIdsLen)
 	progress.Start()
 	defer progress.SnapshotTask()
 
 	var wg sync.WaitGroup
 	maxConcurrency := constants.FANTIA_PRODUCT_MAX_CONCURRENCY
-	if productFanclubIdsLen < maxConcurrency {
-		maxConcurrency = productFanclubIdsLen
+	if productIdsLen < maxConcurrency {
+		maxConcurrency = productIdsLen
 	}
 	queue := make(chan struct{}, maxConcurrency)
-	resChan := make(chan []*httpfuncs.ToDownload, productFanclubIdsLen)
-	errChan := make(chan error, productFanclubIdsLen)
+	resChan := make(chan []*httpfuncs.ToDownload, productIdsLen)
+	errChan := make(chan error, productIdsLen)
 
-	for idx, productId := range f.ProductFanclubIds {
+	for idx, productId := range f.ProductIds {
 		wg.Add(1)
 		go func(productId string, pageNumIdx int) {
 			defer func() {
@@ -354,7 +346,9 @@ func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownl
 		var hasCancelled bool
 		if hasCancelled, errorSlice = logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
 			dlOptions.CancelCtx()
-			progress.StopInterrupt("Stopped getting product(s) from Fantia...")
+			progress.StopInterrupt(
+				fmt.Sprintf("Stopped getting %d product content from Fantia...", productIdsLen),
+			)
 			return nil, nil
 		}
 	}
@@ -385,10 +379,10 @@ func parseCreatorHtml(res *http.Response, creatorId, contentType string) ([]stri
 
 	// get the post ids similar to using the xpath of //a[@class='link-block']
 	hasHtmlErr := false
-	var postIds []string
+	var contentIds []string
 	doc.Find("a.link-block").Each(func(i int, s *goquery.Selection) {
 		if href, exists := s.Attr("href"); exists {
-			postIds = append(postIds, httpfuncs.GetLastPartOfUrl(href))
+			contentIds = append(contentIds, httpfuncs.GetLastPartOfUrl(href))
 		} else if !hasHtmlErr {
 			hasHtmlErr = true
 		}
@@ -401,7 +395,7 @@ func parseCreatorHtml(res *http.Response, creatorId, contentType string) ([]stri
 			creatorId,
 		)
 	}
-	return postIds, nil
+	return contentIds, nil
 }
 
 const (
@@ -528,27 +522,28 @@ func (f *FantiaDl) GetCreatorsContents(creatorIds []string, pageNums []string, c
 		progress.UpdateBaseMsg(baseMsg)
 		progress.UpdateSuccessMsg(
 			fmt.Sprintf(
-				"Finished getting "+contentType+" ID(s) from %d Fanclubs(s) on Fantia!",
+				"Finished getting %s ID(s) from %d Fanclubs(s) on Fantia!",
+				contentType,
 				creatorIdsLen,
 			),
 		)
 		progress.UpdateErrorMsg(
 			fmt.Sprintf(
-				"Something went wrong while getting "+contentType+" IDs from %d Fanclubs(s) on Fantia.\nPlease refer to the logs for more details.",
+				"Something went wrong while getting %s IDs from %d Fanclubs(s) on Fantia.\nPlease refer to the logs for more details.",
+				contentType,
 				creatorIdsLen,
 			),
 		)
 		progress.UpdateMax(creatorIdsLen)
 	} else {
 		progress.SetToSpinner()
-		fanclubId := f.FanclubIds[0]
+		fanclubId := creatorIds[0]
 		progress.UpdateBaseMsg("Getting " + contentType + " ID(s) from Fanclub, " + fanclubId + ", on Fantia...")
 		progress.UpdateSuccessMsg("Finished getting " + contentType + " ID(s) from Fanclub, " + fanclubId + ", on Fantia!")
 		progress.UpdateErrorMsg("Something went wrong while getting " + contentType + " ID(s) from Fanclub, " + fanclubId + ", on Fantia.\nPlease refer to the logs for more details.")
 	}
-
 	progress.Start()
-	for idx, creatorId := range f.FanclubIds {
+	for idx, creatorId := range creatorIds {
 		wg.Add(1)
 		go func(creatorId string, pageNumIdx int) {
 			defer func() {
@@ -559,7 +554,7 @@ func (f *FantiaDl) GetCreatorsContents(creatorIds []string, pageNums []string, c
 			queue <- struct{}{}
 			contentIds, err := getCreatorContent(
 				creatorId,
-				f.FanclubPageNums[pageNumIdx],
+				pageNums[pageNumIdx],
 				dlOptions,
 				contentType,
 			)

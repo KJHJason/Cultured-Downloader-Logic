@@ -43,6 +43,7 @@ const (
 	FANTIA_CAPTCHA_BTN_SELECTOR     = `//input[@name='commit']`
 	FANTIA_CAPTCHA_TIMEOUT          = 45
 	FANTIA_POST_BLOG_DIR_NAME       = "blog_contents"
+	FANTIA_PRODUCT_DIR_NAME         = "products"
 	FANTIA_PRODUCT_PREVIEW_DIR_NAME = "previews"
 	FANTIA_PRODUCT_PAID_DIR_NAME    = "paid_content"
 	FANTIA_UNKNOWN_CREATOR          = "Unknown" // caused when the html content changes and the creator name cannot be found when obtaining the product content.
