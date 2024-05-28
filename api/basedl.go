@@ -5,6 +5,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 type BaseDl struct {
@@ -24,4 +25,8 @@ type BaseDl struct {
 
 	SessionCookieId string
 	SessionCookies  []*http.Cookie
+
+	// Progress indicators
+	MainProgBar          progress.ProgressBar
+	DownloadProgressBars *[]*progress.DownloadProgressBar
 }
