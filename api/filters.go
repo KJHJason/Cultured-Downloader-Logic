@@ -12,8 +12,8 @@ type Filters struct {
 
 	FileExt []string
 
-	MinDate time.Time
-	MaxDate time.Time
+	StartDate time.Time
+	EndDate time.Time
 
 	FileNameFilter *regexp.Regexp
 }
@@ -27,8 +27,8 @@ func (f *Filters) ValidateArgs() error {
 		return errors.New("min file size cannot be greater than max file size")
 	}
 
-	if f.MinDate.After(f.MaxDate) {
-		return errors.New("min date cannot be after max date")
+	if f.StartDate.After(f.EndDate) {
+		return errors.New("start date cannot be after end date")
 	}
 
 	return nil
