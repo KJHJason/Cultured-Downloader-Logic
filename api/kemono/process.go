@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 func getInlineImages(content, postFolderPath string) []*httpfuncs.ToDownload {
@@ -84,9 +84,9 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 		if resJson.Embed.Url != "" {
 			embedsDirPath := filepath.Join(postFolderPath, constants.KEMONO_EMBEDS_FOLDER)
 			if dlOptions.Configs.LogUrls {
-				api.DetectOtherExtDLLink(resJson.Embed.Url, embedsDirPath)
+				utils.DetectOtherExtDLLink(resJson.Embed.Url, embedsDirPath)
 			}
-			if dlOptions.DlGdrive && api.DetectGDriveLinks(resJson.Embed.Url, postFolderPath, true, dlOptions.Configs.LogUrls) {
+			if dlOptions.DlGdrive && utils.DetectGDriveLinks(resJson.Embed.Url, postFolderPath, true, dlOptions.Configs.LogUrls) {
 				gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
 					Url:      resJson.Embed.Url,
 					FilePath: embedsDirPath,

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
@@ -16,6 +15,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // Pixiv Fanbox permitted file extensions based on
@@ -39,8 +39,8 @@ func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath 
 		}
 		for _, linkUrlEl := range linkUrlSlice {
 			linkUrl := linkUrlEl.Url
-			api.DetectOtherExtDLLink(linkUrl, postFolderPath)
-			if api.DetectGDriveLinks(linkUrl, postFolderPath, true, dlOptions.Configs.LogUrls) && dlOptions.DlGdrive {
+			utils.DetectOtherExtDLLink(linkUrl, postFolderPath)
+			if utils.DetectGDriveLinks(linkUrl, postFolderPath, true, dlOptions.Configs.LogUrls) && dlOptions.DlGdrive {
 				gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
 					Url:      linkUrl,
 					FilePath: filepath.Join(postFolderPath, constants.GDRIVE_FOLDER),
@@ -50,7 +50,7 @@ func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath 
 		}
 	}
 
-	if api.DetectPasswordInText(combinedText) {
+	if utils.DetectPasswordInText(combinedText) {
 		// Log the entire post text if it contains a password
 		filePath := filepath.Join(postFolderPath, constants.PASSWORD_FILENAME)
 		logFileSize, err := iofuncs.GetFileSize(filePath)
@@ -152,7 +152,7 @@ func processFanboxFilePost(postBody json.RawMessage, postFolderPath string, dlOp
 		filename := fileInfo.Name + "." + extension
 
 		var filePath string
-		isImage := api.SliceContains(pixivFanboxAllowedImageExt, extension)
+		isImage := utils.SliceContains(pixivFanboxAllowedImageExt, extension)
 		if isImage {
 			filePath = filepath.Join(postFolderPath, constants.IMAGES_FOLDER, filename)
 		} else {
@@ -199,7 +199,7 @@ func processFanboxImagePost(postBody json.RawMessage, postFolderPath string, dlO
 		filename := httpfuncs.GetLastPartOfUrl(fileUrl)
 
 		var filePath string
-		isImage := api.SliceContains(pixivFanboxAllowedImageExt, extension)
+		isImage := utils.SliceContains(pixivFanboxAllowedImageExt, extension)
 		if isImage {
 			filePath = filepath.Join(postFolderPath, constants.IMAGES_FOLDER, filename)
 		} else {

@@ -3,16 +3,16 @@ package pixivweb
 import (
 	"net/http"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
+	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 func processIllustratorPostJson(resJson *IllustratorJson, pageNum string, pixivDlOptions *PixivWebDlOptions) ([]string, error) {
-	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
+	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, err
 	}

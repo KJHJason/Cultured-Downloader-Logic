@@ -12,6 +12,7 @@ import (
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // PixivToDl is the struct that contains the arguments of Pixiv download options.
@@ -90,7 +91,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		}
 	}
 
-	if dlDirPath, err := api.ValidateDlDirPath(p.BaseDownloadDirPath, constants.PIXIV_TITLE); err != nil {
+	if dlDirPath, err := utils.ValidateDlDirPath(p.BaseDownloadDirPath, constants.PIXIV_TITLE); err != nil {
 		return err
 	} else {
 		p.BaseDownloadDirPath = dlDirPath
@@ -118,7 +119,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	p.SortOrder = strings.ToLower(p.SortOrder)
-	_, err := api.ValidateStrArgs(
+	_, err := utils.ValidateStrArgs(
 		p.SortOrder,
 		constants.ACCEPTED_SORT_ORDER,
 		[]string{
@@ -134,7 +135,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	p.SearchMode = strings.ToLower(p.SearchMode)
-	_, err = api.ValidateStrArgs(
+	_, err = utils.ValidateStrArgs(
 		p.SearchMode,
 		constants.ACCEPTED_SEARCH_MODE,
 		[]string{
@@ -150,7 +151,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	p.RatingMode = strings.ToLower(p.RatingMode)
-	_, err = api.ValidateStrArgs(
+	_, err = utils.ValidateStrArgs(
 		p.RatingMode,
 		constants.ACCEPTED_RATING_MODE,
 		[]string{
@@ -166,7 +167,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	p.ArtworkType = strings.ToLower(p.ArtworkType)
-	_, err = api.ValidateStrArgs(
+	_, err = utils.ValidateStrArgs(
 		p.ArtworkType,
 		constants.ACCEPTED_ARTWORK_TYPE,
 		[]string{

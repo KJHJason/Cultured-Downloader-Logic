@@ -12,6 +12,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // PixivFanboxDl is the struct that contains the IDs of the Pixiv Fanbox creators and posts to download.
@@ -28,12 +29,12 @@ type PixivFanboxDl struct {
 //
 // Should be called after initialising the struct.
 func (pf *PixivFanboxDl) ValidateArgs() error {
-	err := api.ValidateIds(pf.PostIds)
+	err := utils.ValidateIds(pf.PostIds)
 	if err != nil {
 		return err
 	}
 
-	pf.PostIds = api.RemoveSliceDuplicates(pf.PostIds)
+	pf.PostIds = utils.RemoveSliceDuplicates(pf.PostIds)
 
 	for _, creatorId := range pf.CreatorIds {
 		if !constants.PIXIV_FANBOX_CREATOR_ID_REGEX.MatchString(creatorId) {
@@ -46,7 +47,7 @@ func (pf *PixivFanboxDl) ValidateArgs() error {
 	}
 
 	if len(pf.CreatorPageNums) > 0 {
-		err = api.ValidatePageNumInput(
+		err = utils.ValidatePageNumInput(
 			len(pf.CreatorIds),
 			pf.CreatorPageNums,
 			[]string{
@@ -59,7 +60,7 @@ func (pf *PixivFanboxDl) ValidateArgs() error {
 	} else {
 		pf.CreatorPageNums = make([]string, len(pf.CreatorIds))
 	}
-	pf.CreatorIds, pf.CreatorPageNums = api.RemoveDuplicateIdAndPageNum(
+	pf.CreatorIds, pf.CreatorPageNums = utils.RemoveDuplicateIdAndPageNum(
 		pf.CreatorIds,
 		pf.CreatorPageNums,
 	)
@@ -136,7 +137,7 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 		pf.UseCacheDb = false
 	}
 
-	if dlDirPath, err := api.ValidateDlDirPath(pf.BaseDownloadDirPath, constants.PIXIV_FANBOX_TITLE); err != nil {
+	if dlDirPath, err := utils.ValidateDlDirPath(pf.BaseDownloadDirPath, constants.PIXIV_FANBOX_TITLE); err != nil {
 		return err
 	} else {
 		pf.BaseDownloadDirPath = dlDirPath

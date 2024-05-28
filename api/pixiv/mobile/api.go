@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -15,6 +14,7 @@ import (
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 type offsetArgs struct {
@@ -246,7 +246,7 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 
 // Query Pixiv's API (mobile) to get all the posts JSON(s) of a user ID
 func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, artworkType string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
-	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
+	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, nil, []error{err}
 	}
@@ -421,7 +421,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName string, dlOptions *PixivMobileD
 // Query Pixiv's API (mobile) to get the JSON of a search query
 // Returns the ToDownload slice, Ugoira slice, boolean indicating if there was an error, and boolean indicating if the context was cancelled
 func (pixiv *PixivMobile) TagSearch(tagName, pageNum string, dlOptions *PixivMobileDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
-	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
+	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		logger.LogError(err, logger.ERROR)
 		return nil, nil, []error{err}, false

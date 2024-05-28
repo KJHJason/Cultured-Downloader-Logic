@@ -1,7 +1,7 @@
 package pixiv
 
 import (
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // PixivDl contains the IDs of the Pixiv artworks and
@@ -22,19 +22,19 @@ type PixivDl struct {
 //
 // Should be called after initialising the struct.
 func (p *PixivDl) ValidateArgs() error {
-	err := api.ValidateIds(p.ArtworkIds)
+	err := utils.ValidateIds(p.ArtworkIds)
 	if err != nil {
 		return err
 	}
 
-	err = api.ValidateIds(p.ArtistIds)
+	err = utils.ValidateIds(p.ArtistIds)
 	if err != nil {
 		return err
 	}
 
-	p.ArtworkIds = api.RemoveSliceDuplicates(p.ArtworkIds)
+	p.ArtworkIds = utils.RemoveSliceDuplicates(p.ArtworkIds)
 	if len(p.ArtistPageNums) > 0 {
-		err = api.ValidatePageNumInput(
+		err = utils.ValidatePageNumInput(
 			len(p.ArtistIds),
 			p.ArtistPageNums,
 			[]string{
@@ -48,13 +48,13 @@ func (p *PixivDl) ValidateArgs() error {
 		p.ArtistPageNums = make([]string, len(p.ArtistIds))
 	}
 
-	p.ArtistIds, p.ArtistPageNums = api.RemoveDuplicateIdAndPageNum(
+	p.ArtistIds, p.ArtistPageNums = utils.RemoveDuplicateIdAndPageNum(
 		p.ArtistIds,
 		p.ArtistPageNums,
 	)
 
 	if len(p.TagNamesPageNums) > 0 {
-		err = api.ValidatePageNumInput(
+		err = utils.ValidatePageNumInput(
 			len(p.TagNames),
 			p.TagNamesPageNums,
 			[]string{
@@ -68,7 +68,7 @@ func (p *PixivDl) ValidateArgs() error {
 		p.TagNamesPageNums = make([]string, len(p.TagNames))
 	}
 
-	p.TagNames, p.TagNamesPageNums = api.RemoveDuplicateIdAndPageNum(
+	p.TagNames, p.TagNamesPageNums = utils.RemoveDuplicateIdAndPageNum(
 		p.TagNames,
 		p.TagNamesPageNums,
 	)

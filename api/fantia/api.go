@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -406,7 +406,7 @@ const (
 // Get all the creator's posts by using goquery to parse the HTML response to get the post IDs
 func getCreatorContent(creatorId, pageNum string, dlOptions *FantiaDlOptions, contentType string) ([]string, error) {
 	var contentIds []string
-	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
+	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, err
 	}
@@ -599,9 +599,9 @@ func (f *FantiaDl) GetCreatorsContents(creatorIds []string, pageNums []string, c
 		}
 	}
 	if contentType == PRODUCTS {
-		f.ProductIds = api.RemoveSliceDuplicates(f.ProductIds)
+		f.ProductIds = utils.RemoveSliceDuplicates(f.ProductIds)
 	} else {
-		f.PostIds = api.RemoveSliceDuplicates(f.PostIds)
+		f.PostIds = utils.RemoveSliceDuplicates(f.PostIds)
 	}
 	return errorSlice
 }

@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // Returns a defined request header needed to communicate with Pixiv Fanbox's API
@@ -265,7 +265,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 		return nil, []error{err}, false
 	}
 
-	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
+	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, []error{err}, false
 	}
@@ -391,6 +391,6 @@ func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) []err
 		logger.LogErrors(logger.ERROR, errSlice...)
 	}
 	progress.Stop(hasErr)
-	pf.PostIds = api.RemoveSliceDuplicates(pf.PostIds)
+	pf.PostIds = utils.RemoveSliceDuplicates(pf.PostIds)
 	return errSlice
 }

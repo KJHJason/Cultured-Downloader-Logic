@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // PixivToDl is the struct that contains the arguments of Pixiv download options.
@@ -87,7 +87,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 		p.UseCacheDb = false
 	}
 
-	if dlDirPath, err := api.ValidateDlDirPath(p.BaseDownloadDirPath, constants.PIXIV_MOBILE_TITLE); err != nil {
+	if dlDirPath, err := utils.ValidateDlDirPath(p.BaseDownloadDirPath, constants.PIXIV_MOBILE_TITLE); err != nil {
 		return err
 	} else {
 		p.BaseDownloadDirPath = dlDirPath
@@ -101,7 +101,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 	}
 
 	p.SortOrder = strings.ToLower(p.SortOrder)
-	_, err := api.ValidateStrArgs(
+	_, err := utils.ValidateStrArgs(
 		p.SortOrder,
 		constants.ACCEPTED_SORT_ORDER,
 		[]string{
@@ -117,7 +117,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 	}
 
 	p.SearchMode = strings.ToLower(p.SearchMode)
-	_, err = api.ValidateStrArgs(
+	_, err = utils.ValidateStrArgs(
 		p.SearchMode,
 		constants.ACCEPTED_SEARCH_MODE,
 		[]string{
@@ -133,7 +133,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 	}
 
 	p.RatingMode = strings.ToLower(p.RatingMode)
-	_, err = api.ValidateStrArgs(
+	_, err = utils.ValidateStrArgs(
 		p.RatingMode,
 		constants.ACCEPTED_RATING_MODE,
 		[]string{
@@ -149,7 +149,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 	}
 
 	p.ArtworkType = strings.ToLower(p.ArtworkType)
-	_, err = api.ValidateStrArgs(
+	_, err = utils.ValidateStrArgs(
 		p.ArtworkType,
 		constants.ACCEPTED_ARTWORK_TYPE,
 		[]string{
@@ -190,7 +190,7 @@ func (p *PixivMobileDlOptions) ValidateArgs() error {
 		}
 
 		// Now that we have the client,
-		// we will have to update the ajax equivalent parameters to suit the mobile API.
+		// we will have to update the ajax equivalent parameters to suit the mobile utils.
 		if p.RatingMode != "all" {
 			p.RatingMode = "all" // only supports "all"
 		}

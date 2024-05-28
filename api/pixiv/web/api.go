@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -17,6 +16,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*ArtworkDetails, error) {
@@ -401,7 +401,7 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 // which will return a map and a slice of Ugoira structures for downloads
 // Returns the map, the slice, a boolean indicating if there was an error, and a boolean indicating if the user cancelled the operation
 func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]string, []error, bool) {
-	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(pageNum)
+	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		logger.LogError(err, logger.ERROR)
 		return nil, []error{err}, false

@@ -12,6 +12,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 type KemonoDl struct {
@@ -86,7 +87,7 @@ func (k *KemonoDl) RemoveDuplicates() {
 }
 
 func (k *KemonoDl) ValidateArgs() error {
-	valid, outlier := api.SliceMatchesRegex(constants.KEMONO_CREATOR_URL_REGEX, k.CreatorUrls, true)
+	valid, outlier := utils.SliceMatchesRegex(constants.KEMONO_CREATOR_URL_REGEX, k.CreatorUrls, true)
 	if !valid {
 		return fmt.Errorf(
 			"kemono error %d: invalid creator URL found for kemono: %s",
@@ -95,7 +96,7 @@ func (k *KemonoDl) ValidateArgs() error {
 		)
 	}
 
-	valid, outlier = api.SliceMatchesRegex(constants.KEMONO_POST_URL_REGEX, k.PostUrls, true)
+	valid, outlier = utils.SliceMatchesRegex(constants.KEMONO_POST_URL_REGEX, k.PostUrls, true)
 	if !valid {
 		return fmt.Errorf(
 			fmt.Sprintf(
@@ -110,7 +111,7 @@ func (k *KemonoDl) ValidateArgs() error {
 		if len(k.CreatorPageNums) == 0 {
 			k.CreatorPageNums = make([]string, len(k.CreatorUrls))
 		} else {
-			err := api.ValidatePageNumInput(
+			err := utils.ValidatePageNumInput(
 				len(k.CreatorUrls),
 				k.CreatorPageNums,
 				[]string{
@@ -204,7 +205,7 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 		k.UseCacheDb = false
 	}
 
-	if dlDirPath, err := api.ValidateDlDirPath(k.BaseDownloadDirPath, constants.KEMONO_TITLE); err != nil {
+	if dlDirPath, err := utils.ValidateDlDirPath(k.BaseDownloadDirPath, constants.KEMONO_TITLE); err != nil {
 		return err
 	} else {
 		k.BaseDownloadDirPath = dlDirPath

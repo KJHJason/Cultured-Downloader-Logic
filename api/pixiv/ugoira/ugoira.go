@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // UgoiraDlOptions is the struct that contains the
@@ -47,7 +47,7 @@ func (u *UgoiraOptions) ValidateArgs() error {
 	}
 
 	u.OutputFormat = strings.ToLower(u.OutputFormat)
-	_, err := api.ValidateStrArgs(
+	_, err := utils.ValidateStrArgs(
 		u.OutputFormat,
 		UGOIRA_ACCEPTED_EXT,
 		[]string{

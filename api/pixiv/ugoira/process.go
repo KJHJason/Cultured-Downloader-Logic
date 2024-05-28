@@ -12,7 +12,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -23,6 +22,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // Map the Ugoira frame delays to their respective filenames
@@ -44,7 +44,7 @@ type UgoiraFfmpegArgs struct {
 // Converts the Ugoira to the desired output path using FFmpeg
 func ConvertUgoira(ugoiraInfo *Ugoira, imagesFolderPath string, ugoiraFfmpeg *UgoiraFfmpegArgs) error {
 	outputExt := filepath.Ext(ugoiraFfmpeg.outputPath)
-	if !api.SliceContains(UGOIRA_ACCEPTED_EXT, outputExt) {
+	if !utils.SliceContains(UGOIRA_ACCEPTED_EXT, outputExt) {
 		return fmt.Errorf(
 			"pixiv error %d: Output extension %s is not allowed for ugoira conversion",
 			cdlerrors.INPUT_ERROR,

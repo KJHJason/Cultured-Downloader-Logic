@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -251,11 +251,11 @@ func GetMultiplePosts(posts []*KemonoPostToDl, dlOptions *KemonoDlOptions) (urls
 
 func getCreatorPosts(creator *KemonoCreatorToDl, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.KEMONO, true)
-	minPage, maxPage, hasMax, err := api.GetMinMaxFromStr(creator.PageNum)
+	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(creator.PageNum)
 	if err != nil {
 		return nil, nil, err
 	}
-	minOffset, maxOffset := api.ConvertPageNumToOffset(minPage, maxPage, constants.KEMONO_PER_PAGE)
+	minOffset, maxOffset := utils.ConvertPageNumToOffset(minPage, maxPage, constants.KEMONO_PER_PAGE)
 
 	var postsToDl, gdriveLinksToDl []*httpfuncs.ToDownload
 	params := make(map[string]string)

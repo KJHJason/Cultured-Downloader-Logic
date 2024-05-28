@@ -14,6 +14,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -34,26 +35,26 @@ type FantiaDl struct {
 //
 // Should be called after initialising the struct.
 func (f *FantiaDl) ValidateArgs() error {
-	err := api.ValidateIds(f.PostIds)
+	err := utils.ValidateIds(f.PostIds)
 	if err != nil {
 		return err
 	}
 
-	err = api.ValidateIds(f.FanclubIds)
+	err = utils.ValidateIds(f.FanclubIds)
 	if err != nil {
 		return err
 	}
 
-	err = api.ValidateIds(f.ProductIds)
+	err = utils.ValidateIds(f.ProductIds)
 	if err != nil {
 		return err
 	}
 
-	f.ProductIds = api.RemoveSliceDuplicates(f.ProductIds)
-	f.PostIds = api.RemoveSliceDuplicates(f.PostIds)
+	f.ProductIds = utils.RemoveSliceDuplicates(f.ProductIds)
+	f.PostIds = utils.RemoveSliceDuplicates(f.PostIds)
 
 	if len(f.FanclubPageNums) > 0 {
-		err = api.ValidatePageNumInput(
+		err = utils.ValidatePageNumInput(
 			len(f.FanclubIds),
 			f.FanclubPageNums,
 			[]string{
@@ -68,7 +69,7 @@ func (f *FantiaDl) ValidateArgs() error {
 	}
 
 	if len(f.ProductFanclubPageNums) > 0 {
-		err = api.ValidatePageNumInput(
+		err = utils.ValidatePageNumInput(
 			len(f.ProductFanclubIds),
 			f.ProductFanclubPageNums,
 			[]string{
@@ -82,11 +83,11 @@ func (f *FantiaDl) ValidateArgs() error {
 		f.ProductFanclubPageNums = make([]string, len(f.ProductFanclubIds))
 	}
 
-	f.FanclubIds, f.FanclubPageNums = api.RemoveDuplicateIdAndPageNum(
+	f.FanclubIds, f.FanclubPageNums = utils.RemoveDuplicateIdAndPageNum(
 		f.FanclubIds,
 		f.FanclubPageNums,
 	)
-	f.ProductFanclubIds, f.ProductFanclubPageNums = api.RemoveDuplicateIdAndPageNum(
+	f.ProductFanclubIds, f.ProductFanclubPageNums = utils.RemoveDuplicateIdAndPageNum(
 		f.ProductFanclubIds,
 		f.ProductFanclubPageNums,
 	)
@@ -153,7 +154,7 @@ func (f *FantiaDlOptions) CtxIsActive() bool {
 }
 
 // GetCsrfToken gets the CSRF token from Fantia's index HTML
-// which is required to communicate with their API.
+// which is required to communicate with their utils.
 func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	f.csrfMu.Lock()
 	defer f.csrfMu.Unlock()
@@ -240,7 +241,7 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		f.UseCacheDb = false
 	}
 
-	if dlDirPath, err := api.ValidateDlDirPath(f.BaseDownloadDirPath, constants.FANTIA_TITLE); err != nil {
+	if dlDirPath, err := utils.ValidateDlDirPath(f.BaseDownloadDirPath, constants.FANTIA_TITLE); err != nil {
 		return err
 	} else {
 		f.BaseDownloadDirPath = dlDirPath
