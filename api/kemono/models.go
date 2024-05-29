@@ -11,7 +11,7 @@ type MainKemonoJson struct {
 	Embed   struct {
 		Description string `json:"description"`
 		Subject     string `json:"subject"`
-		Url         string `json:"url"`
+		Url         string `json:"url"` // usually leads to external links
 	} `json:"embed"`
 	File struct {
 		// usually is for the post thumbnail

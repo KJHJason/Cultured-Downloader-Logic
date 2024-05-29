@@ -123,11 +123,13 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 		}
 
 		if resJson.File.Path != "" {
-			// usually is the thumbnail of the post
-			toDownload = append(toDownload, &httpfuncs.ToDownload{
-				Url:      constants.KEMONO_URL + resJson.File.Path,
-				FilePath: getKemonoFilePath(postFolderPath, "", resJson.File.Name),
-			})
+			if dlOptions.Base.Filters.IsFileNameValid(resJson.File.Name) && dlOptions.Base.Filters.IsFilePathExtValid(resJson.File.Name) {
+				// usually is the thumbnail of the post
+				toDownload = append(toDownload, &httpfuncs.ToDownload{
+					Url:      constants.KEMONO_URL + resJson.File.Path,
+					FilePath: getKemonoFilePath(postFolderPath, "", resJson.File.Name),
+				})
+			}
 		}
 	}
 
