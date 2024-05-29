@@ -19,7 +19,7 @@ type MainKemonoJson struct {
 		Path string `json:"path"`
 	} `json:"file"`
 	Id         string `json:"id"`
-	Published  string `json:"published"`
+	Published  string `json:"published"` // UTC timing
 	Service    string `json:"service"`
 	SharedFile bool   `json:"shared_file"`
 	Title      string `json:"title"`
@@ -30,7 +30,7 @@ type KemonoJson []*MainKemonoJson
 
 type KemonoFavCreatorJson []struct {
 	FavedSeq int    `json:"faved_seq"`
-	Id       string `json:"id"`
+	Id       string `json:"id"` // creator id
 	Indexed  string `json:"indexed"`
 	Name     string `json:"name"`
 	Service  string `json:"service"`

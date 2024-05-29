@@ -22,6 +22,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
@@ -96,8 +97,9 @@ func (tbw *totalBytesWriter) Write(p []byte) (int, error) {
 }
 
 type DlRequestInfo struct {
-	Ctx context.Context
-	Url string
+	Ctx     context.Context
+	Url     string
+	Filters *filters.Filters
 }
 
 type PartialDlInfo struct {
@@ -147,6 +149,17 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 		fileFlags |= os.O_APPEND
 	} else {
 		fileFlags |= os.O_TRUNC
+	}
+
+	filters := dlRequestInfo.Filters
+	if partialDlInfo.ExpectedFileSize != -1 {
+		if !filters.IsFileSizeInRange(partialDlInfo.ExpectedFileSize) {
+			return nil
+		}
+	}
+
+	if !filters.IsFilePathExtValid(filePath) || !filters.IsFilePathFileNameValid(filePath) {
+		return nil
 	}
 
 	file, err := os.OpenFile(filePath, fileFlags, 0644)
@@ -325,8 +338,9 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 
 	if !checkIfCanSkipDl(downloadedBytes, fileReqContentLength, overwriteExistingFile, dlOptions.SupportRange) {
 		dlReqInfo := &DlRequestInfo{
-			Ctx: reqArgs.Context,
-			Url: reqArgs.Url,
+			Ctx:     reqArgs.Context,
+			Url:     reqArgs.Url,
+			Filters: dlOptions.Filters,
 		}
 		dlPartialInfo := PartialDlInfo{
 			DownloadPartial:  downloadPartial,

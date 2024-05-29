@@ -10,7 +10,7 @@ import (
 // Start the download process for Pixiv Fanbox
 func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivFanboxDlOptions *pixivfanbox.PixivFanboxDlOptions) []error {
 	defer pixivFanboxDlOptions.CancelCtx()
-	if !pixivFanboxDlOptions.DlThumbnails && !pixivFanboxDlOptions.DlImages && !pixivFanboxDlOptions.DlAttachments && !pixivFanboxDlOptions.DlGdrive {
+	if !pixivFanboxDlOptions.Base.DlThumbnails && !pixivFanboxDlOptions.Base.DlImages && !pixivFanboxDlOptions.Base.DlAttachments && !pixivFanboxDlOptions.Base.DlGdrive {
 		return nil
 	}
 
@@ -41,16 +41,16 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 				Context:        pixivFanboxDlOptions.GetContext(),
 				MaxConcurrency: constants.PIXIV_FANBOX_MAX_CONCURRENCY,
 				Headers:        pixivfanbox.GetPixivFanboxHeaders(),
-				Cookies:        pixivFanboxDlOptions.SessionCookies,
+				Cookies:        pixivFanboxDlOptions.Base.SessionCookies,
 				UseHttp3:       false,
 				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
 				SupportRange:   constants.PIXIV_FANBOX_RANGE_SUPPORTED,
 				ProgressBarInfo: &progress.ProgressBarInfo{
-					MainProgressBar:      pixivFanboxDlOptions.MainProgBar,
-					DownloadProgressBars: pixivFanboxDlOptions.DownloadProgressBars,
+					MainProgressBar:      pixivFanboxDlOptions.Base.MainProgBar,
+					DownloadProgressBars: pixivFanboxDlOptions.Base.DownloadProgressBars,
 				},
 			},
-			pixivFanboxDlOptions.Configs,
+			pixivFanboxDlOptions.Base.Configs,
 		)
 		if cancelled {
 			return nil
@@ -59,21 +59,22 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 			errSlice = append(errSlice, err...)
 		}
 	}
-	if pixivFanboxDlOptions.GdriveClient != nil && len(gdriveUrlsToDownload) > 0 && pixivFanboxDlOptions.CtxIsActive() {
+	if pixivFanboxDlOptions.Base.GdriveClient != nil && len(gdriveUrlsToDownload) > 0 && pixivFanboxDlOptions.CtxIsActive() {
 		downloadedPosts = true
-		err := pixivFanboxDlOptions.GdriveClient.DownloadGdriveUrls(
+		err := pixivFanboxDlOptions.Base.GdriveClient.DownloadGdriveUrls(
 			gdriveUrlsToDownload,
 			&progress.ProgressBarInfo{
-				MainProgressBar:      pixivFanboxDlOptions.MainProgBar,
-				DownloadProgressBars: pixivFanboxDlOptions.DownloadProgressBars,
+				MainProgressBar:      pixivFanboxDlOptions.Base.MainProgBar,
+				DownloadProgressBars: pixivFanboxDlOptions.Base.DownloadProgressBars,
 			},
+			pixivFanboxDlOptions.Base.Filters,
 		)
 		if len(err) > 0 {
 			errSlice = append(errSlice, err...)
 		}
 	}
 
-	notifier := pixivFanboxDlOptions.Notifier
+	notifier := pixivFanboxDlOptions.Base.Notifier
 	if downloadedPosts {
 		notifier.Alert("Downloaded all posts from Pixiv Fanbox!")
 	} else {

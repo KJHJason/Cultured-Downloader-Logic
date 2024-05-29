@@ -10,13 +10,13 @@ import (
 // Start the download process for Fantia
 func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.FantiaDlOptions) []error {
 	defer fantiaDlOptions.CancelCtx()
-	if !fantiaDlOptions.DlThumbnails && !fantiaDlOptions.DlImages && !fantiaDlOptions.DlAttachments {
+	if !fantiaDlOptions.Base.DlThumbnails && !fantiaDlOptions.Base.DlImages && !fantiaDlOptions.Base.DlAttachments {
 		return nil
 	}
 
 	var errorSlice []error
 	if len(fantiaDl.FanclubIds) > 0 {
-		if errSlice := fantiaDl.GetCreatorsPosts(fantiaDlOptions); len(errSlice) > 0 {
+		if errSlice := fantiaDl.GetFanclubsPosts(fantiaDlOptions); len(errSlice) > 0 {
 			errorSlice = append(errorSlice, errSlice...)
 		}
 	}
@@ -34,7 +34,7 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 	}
 
 	if len(fantiaDl.ProductFanclubIds) > 0 && fantiaDlOptions.CtxIsActive() {
-		if errSlice := fantiaDl.GetCreatorsProducts(fantiaDlOptions); len(errSlice) > 0 {
+		if errSlice := fantiaDl.GetFanclubsProducts(fantiaDlOptions); len(errSlice) > 0 {
 			errorSlice = append(errorSlice, errSlice...)
 		}
 	}
@@ -51,16 +51,17 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 			&httpfuncs.DlOptions{
 				Context:        fantiaDlOptions.GetContext(),
 				MaxConcurrency: constants.FANTIA_MAX_CONCURRENCY,
-				Cookies:        fantiaDlOptions.SessionCookies,
+				Cookies:        fantiaDlOptions.Base.SessionCookies,
 				UseHttp3:       constants.FANTIA_PRODUCT_USE_HTTP3,
 				SupportRange:   constants.FANTIA_RANGE_SUPPORTED,
 				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
+				Filters:        fantiaDlOptions.Base.Filters,
 				ProgressBarInfo: &progress.ProgressBarInfo{
-					MainProgressBar:      fantiaDlOptions.MainProgBar,
-					DownloadProgressBars: fantiaDlOptions.DownloadProgressBars,
+					MainProgressBar:      fantiaDlOptions.Base.MainProgBar,
+					DownloadProgressBars: fantiaDlOptions.Base.DownloadProgressBars,
 				},
 			},
-			fantiaDlOptions.Configs,
+			fantiaDlOptions.Base.Configs,
 		)
 		if cancelled {
 			return nil
@@ -70,13 +71,14 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 		}
 	}
 
-	if fantiaDlOptions.GdriveClient != nil && len(gdriveLinks) > 0 && fantiaDlOptions.CtxIsActive() {
-		gdriveErrs := fantiaDlOptions.GdriveClient.DownloadGdriveUrls(
+	if fantiaDlOptions.Base.GdriveClient != nil && len(gdriveLinks) > 0 && fantiaDlOptions.CtxIsActive() {
+		gdriveErrs := fantiaDlOptions.Base.GdriveClient.DownloadGdriveUrls(
 			gdriveLinks,
 			&progress.ProgressBarInfo{
-				MainProgressBar:      fantiaDlOptions.MainProgBar,
-				DownloadProgressBars: fantiaDlOptions.DownloadProgressBars,
+				MainProgressBar:      fantiaDlOptions.Base.MainProgBar,
+				DownloadProgressBars: fantiaDlOptions.Base.DownloadProgressBars,
 			},
+			fantiaDlOptions.Base.Filters,
 		)
 		errorSlice = append(errorSlice, gdriveErrs...)
 		downloadedPosts = true

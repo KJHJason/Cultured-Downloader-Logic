@@ -23,22 +23,17 @@ func GetPixivFanboxHeaders() map[string]string {
 	}
 }
 
-type resChanVal struct {
-	cacheKey string
-	response *http.Response
-}
-
-func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOptions, useHttp3 bool) (*resChanVal, error) {
+func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOptions, useHttp3 bool) (*http.Response, string, error) {
 	header := GetPixivFanboxHeaders()
 	params := map[string]string{"postId": postId}
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
 			Method:    "GET",
 			Url:       url,
-			Cookies:   dlOptions.SessionCookies,
+			Cookies:   dlOptions.Base.SessionCookies,
 			Headers:   header,
 			Params:    params,
-			UserAgent: dlOptions.Configs.UserAgent,
+			UserAgent: dlOptions.Base.Configs.UserAgent,
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			Context:   dlOptions.ctx,
@@ -46,9 +41,9 @@ func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOption
 	)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			return nil, err
+			return nil, "", err
 		}
-		return nil, fmt.Errorf(
+		return nil, "", fmt.Errorf(
 			"pixiv fanbox error %d: failed to get post details for %s, more info => %w",
 			cdlerrors.CONNECTION_ERROR,
 			url,
@@ -57,7 +52,7 @@ func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOption
 	}
 
 	if res.StatusCode != 200 {
-		return nil, fmt.Errorf(
+		return nil, "", fmt.Errorf(
 			"pixiv fanbox error %d: failed to get post details for %s due to a %s response",
 			cdlerrors.CONNECTION_ERROR,
 			url,
@@ -65,11 +60,16 @@ func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOption
 		)
 	}
 
-	if dlOptions.UseCacheDb {
+	if dlOptions.Base.UseCacheDb {
 		cacheKey = database.ParsePostKey(cacheKey, constants.PIXIV_FANBOX)
 		database.CachePostViaBatch(cacheKey)
 	}
-	return &resChanVal{cacheKey: cacheKey, response: res}, nil
+	return res, cacheKey, nil
+}
+
+type urlsChanVal struct {
+	postUrls   []*httpfuncs.ToDownload
+	gdriveUrls []*httpfuncs.ToDownload
 }
 
 // Query Pixiv Fanbox's API based on the slice of post IDs and
@@ -82,21 +82,21 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	}
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, maxConcurrency)
-	resChan := make(chan *resChanVal, postIdsLen)
+	urlsChan := make(chan *urlsChanVal, postIdsLen)
 	errChan := make(chan error, postIdsLen)
 
-	baseMsg := "Getting post details from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", postIdsLen)
-	progress := dlOptions.MainProgBar
+	baseMsg := "Getting and processing post details from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", postIdsLen)
+	progress := dlOptions.Base.MainProgBar()
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
-			"Finished getting %d post details from Pixiv Fanbox!",
+			"Finished getting and processing %d post details from Pixiv Fanbox!",
 			postIdsLen,
 		),
 	)
 	progress.UpdateErrorMsg(
 		fmt.Sprintf(
-			"Something went wrong while getting %d post details from Pixiv Fanbox.\nPlease refer to the logs for more details.",
+			"Something went wrong while getting and processing %d post details from Pixiv Fanbox.\nPlease refer to the logs for more details.",
 			postIdsLen,
 		),
 	)
@@ -109,7 +109,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	url := fmt.Sprintf("%s/post.info", constants.PIXIV_FANBOX_API_URL)
 	for _, postId := range pf.PostIds {
 		var cacheKey string
-		if dlOptions.UseCacheDb {
+		if dlOptions.Base.UseCacheDb {
 			fullUrl := fmt.Sprintf("%s?postId=%s", url, postId)
 			if database.PostCacheExists(fullUrl, constants.PIXIV_FANBOX) {
 				progress.Increment()
@@ -121,23 +121,38 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 		wg.Add(1)
 		go func(postId, cacheKey string) {
 			defer func() {
+				progress.Increment()
 				wg.Done()
 				<-queue
 			}()
 
 			queue <- struct{}{}
-			res, err := getPostDetails(cacheKey, postId, url, dlOptions, useHttp3)
+			res, parsedCacheKey, err := getPostDetails(cacheKey, postId, url, dlOptions, useHttp3)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			postUrls, postGdriveLinks, err := processFanboxPostJson(res, dlOptions)
 			if err != nil {
 				errChan <- err
 			} else {
-				resChan <- res
+				if dlOptions.Base.UseCacheDb && parsedCacheKey != "" {
+					for _, url := range postUrls {
+						url.CacheKey = parsedCacheKey
+						url.CacheFn = database.CachePost
+					}
+				}
+				urlsChan <- &urlsChanVal{
+					postUrls:   postUrls,
+					gdriveUrls: postGdriveLinks,
+				}
 			}
-			progress.Increment()
 		}(postId, cacheKey)
 	}
 	wg.Wait()
 	close(queue)
-	close(resChan)
+	close(urlsChan)
 	close(errChan)
 
 	hasErr := len(errChan) > 0
@@ -151,15 +166,20 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	}
 	if hasCancelled {
 		dlOptions.CancelCtx()
-		progress.StopInterrupt("Stopped getting post details from Pixiv Fanbox...")
+		progress.StopInterrupt("Stopped getting and processing post details from Pixiv Fanbox...")
 		return nil, nil, errSlice
 	}
 	progress.Stop(hasErr)
 
-	urlsSlice, gdriveUrls := processMultiplePostJson(resChan, dlOptions)
+	var urlsSlice, gdriveUrls []*httpfuncs.ToDownload
+	for urls := range urlsChan {
+		urlsSlice = append(urlsSlice, urls.postUrls...)
+		gdriveUrls = append(gdriveUrls, urls.gdriveUrls...)
+	}
 	return urlsSlice, gdriveUrls, errSlice
 }
 
+// To get all the paginated URL(s) from the api
 func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions) ([]string, error) {
 	params := map[string]string{"creatorId": creatorId}
 	headers := GetPixivFanboxHeaders()
@@ -172,10 +192,10 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 		&httpfuncs.RequestArgs{
 			Method:    "GET",
 			Url:       url,
-			Cookies:   dlOptions.SessionCookies,
+			Cookies:   dlOptions.Base.SessionCookies,
 			Headers:   headers,
 			Params:    params,
-			UserAgent: dlOptions.Configs.UserAgent,
+			UserAgent: dlOptions.Base.Configs.UserAgent,
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			Context:   dlOptions.GetContext(),
@@ -223,9 +243,9 @@ func getFanboxPostsLogic(reqUrl string, headers map[string]string, dlOptions *Pi
 		&httpfuncs.RequestArgs{
 			Method:    "GET",
 			Url:       reqUrl,
-			Cookies:   dlOptions.SessionCookies,
+			Cookies:   dlOptions.Base.SessionCookies,
 			Headers:   headers,
-			UserAgent: dlOptions.Configs.UserAgent,
+			UserAgent: dlOptions.Base.Configs.UserAgent,
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			Context:   dlOptions.GetContext(),
@@ -310,7 +330,9 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 		}
 
 		for _, postInfoMap := range res.json.Body.Items {
-			postIds = append(postIds, postInfoMap.Id)
+			if dlOptions.Base.Filters.IsPostDateValid(postInfoMap.PublishedDatetime) {
+				postIds = append(postIds, postInfoMap.ID)
+			}
 		}
 	}
 
@@ -337,7 +359,7 @@ func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) []err
 	}
 
 	var errSlice []error
-	progress := dlOptions.MainProgBar
+	progress := dlOptions.Base.MainProgBar()
 	if len(pf.CreatorIds) > 1 {
 		baseMsg := "Getting post ID(s) from creator(s) on Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", creatorIdsLen)
 		progress.UpdateBaseMsg(baseMsg)

@@ -69,7 +69,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 	)
 
 	var cacheKey string
-	if dlOptions.UseCacheDb {
+	if dlOptions.Base.UseCacheDb {
 		if name := database.GetKemonoCreatorCache(url); name != "" {
 			return name, nil
 		}
@@ -88,8 +88,8 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 			Url:         url,
 			Method:      "GET",
 			Headers:     getKemonoPartyHeaders(),
-			UserAgent:   dlOptions.Configs.UserAgent,
-			Cookies:     dlOptions.SessionCookies,
+			UserAgent:   dlOptions.Base.Configs.UserAgent,
+			Cookies:     dlOptions.Base.SessionCookies,
 			Http2:       !useHttp3,
 			Http3:       useHttp3,
 			CheckStatus: true,
@@ -105,7 +105,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 		return userId, err
 	}
 
-	if dlOptions.UseCacheDb {
+	if dlOptions.Base.UseCacheDb {
 		database.CacheKemonoCreatorName(url, creatorName)
 	} else {
 		creatorNameCache[cacheKey] = creatorName
@@ -122,7 +122,7 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 		post.PostId,
 	)
 	var cacheKey string
-	if dlOptions.UseCacheDb {
+	if dlOptions.Base.UseCacheDb {
 		if database.PostCacheExists(url, constants.KEMONO) {
 			return nil, nil, nil
 		}
@@ -135,8 +135,8 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 			Url:         url,
 			Method:      "GET",
 			Headers:     getKemonoPartyHeaders(),
-			UserAgent:   dlOptions.Configs.UserAgent,
-			Cookies:     dlOptions.SessionCookies,
+			UserAgent:   dlOptions.Base.Configs.UserAgent,
+			Cookies:     dlOptions.Base.SessionCookies,
 			Http2:       !useHttp3,
 			Http3:       useHttp3,
 			CheckStatus: true,
@@ -154,7 +154,7 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 	}
 
 	postsToDl, gdriveLinks := processMultipleJson(KemonoJson{&resJson}, dlOptions)
-	if dlOptions.UseCacheDb {
+	if dlOptions.Base.UseCacheDb {
 		for _, post := range postsToDl {
 			post.CacheKey = cacheKey
 			post.CacheFn = database.CachePost
@@ -176,7 +176,7 @@ func GetMultiplePosts(posts []*KemonoPostToDl, dlOptions *KemonoDlOptions) (urls
 	resChan := make(chan *kemonoChanRes, postLen)
 
 	baseMsg := "Getting post details from Kemono [%d/" + fmt.Sprintf("%d]...", postLen)
-	progress := dlOptions.MainProgBar
+	progress := dlOptions.Base.MainProgBar()
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -271,9 +271,9 @@ func getCreatorPosts(creator *KemonoCreatorToDl, dlOptions *KemonoDlOptions) ([]
 					creator.CreatorId,
 				),
 				Method:      "GET",
-				UserAgent:   dlOptions.Configs.UserAgent,
+				UserAgent:   dlOptions.Base.Configs.UserAgent,
 				Headers:     getKemonoPartyHeaders(),
-				Cookies:     dlOptions.SessionCookies,
+				Cookies:     dlOptions.Base.SessionCookies,
 				Params:      params,
 				Http2:       !useHttp3,
 				Http3:       useHttp3,
@@ -309,7 +309,7 @@ func getCreatorPosts(creator *KemonoCreatorToDl, dlOptions *KemonoDlOptions) ([]
 func GetMultipleCreators(creators []*KemonoCreatorToDl, dlOptions *KemonoDlOptions) (urlsToDownload []*httpfuncs.ToDownload, gdriveLinks []*httpfuncs.ToDownload, errSlice []error) {
 	creatorLen := len(creators)
 
-	progress := dlOptions.MainProgBar
+	progress := dlOptions.Base.MainProgBar()
 	if creatorLen > 1 {
 		baseMsg := "Getting creator's posts from Kemono [%d/" + fmt.Sprintf("%d]...", creatorLen)
 		progress.UpdateBaseMsg(baseMsg)
@@ -389,10 +389,10 @@ func GetFavourites(dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*http
 	reqArgs := &httpfuncs.RequestArgs{
 		Url:         constants.KEMONO_API_URL + "/account/favorites",
 		Method:      "GET",
-		Cookies:     dlOptions.SessionCookies,
+		Cookies:     dlOptions.Base.SessionCookies,
 		Params:      params,
 		Headers:     getKemonoPartyHeaders(),
-		UserAgent:   dlOptions.Configs.UserAgent,
+		UserAgent:   dlOptions.Base.Configs.UserAgent,
 		Http2:       !useHttp3,
 		Http3:       useHttp3,
 		CheckStatus: true,

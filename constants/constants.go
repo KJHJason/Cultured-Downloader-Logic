@@ -3,6 +3,7 @@ package constants
 import (
 	"fmt"
 	"regexp"
+	"time"
 )
 
 const (
@@ -98,6 +99,7 @@ const (
 	KEMONO_CREATOR_ID_GROUP_NAME = "creatorId"
 	KEMONO_POST_ID_GROUP_NAME    = "postId"
 	KEMONO_MAX_CONCURRENCY       = 1 // Since Kemono server is very slow as of April 2024
+	KEMONO_PUBLISHED_DATE_LAYOUT = "2006-01-02T15:04:05"
 
 	PASSWORD_FILENAME = "detected_passwords.txt"
 	ATTACHMENT_FOLDER = "attachments"
@@ -211,6 +213,7 @@ var (
 	// For Kemono
 	KEMONO_IMG_SRC_TAG_REGEX     = regexp.MustCompile(`(?i)<img[^>]+src=(?:\\)?"(?P<imgSrc>[^">]+)(?:\\)?"[^>]*>`)
 	KEMONO_IMG_SRC_TAG_REGEX_IDX = KEMONO_IMG_SRC_TAG_REGEX.SubexpIndex("imgSrc")
+	KEMONO_DATETIME_OFFSET       = time.FixedZone("UTC+9", 9*60*60)
 
 	// For Kemono input validations
 	KEMONO_POST_URL_REGEX = regexp.MustCompile(

@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
@@ -44,7 +46,30 @@ func getKemonoFilePath(postFolderPath, childDir, fileName string) string {
 	return filepath.Join(postFolderPath, childDir, fileName)
 }
 
+// Convert "2024-05-24T15:00:00" string to time.Time
+//
+// Note: The value returned by Kemono is UTC+0
+func parsePublishedDate(publishedDate string) time.Time {
+	datePublished, err := time.Parse(constants.KEMONO_PUBLISHED_DATE_LAYOUT, publishedDate)
+	if err != nil {
+		errMsg := fmt.Errorf(
+			"kemono error %d: failed to parse published date %q, more info => %w",
+			cdlerrors.UNEXPECTED_ERROR,
+			publishedDate,
+			err,
+		)
+		logger.LogError(errMsg, logger.ERROR)
+		return time.Time{}
+	}
+	return datePublished.In(constants.KEMONO_DATETIME_OFFSET) // convert to UTC+9/JST
+}
+
 func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload) {
+	publishedDate := parsePublishedDate(resJson.Published)
+	if !dlOptions.Base.Filters.IsPostDateValid(publishedDate) {
+		return nil, nil
+	}
+
 	var creatorNamePath string
 	if creatorName, err := getCreatorName(resJson.Service, resJson.User, dlOptions); err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -64,7 +89,7 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 	}
 
 	postFolderPath := iofuncs.GetPostFolder(
-		filepath.Join(dlOptions.BaseDownloadDirPath, resJson.Service),
+		filepath.Join(dlOptions.Base.DownloadDirPath, resJson.Service),
 		creatorNamePath,
 		resJson.Id,
 		resJson.Title,
@@ -72,9 +97,12 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 
 	var gdriveLinks []*httpfuncs.ToDownload
 	var toDownload []*httpfuncs.ToDownload
-	if dlOptions.DlAttachments {
+	if dlOptions.Base.DlAttachments {
 		toDownload = getInlineImages(resJson.Content, postFolderPath)
 		for _, attachment := range resJson.Attachments {
+			if !dlOptions.Base.Filters.IsFileNameValid(attachment.Name) || !dlOptions.Base.Filters.IsFilePathExtValid(attachment.Name) {
+				continue
+			}
 			toDownload = append(toDownload, &httpfuncs.ToDownload{
 				Url:      constants.KEMONO_URL + attachment.Path,
 				FilePath: getKemonoFilePath(postFolderPath, constants.KEMONO_CONTENT_FOLDER, attachment.Name),
@@ -83,10 +111,10 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 
 		if resJson.Embed.Url != "" {
 			embedsDirPath := filepath.Join(postFolderPath, constants.KEMONO_EMBEDS_FOLDER)
-			if dlOptions.Configs.LogUrls {
+			if dlOptions.Base.Configs.LogUrls {
 				utils.DetectOtherExtDLLink(resJson.Embed.Url, embedsDirPath)
 			}
-			if dlOptions.DlGdrive && utils.DetectGDriveLinks(resJson.Embed.Url, postFolderPath, true, dlOptions.Configs.LogUrls) {
+			if dlOptions.Base.DlGdrive && utils.DetectGDriveLinks(resJson.Embed.Url, postFolderPath, true, dlOptions.Base.Configs.LogUrls) {
 				gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
 					Url:      resJson.Embed.Url,
 					FilePath: embedsDirPath,
@@ -106,8 +134,8 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 	contentGdriveLinks := gdrive.ProcessPostText(
 		resJson.Content,
 		postFolderPath,
-		dlOptions.DlGdrive,
-		dlOptions.Configs.LogUrls,
+		dlOptions.Base.DlGdrive,
+		dlOptions.Base.Configs.LogUrls,
 	)
 	gdriveLinks = append(gdriveLinks, contentGdriveLinks...)
 	return toDownload, gdriveLinks

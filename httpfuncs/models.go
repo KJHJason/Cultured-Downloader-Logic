@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 )
 
 type RequestHandler func(reqArgs *RequestArgs) (*http.Response, error)
@@ -53,6 +54,8 @@ type DlOptions struct {
 
 	// Whether the server supports Accept-Ranges header value
 	SupportRange bool
+
+	Filters *filters.Filters
 
 	ProgressBarInfo *progress.ProgressBarInfo
 }

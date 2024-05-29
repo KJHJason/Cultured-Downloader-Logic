@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
@@ -116,6 +117,22 @@ func dlAttachmentsFromPost(content *FantiaContent, postFolderPath string) []*htt
 	return urlsSlice
 }
 
+// Convert string value like "Wed, 14 Feb 2024 20:00:00 +0900" to time.Time
+func parseDateStrToDateTime(dateStr string) time.Time {
+	dateTime, err := time.Parse(time.RFC1123Z, dateStr)
+	if err != nil {
+		errMsg := fmt.Errorf(
+			"fantia error %d: failed to parse date string %q to datetime: %w",
+			cdlerrors.UNEXPECTED_ERROR,
+			dateStr,
+			err,
+		)
+		logger.LogError(errMsg, logger.ERROR)
+		return time.Time{}
+	}
+	return dateTime
+}
+
 // Process the JSON response from Fantia's API and
 // returns a slice of urls and a slice of gdrive urls to download from
 func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
@@ -138,17 +155,21 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 	}
 
 	post := postJson.Post
+	postDate := parseDateStrToDateTime(post.PostedAt);
+	if dlOptions.Base.Filters.IsPostDateValid(postDate) {
+		return nil, nil, nil
+	}
 	postId := strconv.Itoa(post.ID)
 	postTitle := post.Title
-	creatorName := post.Fanclub.FanclubNameWithCreatorName
-	if creatorName == "" { // just in case but shouldn't happen
-		creatorName = post.Fanclub.User.Name
+	fanclubName := post.Fanclub.FanclubNameWithCreatorName
+	if fanclubName == "" { // just in case but shouldn't happen
+		fanclubName = post.Fanclub.User.Name
 	}
-	postFolderPath := iofuncs.GetPostFolder(dlOptions.BaseDownloadDirPath, creatorName, postId, postTitle)
+	postFolderPath := iofuncs.GetPostFolder(dlOptions.Base.DownloadDirPath, fanclubName, postId, postTitle)
 
 	var urlsSlice []*httpfuncs.ToDownload
 	thumbnail := post.Thumb.Original
-	if dlOptions.DlThumbnails && thumbnail != "" {
+	if dlOptions.Base.DlThumbnails && thumbnail != "" {
 		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      thumbnail,
 			FilePath: postFolderPath,
@@ -158,8 +179,8 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 	gdriveLinks := gdrive.ProcessPostText(
 		post.Comment,
 		postFolderPath,
-		dlOptions.DlGdrive,
-		dlOptions.Configs.LogUrls,
+		dlOptions.Base.DlGdrive,
+		dlOptions.Base.Configs.LogUrls,
 	)
 
 	postContent := post.PostContents
@@ -175,16 +196,16 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 		commentGdriveLinks := gdrive.ProcessPostText(
 			content.Comment,
 			postFolderPath,
-			dlOptions.DlGdrive,
-			dlOptions.Configs.LogUrls,
+			dlOptions.Base.DlGdrive,
+			dlOptions.Base.Configs.LogUrls,
 		)
 		if len(commentGdriveLinks) > 0 {
 			gdriveLinks = append(gdriveLinks, commentGdriveLinks...)
 		}
-		if dlOptions.DlImages {
-			urlsSlice = append(urlsSlice, dlImagesFromPost(&content, postFolderPath, dlOptions.OrganiseImages, contentIds)...)
+		if dlOptions.Base.DlImages {
+			urlsSlice = append(urlsSlice, dlImagesFromPost(&content, postFolderPath, dlOptions.Base.OrganiseImages, contentIds)...)
 		}
-		if dlOptions.DlAttachments {
+		if dlOptions.Base.DlAttachments {
 			urlsSlice = append(urlsSlice, dlAttachmentsFromPost(&content, postFolderPath)...)
 		}
 	}
@@ -200,7 +221,7 @@ type processIllustArgs struct {
 
 // Process the JSON response to get the urls to download
 func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
-	progress := dlOptions.MainProgBar
+	progress := dlOptions.Base.MainProgBar()
 	progress.SetToSpinner()
 	progress.UpdateBaseMsg(
 		fmt.Sprintf(
@@ -283,24 +304,24 @@ func getAndProcessProductPaidContent(purchaseRelativeUrl, productId string, dlOp
 	return paidContentUrls, nil
 }
 
-func getCreatorNameFromProductPage(productId string, doc *goquery.Document) string {
-	creatorName := doc.Find(".fanclub-show-header h1.fanclub-name a").Text()
-	if creatorName == "" {
+func getFanclubNameFromProductPage(productId string, doc *goquery.Document) string {
+	fanclubName := doc.Find(".fanclub-show-header h1.fanclub-name a").Text()
+	if fanclubName == "" {
 		htmlContent, err := doc.Html()
 		if err != nil {
 			htmlContent = "failed to get HTML"
 		}
 		//lint:ignore ST1005 Since the html content is long, it's better to have it on a new line for readability
 		errMsg := fmt.Errorf(
-			"fantia error %d: failed to get creator name from product id %q, please report this issue with the html content below;\n%s\n",
+			"fantia error %d: failed to get fanclub name from product id %q, please report this issue with the html content below;\n%s\n",
 			cdlerrors.HTML_ERROR,
 			productId,
 			htmlContent,
 		)
 		logger.LogError(errMsg, logger.ERROR)
-		creatorName = constants.FANTIA_UNKNOWN_CREATOR
+		fanclubName = constants.FANTIA_UNKNOWN_CREATOR
 	}
-	return creatorName
+	return fanclubName
 }
 
 func getProductPaidContent(productId string, doc *goquery.Document, dlOptions *FantiaDlOptions) ([]string, error) {
@@ -405,10 +426,10 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)
-	var creatorName string
+	var fanclubName string
 	go func() {
 		defer wg.Done()
-		creatorName = getCreatorNameFromProductPage(productId, doc)
+		fanclubName = getFanclubNameFromProductPage(productId, doc)
 	}()
 
 	var previewContentUrls []string
@@ -440,7 +461,7 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 	}
 
 	toDownload := make([]*httpfuncs.ToDownload, 0, numOfEl)
-	dirPath := iofuncs.GetPostFolder(dlOptions.BaseDownloadDirPath, creatorName, productId, productName)
+	dirPath := iofuncs.GetPostFolder(dlOptions.Base.DownloadDirPath, fanclubName, productId, productName)
 	dirPath = filepath.Join(
 		filepath.Dir(dirPath), // go up one directory
 		constants.FANTIA_PRODUCT_DIR_NAME,
@@ -457,7 +478,7 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 	}
 	for i, url := range previewContentUrls {
 		dlFilePath := filepath.Join(dirPath, constants.FANTIA_PRODUCT_PREVIEW_DIR_NAME)
-		if dlOptions.OrganiseImages {
+		if dlOptions.Base.OrganiseImages {
 			fileExt := filepath.Ext(url)
 			dlFilePath = filepath.Join(dlFilePath, fmt.Sprintf("%d%s", i+1, fileExt))
 		}

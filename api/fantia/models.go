@@ -25,10 +25,11 @@ type FantiaContent struct {
 
 type FantiaPost struct {
 	Post struct {
-		ID      int    `json:"id"`
-		Comment string `json:"comment"` // the main post content
-		Title   string `json:"title"`
-		Thumb   struct {
+		ID       int    `json:"id"`
+		Comment  string `json:"comment"` // the main post content
+		Title    string `json:"title"`
+		PostedAt string `json:"posted_at"` // Wed, 14 Feb 2024 20:00:00 +0900
+		Thumb    struct {
 			Original string `json:"original"`
 		} `json:"thumb"`
 		Fanclub struct {

@@ -6,12 +6,8 @@ import (
 	"net/http"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
-	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
-	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
@@ -69,29 +65,9 @@ func (pf *PixivFanboxDl) ValidateArgs() error {
 
 // PixivFanboxDlOptions is the struct that contains the options for downloading from Pixiv Fanbox.
 type PixivFanboxDlOptions struct {
-	ctx                 context.Context
-	cancel              context.CancelFunc
-	DlThumbnails        bool
-	DlImages            bool
-	DlAttachments       bool
-	DlGdrive            bool
-	UseCacheDb          bool
-	BaseDownloadDirPath string
-
-	Configs *configs.Config
-
-	// GdriveClient is the Google Drive client to be
-	// used in the download process for Pixiv Fanbox posts
-	GdriveClient *gdrive.GDrive
-
-	SessionCookieId string
-	SessionCookies  []*http.Cookie
-
-	Notifier notify.Notifier
-
-	// Progress indicators
-	MainProgBar          progress.ProgressBar
-	DownloadProgressBars *[]*progress.DownloadProgressBar
+	ctx    context.Context
+	cancel context.CancelFunc
+	Base   *api.BaseDl
 }
 
 func (pf *PixivFanboxDlOptions) GetContext() context.Context {
@@ -119,54 +95,61 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 		pf.SetContext(context.Background())
 	}
 
-	if pf.Notifier == nil {
+	if pf.Base == nil {
+		return fmt.Errorf(
+			"pixiv fanbox error %d: Base cannot be nil",
+			cdlerrors.DEV_ERROR,
+		)
+	}
+
+	if pf.Base.Notifier == nil {
 		return fmt.Errorf(
 			"pixiv fanbox error %d: Notifier cannot be nil",
 			cdlerrors.DEV_ERROR,
 		)
 	}
 
-	if pf.Configs == nil {
-		return fmt.Errorf(
-			"pixiv fanbox error %d, configs is nil",
-			cdlerrors.DEV_ERROR,
-		)
-	}
-
-	if pf.UseCacheDb && pf.Configs.OverwriteFiles {
-		pf.UseCacheDb = false
-	}
-
-	if dlDirPath, err := utils.ValidateDlDirPath(pf.BaseDownloadDirPath, constants.PIXIV_FANBOX_TITLE); err != nil {
-		return err
-	} else {
-		pf.BaseDownloadDirPath = dlDirPath
-	}
-
-	if len(pf.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.PIXIV_FANBOX, userAgent, pf.SessionCookies); err != nil {
-			return err
-		}
-		pf.SessionCookieId = ""
-	} else if pf.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV_FANBOX, pf.SessionCookieId, userAgent); err != nil {
-			return err
-		} else {
-			pf.SessionCookies = []*http.Cookie{cookie}
-		}
-	}
-
-	if pf.MainProgBar == nil {
+	if pf.Base.MainProgBar() == nil {
 		return fmt.Errorf(
 			"pixiv fanbox error %d, main progress bar is nil",
 			cdlerrors.DEV_ERROR,
 		)
 	}
 
-	if pf.DlGdrive && pf.GdriveClient == nil {
-		pf.DlGdrive = false
-	} else if !pf.DlGdrive && pf.GdriveClient != nil {
-		pf.GdriveClient = nil
+	if pf.Base.Configs == nil {
+		return fmt.Errorf(
+			"pixiv fanbox error %d, configs is nil",
+			cdlerrors.DEV_ERROR,
+		)
+	}
+
+	if pf.Base.UseCacheDb && pf.Base.Configs.OverwriteFiles {
+		pf.Base.UseCacheDb = false
+	}
+
+	if dlDirPath, err := utils.ValidateDlDirPath(pf.Base.DownloadDirPath, constants.PIXIV_FANBOX_TITLE); err != nil {
+		return err
+	} else {
+		pf.Base.DownloadDirPath = dlDirPath
+	}
+
+	if len(pf.Base.SessionCookies) > 0 {
+		if err := api.VerifyCookies(constants.PIXIV_FANBOX, userAgent, pf.Base.SessionCookies); err != nil {
+			return err
+		}
+		pf.Base.SessionCookieId = ""
+	} else if pf.Base.SessionCookieId != "" {
+		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV_FANBOX, pf.Base.SessionCookieId, userAgent); err != nil {
+			return err
+		} else {
+			pf.Base.SessionCookies = []*http.Cookie{cookie}
+		}
+	}
+
+	if pf.Base.DlGdrive && pf.Base.GdriveClient == nil {
+		pf.Base.DlGdrive = false
+	} else if !pf.Base.DlGdrive && pf.Base.GdriveClient != nil {
+		pf.Base.GdriveClient = nil
 	}
 	return nil
 }

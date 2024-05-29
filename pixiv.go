@@ -3,7 +3,6 @@ package cdlogic
 import (
 	"fmt"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	pixivmobile "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/mobile"
@@ -13,6 +12,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 func alertUser(artworksToDl []*httpfuncs.ToDownload, ugoiraToDl []*ugoira.Ugoira, notifier notify.Notifier) {
@@ -90,7 +90,7 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 	}
 
 	if len(pixivDl.ArtworkIds) > 0 && pixivDlOptions.CtxIsActive() {
-		pixivDl.ArtworkIds = api.RemoveSliceDuplicates(pixivDl.ArtworkIds)
+		pixivDl.ArtworkIds = utils.RemoveSliceDuplicates(pixivDl.ArtworkIds)
 		artworkSlice, ugoiraSlice, err := pixivweb.GetMultipleArtworkDetails(
 			pixivDl.ArtworkIds,
 			pixivDlOptions,
