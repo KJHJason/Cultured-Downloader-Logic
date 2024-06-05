@@ -13,7 +13,7 @@ require (
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/quic-go/quic-go v0.44.0
 	go.etcd.io/bbolt v1.3.10
-	golang.org/x/oauth2 v0.20.0
+	golang.org/x/oauth2 v0.21.0
 	google.golang.org/api v0.181.0
 )
 
