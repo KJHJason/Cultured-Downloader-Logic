@@ -1,7 +1,7 @@
 //go:build darwin
 // +build darwin
 
-package configs
+package utils
 
 import (
 	"os/exec"

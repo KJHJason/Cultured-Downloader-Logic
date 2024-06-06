@@ -22,9 +22,10 @@ type BaseDl struct {
 	UseCacheDb         bool
 	DownloadDirPath    string
 
-	Filters      *filters.Filters
-	Configs      *configs.Config
-	GdriveClient *gdrive.GDrive // Fantia, PixivFanbox, Kemono
+	PasswordRegex []string
+	Filters       *filters.Filters
+	Configs       *configs.Config
+	GdriveClient  *gdrive.GDrive // Fantia, PixivFanbox, Kemono
 
 	SessionCookieId string
 	SessionCookies  []*http.Cookie

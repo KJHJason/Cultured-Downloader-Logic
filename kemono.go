@@ -5,19 +5,18 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDlOptions) []error {
 	defer dlOptions.CancelCtx()
-	if !dlOptions.DlAttachments && !dlOptions.DlGdrive {
+	if !dlOptions.Base.DlAttachments && !dlOptions.Base.DlGdrive {
 		return nil
 	}
 
 	var errSlice []error
 	var toDownload, gdriveLinks []*httpfuncs.ToDownload
 	if kemonoDl.DlFav {
-		prog := dlOptions.MainProgBar
+		prog := dlOptions.Base.MainProgBar()
 		prog.SetToSpinner()
 		prog.UpdateBaseMsg("Getting favourites from Kemono...")
 		prog.UpdateSuccessMsg("Finished getting favourites from Kemono!")
@@ -64,19 +63,16 @@ func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDl
 		cancelled, err := httpfuncs.DownloadUrls(
 			toDownload,
 			&httpfuncs.DlOptions{
-				Context:        dlOptions.GetContext(),
-				MaxConcurrency: constants.KEMONO_MAX_CONCURRENCY,
-				Cookies:        dlOptions.SessionCookies,
-				UseHttp3:       httpfuncs.IsHttp3Supported(constants.KEMONO, false),
-				SupportRange:   constants.KEMONO_RANGE_SUPPORTED,
-				HeadReqTimeout: constants.KEMONO_HEAD_REQ_TIMEOUT,
-				RetryDelay:     &httpfuncs.RetryDelay{Min: 25, Max: 35},
-				ProgressBarInfo: &progress.ProgressBarInfo{
-					MainProgressBar:      dlOptions.MainProgBar,
-					DownloadProgressBars: dlOptions.DownloadProgressBars,
-				},
+				Context:         dlOptions.GetContext(),
+				MaxConcurrency:  constants.KEMONO_MAX_CONCURRENCY,
+				Cookies:         dlOptions.Base.SessionCookies,
+				UseHttp3:        httpfuncs.IsHttp3Supported(constants.KEMONO, false),
+				SupportRange:    constants.KEMONO_RANGE_SUPPORTED,
+				HeadReqTimeout:  constants.KEMONO_HEAD_REQ_TIMEOUT,
+				RetryDelay:      &httpfuncs.RetryDelay{Min: 25, Max: 35},
+				ProgressBarInfo: dlOptions.Base.ProgressBarInfo,
 			},
-			dlOptions.Configs,
+			dlOptions.Base.Configs,
 		)
 		if cancelled {
 			return nil
@@ -85,21 +81,19 @@ func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDl
 			errSlice = append(errSlice, err...)
 		}
 	}
-	if dlOptions.GdriveClient != nil && len(gdriveLinks) > 0 && dlOptions.CtxIsActive() {
+	if dlOptions.Base.GdriveClient != nil && len(gdriveLinks) > 0 && dlOptions.CtxIsActive() {
 		downloadedPosts = true
-		err := dlOptions.GdriveClient.DownloadGdriveUrls(
+		err := dlOptions.Base.GdriveClient.DownloadGdriveUrls(
 			gdriveLinks,
-			&progress.ProgressBarInfo{
-				MainProgressBar:      dlOptions.MainProgBar,
-				DownloadProgressBars: dlOptions.DownloadProgressBars,
-			},
+			dlOptions.Base.ProgressBarInfo,
+			dlOptions.Base.Filters,
 		)
 		if err != nil {
 			errSlice = append(errSlice, err...)
 		}
 	}
 
-	notifier := dlOptions.Notifier
+	notifier := dlOptions.Base.Notifier
 	if downloadedPosts {
 		notifier.Alert("Downloaded all posts from Kemono!")
 	} else {

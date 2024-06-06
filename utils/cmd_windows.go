@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package configs
+package utils
 
 import (
 	"os/exec"

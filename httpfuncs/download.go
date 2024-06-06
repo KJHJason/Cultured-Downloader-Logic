@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -67,10 +68,16 @@ func checkIfCanSkipDl(fileSize, contentLength int64, forceOverwrite, supportRang
 		return false // file does not exist
 	}
 
-	if fileSize == contentLength {
+	// TODO: Check if metadata is enabled for a more lenient file size check
+	if runtime.GOOS == "windows" && fileSize == contentLength {
+		return true // file already exists and the file size matches the content length
+	} 
+
+	if fileSize >= contentLength && fileSize-contentLength <= 30 {
 		// If the file already exists and the file size
-		// matches the expected file size in the Content-Length header,
+		// is more than the expected file size in the Content-Length header,
 		// then skip the download process.
+		// Why not strict equality? This is due to the metadata inserted by exiftool
 		return true
 	}
 

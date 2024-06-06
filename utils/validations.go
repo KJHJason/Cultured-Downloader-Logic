@@ -3,12 +3,12 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"path/filepath"
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
 func ValidateDlDirPath(dlDirPath, targetDirName string) (validatedDirPath string, err error) {

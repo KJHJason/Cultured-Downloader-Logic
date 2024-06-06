@@ -155,7 +155,7 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 	}
 
 	post := postJson.Post
-	postDate := parseDateStrToDateTime(post.PostedAt);
+	postDate := parseDateStrToDateTime(post.PostedAt)
 	if dlOptions.Base.Filters.IsPostDateValid(postDate) {
 		return nil, nil, nil
 	}

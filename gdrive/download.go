@@ -148,7 +148,7 @@ func filterDownloads(files []*GdriveFileToDl, filters *filters.Filters) []*Gdriv
 		if strings.Contains(file.MimeType, "application/vnd.google-apps") {
 			notAllowedForDownload = append(notAllowedForDownload, file)
 			continue
-		} 
+		}
 
 		if !filters.IsFileSizeInRange(file.Size) {
 			continue

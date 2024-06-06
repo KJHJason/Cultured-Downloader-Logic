@@ -4,7 +4,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixivfanbox"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 // Start the download process for Pixiv Fanbox
@@ -38,17 +37,14 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 		cancelled, err := httpfuncs.DownloadUrls(
 			urlsToDownload,
 			&httpfuncs.DlOptions{
-				Context:        pixivFanboxDlOptions.GetContext(),
-				MaxConcurrency: constants.PIXIV_FANBOX_MAX_CONCURRENCY,
-				Headers:        pixivfanbox.GetPixivFanboxHeaders(),
-				Cookies:        pixivFanboxDlOptions.Base.SessionCookies,
-				UseHttp3:       false,
-				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
-				SupportRange:   constants.PIXIV_FANBOX_RANGE_SUPPORTED,
-				ProgressBarInfo: &progress.ProgressBarInfo{
-					MainProgressBar:      pixivFanboxDlOptions.Base.MainProgBar,
-					DownloadProgressBars: pixivFanboxDlOptions.Base.DownloadProgressBars,
-				},
+				Context:         pixivFanboxDlOptions.GetContext(),
+				MaxConcurrency:  constants.PIXIV_FANBOX_MAX_CONCURRENCY,
+				Headers:         pixivfanbox.GetPixivFanboxHeaders(),
+				Cookies:         pixivFanboxDlOptions.Base.SessionCookies,
+				UseHttp3:        false,
+				HeadReqTimeout:  constants.DEFAULT_HEAD_REQ_TIMEOUT,
+				SupportRange:    constants.PIXIV_FANBOX_RANGE_SUPPORTED,
+				ProgressBarInfo: pixivFanboxDlOptions.Base.ProgressBarInfo,
 			},
 			pixivFanboxDlOptions.Base.Configs,
 		)
@@ -63,10 +59,7 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 		downloadedPosts = true
 		err := pixivFanboxDlOptions.Base.GdriveClient.DownloadGdriveUrls(
 			gdriveUrlsToDownload,
-			&progress.ProgressBarInfo{
-				MainProgressBar:      pixivFanboxDlOptions.Base.MainProgBar,
-				DownloadProgressBars: pixivFanboxDlOptions.Base.DownloadProgressBars,
-			},
+			pixivFanboxDlOptions.Base.ProgressBarInfo,
 			pixivFanboxDlOptions.Base.Filters,
 		)
 		if len(err) > 0 {

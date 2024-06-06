@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
+	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 type RequestHandler func(reqArgs *RequestArgs) (*http.Response, error)
