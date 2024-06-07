@@ -114,6 +114,8 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 				UseHttp3:       false,
 				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
 				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
+				// SetMetadata:    pixivDlOptions.Base.SetMetadata,
+				// Filters:        pixivDlOptions.Base.Filters,
 				ProgressBarInfo: &progress.ProgressBarInfo{
 					MainProgressBar:      pixivDlOptions.MainProgBar,
 					DownloadProgressBars: pixivDlOptions.DownloadProgressBars,
@@ -135,6 +137,7 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 			pixivUgoiraOptions,
 			pixivDlOptions.Configs,
 			httpfuncs.CallRequest,
+			false,
 			&progress.ProgressBarInfo{
 				MainProgressBar:      pixivDlOptions.MainProgBar,
 				DownloadProgressBars: pixivDlOptions.DownloadProgressBars,
@@ -239,6 +242,8 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 				UseHttp3:       false,
 				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
 				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
+				// SetMetadata:    pixivDlOptions.Base.SetMetadata,
+				// Filters:        pixivDlOptions.Base.Filters,
 				ProgressBarInfo: &progress.ProgressBarInfo{
 					MainProgressBar:      pixivDlOptions.MainProgBar,
 					DownloadProgressBars: pixivDlOptions.DownloadProgressBars,
@@ -267,6 +272,7 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 			pixivUgoiraOptions,
 			pixivDlOptions.Configs,
 			pixivDlOptions.MobileClient.SendRequest,
+			false,
 			&progress.ProgressBarInfo{
 				MainProgressBar:      pixivDlOptions.MainProgBar,
 				DownloadProgressBars: pixivDlOptions.DownloadProgressBars,

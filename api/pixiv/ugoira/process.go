@@ -243,7 +243,7 @@ func (u *UgoiraArgs) SetContext(ctx context.Context) {
 }
 
 // Downloads multiple Ugoira artworks and converts them based on the output format
-func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config, reqHandler httpfuncs.RequestHandler, progBarInfo *progress.ProgressBarInfo) []error {
+func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config, reqHandler httpfuncs.RequestHandler, setMetadata bool, progBarInfo *progress.ProgressBarInfo) []error {
 	if ugoiraOptions.UseCacheDb {
 		filteredUgoira := make([]*Ugoira, 0, len(ugoiraArgs.ToDownload))
 		for _, ugoira := range ugoiraArgs.ToDownload {
@@ -291,6 +291,8 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 			Headers:         headers,
 			Cookies:         ugoiraArgs.Cookies,
 			UseHttp3:        useHttp3,
+			SetMetadata:     setMetadata,
+			Filters:         nil,
 			ProgressBarInfo: progBarInfo,
 		},
 		config, // Note: if isMobileApi is true, custom user-agent will be ignored

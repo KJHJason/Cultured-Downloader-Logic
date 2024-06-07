@@ -55,6 +55,8 @@ type DlOptions struct {
 	// Whether the server supports Accept-Ranges header value
 	SupportRange bool
 
+	SetMetadata bool
+
 	Filters *filters.Filters
 
 	ProgressBarInfo *progress.ProgressBarInfo

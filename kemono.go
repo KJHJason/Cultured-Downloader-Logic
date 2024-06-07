@@ -70,6 +70,8 @@ func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDl
 				SupportRange:    constants.KEMONO_RANGE_SUPPORTED,
 				HeadReqTimeout:  constants.KEMONO_HEAD_REQ_TIMEOUT,
 				RetryDelay:      &httpfuncs.RetryDelay{Min: 25, Max: 35},
+				SetMetadata:     dlOptions.Base.SetMetadata,
+				Filters:         dlOptions.Base.Filters,
 				ProgressBarInfo: dlOptions.Base.ProgressBarInfo,
 			},
 			dlOptions.Base.Configs,

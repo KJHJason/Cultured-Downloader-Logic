@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -26,6 +25,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
@@ -58,30 +58,50 @@ func getFullFilePath(res *http.Response, filePath string) (string, error) {
 	return filePath, nil
 }
 
+type skipDlArgs struct {
+	ctx            context.Context
+	filePath       string
+	fileSize       int64
+	contentLength  int64
+	forceOverwrite bool
+	supportRange   bool
+	setMetadata    bool
+}
+
 // check if the file size matches the content length
 // if not, then the file does not exist or is corrupted and should be re-downloaded
-func checkIfCanSkipDl(fileSize, contentLength int64, forceOverwrite, supportRange bool) bool {
-	if forceOverwrite {
+func checkIfCanSkipDl(skipDlArgsVal skipDlArgs) bool {
+	if skipDlArgsVal.forceOverwrite {
 		return false
 	}
-	if fileSize == -1 {
+	if skipDlArgsVal.fileSize == -1 {
 		return false // file does not exist
 	}
 
-	// TODO: Check if metadata is enabled for a more lenient file size check
-	if runtime.GOOS == "windows" && fileSize == contentLength {
-		return true // file already exists and the file size matches the content length
-	} 
+	if skipDlArgsVal.setMetadata && skipDlArgsVal.fileSize > skipDlArgsVal.contentLength {
+		fileSizeWithoutMetadata, err := metadata.GetFileSizeWithoutExifData(skipDlArgsVal.ctx, skipDlArgsVal.filePath)
+		if err != nil {
+			logger.LogError(
+				fmt.Errorf(
+					"error %d: failed to get file size without metadata, more info => %w",
+					cdlerrors.UNEXPECTED_ERROR,
+					err,
+				),
+				logger.ERROR,
+			)
+			return false
+		}
+		skipDlArgsVal.fileSize = fileSizeWithoutMetadata
+	}
 
-	if fileSize >= contentLength && fileSize-contentLength <= 30 {
+	if skipDlArgsVal.fileSize == skipDlArgsVal.contentLength {
 		// If the file already exists and the file size
-		// is more than the expected file size in the Content-Length header,
+		// is equal to the expected file size in the Content-Length header,
 		// then skip the download process.
-		// Why not strict equality? This is due to the metadata inserted by exiftool
 		return true
 	}
 
-	if fileSize > 0 && !supportRange {
+	if skipDlArgsVal.fileSize > 0 && !skipDlArgsVal.supportRange {
 		// If the file already exists and have more than 0 bytes
 		// but the server doesn't have Content-Length headers or doesn't
 		// support range requests, we will assume that the file is already downloaded
@@ -343,7 +363,16 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		dlOptions.ProgressBarInfo.AppendDlProgBar(dlProgBar)
 	}
 
-	if !checkIfCanSkipDl(downloadedBytes, fileReqContentLength, overwriteExistingFile, dlOptions.SupportRange) {
+	skipDlArgsVal := skipDlArgs{
+		ctx:            reqArgs.Context,
+		filePath:       filePath,
+		fileSize:       downloadedBytes,
+		contentLength:  fileReqContentLength,
+		forceOverwrite: overwriteExistingFile,
+		supportRange:   dlOptions.SupportRange,
+		setMetadata:    dlOptions.SetMetadata,
+	}
+	if !checkIfCanSkipDl(skipDlArgsVal) {
 		dlReqInfo := &DlRequestInfo{
 			Ctx:     reqArgs.Context,
 			Url:     reqArgs.Url,

@@ -44,6 +44,8 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 				UseHttp3:        false,
 				HeadReqTimeout:  constants.DEFAULT_HEAD_REQ_TIMEOUT,
 				SupportRange:    constants.PIXIV_FANBOX_RANGE_SUPPORTED,
+				SetMetadata:     pixivFanboxDlOptions.Base.SetMetadata,
+				Filters:         pixivFanboxDlOptions.Base.Filters,
 				ProgressBarInfo: pixivFanboxDlOptions.Base.ProgressBarInfo,
 			},
 			pixivFanboxDlOptions.Base.Configs,

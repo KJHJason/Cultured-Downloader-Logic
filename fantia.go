@@ -54,6 +54,7 @@ func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.Fa
 				UseHttp3:        constants.FANTIA_PRODUCT_USE_HTTP3,
 				SupportRange:    constants.FANTIA_RANGE_SUPPORTED,
 				HeadReqTimeout:  constants.DEFAULT_HEAD_REQ_TIMEOUT,
+				SetMetadata:     fantiaDlOptions.Base.SetMetadata,
 				Filters:         fantiaDlOptions.Base.Filters,
 				ProgressBarInfo: fantiaDlOptions.Base.ProgressBarInfo,
 			},
