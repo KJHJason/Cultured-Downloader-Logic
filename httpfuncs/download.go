@@ -147,18 +147,26 @@ func writeDlDetailsToProgBar(dlProgBar *progress.DownloadProgressBar, startTime 
 
 	var estimatedTime float64
 	var progressPercentage float64
-	if expectedFileSize == -1 || downloadSpeed == 0 { // not present in the response or the time elapsed is too short
+	if expectedFileSize <= 0 { // not present in the response or the time elapsed is too short
 		estimatedTime = -1 // -1 indicates that the ETA is unknown
 		progressPercentage = 0
 	} else {
 		// Calculate the total progress made so far, including initial progress from bytesOnDisk
 		totalProgress := reqWrittenBytes + bytesOnDisk
 
-		// Calculate the progress percentage based on total bytes and written bytes
-		progressPercentage = float64(totalProgress) / float64(expectedFileSize) * 100
+		remainingBytesLenToDl := expectedFileSize - totalProgress
+		if remainingBytesLenToDl <= 0 {
+			// As a fallback, set the estimated
+			// time to -1 to avoid negative values.
+			estimatedTime = -1
+			progressPercentage = 0
+		} else {
+			// Calculate the progress percentage based on total bytes and written bytes
+			progressPercentage = float64(totalProgress) / float64(expectedFileSize) * 100
 
-		// Calculate the estimated time based on remaining bytes to be downloaded and download speed
-		estimatedTime = float64(expectedFileSize-totalProgress) / downloadSpeed
+			// Calculate the estimated time based on remaining bytes to be downloaded and download speed
+			estimatedTime = float64(remainingBytesLenToDl) / downloadSpeed
+		}
 	}
 	(*dlProgBar).UpdateDownloadETA(estimatedTime)
 
