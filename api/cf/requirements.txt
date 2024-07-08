@@ -1,0 +1,2 @@
+DrissionPage==4.0.5.6
+validators==0.31.0

@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -38,7 +41,8 @@ func HasBypassed(website string, ctx context.Context) (bool, error) {
 	return !strings.Contains(strings.ToLower(title), "just a moment"), nil
 }
 
-func TestFanboxCF(t *testing.T) {
+// Doesn't work as it is detected by Cloudflare as a webdriver
+func DemoChromedp(t *testing.T) {
 	// Set up Chrome options
 	userAgent := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
@@ -74,7 +78,7 @@ func TestFanboxCF(t *testing.T) {
 				t.Fatalf("Unknown status code: %d", statusCode)
 			}
 		} else {
-			time.Sleep(3 * time.Second)
+			time.Sleep(5 * time.Second)
 			if hasBypassed, err := HasBypassed(website, ctx); err != nil {
 				t.Fatal(err)
 			} else if hasBypassed {
@@ -82,7 +86,7 @@ func TestFanboxCF(t *testing.T) {
 				return // pass
 			}
 		}
-		time.Sleep(4 * time.Second)
+		time.Sleep(5 * time.Second)
 
 		t.Log("Solving Cloudflare challenge...")
 		targets, err := chromedp.Targets(ctx)
@@ -116,7 +120,7 @@ func TestFanboxCF(t *testing.T) {
 		}
 
 		err = chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
-			time.Sleep(4 * time.Second)
+			time.Sleep(5 * time.Second)
 
 			t.Log("Getting cookies...")
 			browserCookies, err := network.GetCookies().Do(ctx)
@@ -146,6 +150,15 @@ func TestFanboxCF(t *testing.T) {
 	}
 
 	t.Log("Done")
+
+	// Catch SIGINT/SIGTERM signal and cancel the context when received
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		cancel()
+	}()
+	defer signal.Stop(sigs)
 
 	var pause = make(chan struct{})
 	<-pause
