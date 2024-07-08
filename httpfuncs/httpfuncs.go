@@ -23,10 +23,9 @@ func init() {
 	}
 	userAgentOS, ok := userAgent[runtime.GOOS]
 	if !ok { // fallback to Windows
-		DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-	} else {
-		DEFAULT_USER_AGENT = fmt.Sprintf("Mozilla/5.0 (%s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36", userAgentOS)
+		userAgentOS = userAgent["windows"]
 	}
+	DEFAULT_USER_AGENT = fmt.Sprintf("Mozilla/5.0 (%s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36", userAgentOS)
 }
 
 // Returns a boolean value indicating whether the specified site supports HTTP/3
