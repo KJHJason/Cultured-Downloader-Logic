@@ -38,10 +38,6 @@ func HasBypassed(website string, ctx context.Context) (bool, error) {
 	return !strings.Contains(strings.ToLower(title), "just a moment"), nil
 }
 
-var (
-	errIframeDeadlineExceeded   = errors.New("iframe context deadline exceeded")
-)
-
 func TestFanboxCF(t *testing.T) {
 	// Set up Chrome options
 	userAgent := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
