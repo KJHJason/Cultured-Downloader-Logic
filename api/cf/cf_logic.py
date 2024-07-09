@@ -10,59 +10,81 @@ import time
 import logging
 from DrissionPage import (
     ChromiumPage,
-    errors,
+)
+from DrissionPage.common import (
+    Actions,
 )
 
-FANBOX_URL = "https://www.fanbox.cc"
-
-# used to work but cf decided to add #shadow-root (closed) to the iframe.
-# though not sure about custom pages which fanbox uses.
-IFRAME_XPATH = "xpath://div/iframe"
-IFRAME_DIV_WRAPPER_XPATH = "#turnstile-wrapper"
+CF_WRAPPER_XPATH = ".cf-turnstile-wrapper"
 
 def __is_bypassed(driver: ChromiumPage, target_url: str) -> None:
     logging.info("Checking if bypassed...")
-    if target_url == FANBOX_URL:
-        return driver.wait.ele_displayed(r"xpath://a[@href='/']",timeout=1.5)
+    if target_url == "https://www.fanbox.cc":
+        return driver.wait.ele_displayed(r"xpath://a[@href='/']",timeout=2.5)
 
     # Note: doesn't work for custom pages
-    html_lang = driver.ele("xpath://html", timeout=1.5).attr("lang")
-    if html_lang == "en-US":
+    html_lang = driver.ele("tag:html", timeout=1.5).attr("lang")
+    if html_lang == "en" or html_lang == "en-US":
         title = driver.title.lower()
         return "just a moment" not in title
 
     # in the event the user's system is not set to en-US
-    return not driver.wait.ele_displayed(IFRAME_DIV_WRAPPER_XPATH, timeout=2.5)
+    return not driver.wait.ele_displayed(CF_WRAPPER_XPATH, timeout=2.5)
 
-def __bypass_logic(driver: ChromiumPage, target_url: str) -> None:
-    selector = ""
-    if target_url == FANBOX_URL and driver.wait.ele_displayed(IFRAME_XPATH, timeout=1.5):
-        selector = IFRAME_XPATH
-
-    if selector == "":
-        if not driver.wait.ele_displayed(IFRAME_DIV_WRAPPER_XPATH, timeout=1.5):
-            logging.error(f"{IFRAME_DIV_WRAPPER_XPATH} Element not found, retrying...")
-            return
-        selector = IFRAME_DIV_WRAPPER_XPATH
+def __bypass_logic(driver: ChromiumPage) -> None:
+    if not driver.wait.ele_displayed(CF_WRAPPER_XPATH, timeout=1.5):
+        logging.error(f"{CF_WRAPPER_XPATH} Element not found at {driver.url} retrying...")
+        logging.info(f"HTML Content for reference:\n{driver.html}\n")
+        return
 
     time.sleep(1.5)
-    if selector == IFRAME_DIV_WRAPPER_XPATH:
-        # Since the IFRAME_DIV_WRAPPER_XPATH is guaranteed to exist due to the check above,
-        # we can safely use the ele() without wrapping it in a try-except block.
-        driver.ele(selector, timeout=2.5).click()
-        return
+    actions = Actions(driver)
 
-    try:
-        iframe = driver(selector)
-        checkbox = iframe.ele("xpath://input[@type='checkbox']", timeout=2.5)
-        checkbox.click()
-    except errors.ElementLostError:
-        logging.error("Checkbox element not found, retrying...")
-        return
+    # Move mouse to the CF Wrapper
+    actions.move_to(CF_WRAPPER_XPATH, duration=0.75)
+
+    # Tries to move 120px to the left
+    # from current position in a human-like manner
+    actions.left(130).wait(0.15, 0.45).right(10)
+
+    # left click and hold for 
+    # 0.01~0.15 seconds (randomised) before releasing
+    actions.hold().wait(0.01, 0.15).release()
+
+    # # Old code below that uses .click() on the checkbox element
+    # from DrissionPage import (
+    #     ChromiumPage,
+    #     errors as drission_errors,
+    # )
+    # from DrissionPage._elements.chromium_element import (
+    #     ChromiumElement,
+    #     ShadowRoot,
+    # )
+    # try:
+    #     cf_wrapper: ShadowRoot | None = driver.ele(CF_WRAPPER_XPATH).shadow_root
+    #     if cf_wrapper is None:
+    #         logging.error("cf wrapper ShadowRoot not found, retrying...")
+    #         return
+    # except drission_errors.ElementNotFoundError:
+    #     logging.error("cf wrapper element not found, retrying...")
+    #     return
+
+    # try:
+    #     iframe: ChromiumElement = cf_wrapper.ele("tag:iframe", timeout=2.5)
+    # except drission_errors.ElementNotFoundError:
+    #     logging.error("iframe element not found, retrying...")
+    #     return
+
+    # try:
+    #     iframe.ele("tag:input", timeout=2.5).click()
+    # except drission_errors.ElementNotFoundError:
+    #     logging.error("checkbox element not found, retrying...")
+    #     return
 
 def bypass_cf(driver: ChromiumPage, target_url: str) -> None:
     while not __is_bypassed(driver, target_url):
-        logging.info("Challenge page detected, trying to bypass...")
-        time.sleep(5)
-        __bypass_logic(driver, target_url)
-        time.sleep(3)
+        logging.info("Challenge page detected...")
+        time.sleep(4)
+        logging.info("trying to bypass...")
+        __bypass_logic(driver)
+        time.sleep(4)

@@ -33,3 +33,6 @@ json/*
 __pycache__/
 *.pyc
 venv/
+
+# cf bypasser logs
+api/cf/*.log

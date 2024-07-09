@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/cf"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/target"
@@ -39,6 +40,10 @@ func HasBypassed(website string, ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("CF Solver - failed to get title: %w", err)
 	}
 	return !strings.Contains(strings.ToLower(title), "just a moment"), nil
+}
+
+func DemoPyScript(t *testing.T) {
+	cf.InitFiles()
 }
 
 // Doesn't work as it is detected by Cloudflare as a webdriver

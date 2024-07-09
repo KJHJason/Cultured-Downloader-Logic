@@ -22,16 +22,28 @@ const (
 )
 
 var (
-	MainLogger  Logger
-	logFolder   = filepath.Join(iofuncs.APP_PATH, "logs")
-	logFilePath = filepath.Join(logFolder, getLogFileName())
+	MainLogger      Logger
+	logFolder       = filepath.Join(iofuncs.APP_PATH, "logs")
+	logFilePath     = filepath.Join(logFolder, getLogFileName())
+	CfPyLogFilePath = filepath.Join(logFolder, getCfPyLogFileName())
 )
+
+func getFilenameDateFmt() string {
+	return time.Now().Format("2006-01-02")
+}
 
 func getLogFileName() string {
 	return fmt.Sprintf(
-		"cultured_downloader-logic_v%s_%s.log",
+		"cultured-downloader-logic-v%s_%s.log",
 		constants.VERSION,
-		time.Now().Format("2006-01-02"),
+		getFilenameDateFmt(),
+	)
+}
+
+func getCfPyLogFileName() string {
+	return fmt.Sprintf(
+		"kjhjason-cf-py_%s.log",
+		getFilenameDateFmt(),
 	)
 }
 

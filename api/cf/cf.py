@@ -8,6 +8,7 @@ Note: Logic based on https://github.com/sarperavci/CloudflareBypassForScraping
 
 import sys
 import json
+import typing
 import tempfile
 import logging
 import pathlib
@@ -44,7 +45,11 @@ def get_driver(browser_path: str, ua: str, headless: bool) -> ChromiumPage:
     )
     for arg in args:
         options.set_argument(arg)
-    return ChromiumPage(addr_or_opts=options)
+
+    driver = ChromiumPage(addr_or_opts=options)
+    if headless:
+        driver.set.window.max()
+    return driver
 
 def get_default_ua() -> str:
     ua_os = ""
@@ -69,6 +74,12 @@ def create_arg_parser() -> argparse.ArgumentParser:
         version=f"%(prog)s v{__version__}",
     )
     parser.add_argument(
+        "--log-path",
+        type=str,
+        help="Path to save log file",
+        default=f"cf-{__version__}.log",
+    )
+    parser.add_argument(
         "--browser-path", 
         type=str, 
         help="Path to the Google Chrome browser executable", 
@@ -81,7 +92,6 @@ def create_arg_parser() -> argparse.ArgumentParser:
         default=False,
     )
     parser.add_argument(
-        "-t", 
         "--target-url", 
         type=str, 
         help="URL to visit and bypass", 
@@ -96,51 +106,72 @@ def create_arg_parser() -> argparse.ArgumentParser:
     )
     return parser
 
+def __handle_err(msg: str) -> typing.NoReturn:
+    print(msg)
+    logging.error(msg)
+    sys.exit(1)
+
 def validate_url(url: str) -> bool:
     if not url_validator(url):
-        print(f"input error: invalid url, {url}, provided")
-        sys.exit(1)
+        __handle_err(f"input error: invalid url, {url}, provided")
 
 def validate_browser_path(browser_path_value: str) -> bool:
     try:
         browser_path = pathlib.Path(browser_path_value).resolve()
     except TypeError:
-        print(f"input error: invalid browser path, {browser_path}, provided")
-        sys.exit(1)
+        __handle_err(f"input error: invalid browser path, {browser_path}, provided")
 
     if not browser_path.exists():
-        print(f"input error: provided browser path, {browser_path}, does not exist")
-        sys.exit(1)
+        __handle_err(f"input error: provided browser path, {browser_path}, does not exist")
 
     if not browser_path.is_file():
-        print(f"input error: provided browser path, {browser_path}, is not a file")
-        sys.exit(1)
+        __handle_err(f"input error: provided browser path, {browser_path}, is not a file")
+
+def save_cookies(cookies: dict) -> None:
+    logging.info("Saving cookies...")
+    with tempfile.NamedTemporaryFile(mode="w", prefix="kjhjason-cf-", delete=False, delete_on_close=False) as f:
+        json.dump(cookies, f)
+        msg = f"cookies saved to {f.name}"
+        print(msg)
+        logging.info(msg)
 
 def main(args_parser: argparse.ArgumentParser) -> None:
     args = args_parser.parse_args()
-    browser_path = args.browser_path
-    headless = args.headless
-    target_url = args.target_url
-    ua = args.user_agent
+
+    log_path_arg: str = args.log_path
+    log_path = pathlib.Path(log_path_arg).resolve()
+    if not (log_path_dir := log_path.parent).exists():
+        log_path_dir.mkdir(parents=True)
+
+    logging.basicConfig(
+        filename=log_path,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+
+    browser_path: str = args.browser_path
+    headless: bool = args.headless
+    target_url: str = args.target_url
+    ua: str = args.user_agent
 
     validate_browser_path(browser_path)
     validate_url(target_url)
 
+    logging.info("Starting Cloudflare Bypass...")
     driver = get_driver(browser_path, ua, headless)
     try:
         driver.get(target_url)
         cf_logic.bypass_cf(driver, target_url)
-        cookies = driver.cookies(as_dict=True, all_domains=True)
+        cookies = driver.cookies(as_dict=False, all_domains=False, all_info=True)
+        save_cookies(cookies)
+    except KeyboardInterrupt:
+        logging.info("Script interrupted.")
+    except Exception as e:
+        logging.error(f"An error occurred:\n{e}\n")
+        raise e
     finally:
+        logging.info("Closing browser...")
         driver.quit()
 
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, delete_on_close=False) as f:
-        json.dump(cookies, f)
-        print(f"cookies saved to {f.name}")
-
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
     main(create_arg_parser())
