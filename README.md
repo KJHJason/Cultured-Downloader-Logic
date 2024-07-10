@@ -8,6 +8,9 @@ Cultured Downloader Logic
     <a href="https://pkg.go.dev/github.com/KJHJason/Cultured-Downloader-Logic">
         <img src="https://pkg.go.dev/badge/github.com/KJHJason/Cultured-Downloader-Logic.svg" alt="Go Reference">
     </a>
+    <a href="https://opensource.org/license/gpl-3-0">
+        <img src="https://img.shields.io/badge/license-GPLv3-blue" alt="License: GPLv3">
+    </a>
     <a href="https://github.com/KJHJason/Cultured-Downloader-Logic/releases">
         <img src="https://img.shields.io/github/v/release/KJHJason/Cultured-Downloader-Logic?include_prereleases&label=Latest%20Release" />
     </a>

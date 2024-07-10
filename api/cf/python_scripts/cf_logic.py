@@ -1,10 +1,7 @@
 # Author: KJHJason <contact@kjhjason.com>.
 # License: GNU GPL v3.
 
-"""Simple script to bypass Cloudflare protection using DrissionPage.
-
-Note: Logic based on https://github.com/sarperavci/CloudflareBypassForScraping
-"""
+"""Simple script to bypass Cloudflare protection using DrissionPage."""
 
 import time
 import logging
@@ -81,10 +78,28 @@ def __bypass_logic(driver: ChromiumPage) -> None:
     #     logging.error("checkbox element not found, retrying...")
     #     return
 
-def bypass_cf(driver: ChromiumPage, target_url: str) -> None:
-    while not __is_bypassed(driver, target_url):
-        logging.info("Challenge page detected...")
-        time.sleep(4)
-        logging.info("trying to bypass...")
-        __bypass_logic(driver)
-        time.sleep(4)
+def __bypass(driver: ChromiumPage, target_url: str, attempts: int) -> bool:
+    if __is_bypassed(driver, target_url):
+        logging.info("Bypassed!")
+        return True
+
+    logging.info("Challenge page detected...")
+    time.sleep(4)
+    logging.info("trying to bypass...")
+    __bypass_logic(driver)
+    time.sleep(4)
+
+    logging.error(f"Failed to bypass after {attempts} attempts")
+    return False
+
+def bypass_cf(driver: ChromiumPage, target_url: str, attempts: int) -> bool:
+    time.sleep(4)
+    if attempts > 0:
+        for _ in range(attempts):
+            if __bypass(driver, target_url, attempts):
+                return True
+        return False
+
+    while True:
+        if __bypass(driver, target_url, attempts):
+            return True

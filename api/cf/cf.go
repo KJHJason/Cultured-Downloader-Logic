@@ -3,28 +3,36 @@ package cf
 import (
 	"context"
 	_ "embed"
-	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
+const (
+	cfPyFilename            = "cf.py"
+	cfLogicPyFilename       = "cf_logic.py"
+	requirementsTxtFilename = "requirements.txt"
+	licenseFilename         = "LICENSE"
+	readmeFilename          = "README.md"
+)
+
 var (
-	//go:embed requirements.txt
-	requirementsTxtData []byte
-	//go:embed cf.py
+	//go:embed python_scripts/cf.py
 	cfPyData []byte
-	//go:embed cf_logic.py
+	//go:embed python_scripts/cf_logic.py
 	cfLogicPyData []byte
+	//go:embed python_scripts/requirements.txt
+	requirementsTxtData []byte
+	//go:embed python_scripts/LICENSE
+	licenseData []byte
+	//go:embed python_scripts/README.md
+	readmeData []byte
 
 	panicHandler = func(err error) {
 		logger.LogError(err, logger.FATAL)
@@ -39,10 +47,35 @@ func getVenvDirPath() string {
 	return filepath.Join(getCfDirPath(), "venv")
 }
 
+func InitFiles() {
+	cfDirPath := getCfDirPath()
+	os.MkdirAll(cfDirPath, constants.DEFAULT_PERMS)
+
+	// Get the local paths for the files
+	cfPyPath := filepath.Join(cfDirPath, cfPyFilename)
+	cfLogicPyPath := filepath.Join(cfDirPath, cfLogicPyFilename)
+	requirementsTxtPath := filepath.Join(cfDirPath, requirementsTxtFilename)
+	licensePath := filepath.Join(cfDirPath, licenseFilename)
+	readmePath := filepath.Join(cfDirPath, readmeFilename)
+
+	checkAndWriteFile(cfPyPath, cfPyData)
+	checkAndWriteFile(cfLogicPyPath, cfLogicPyData)
+	checkAndWriteFile(requirementsTxtPath, requirementsTxtData)
+	checkAndWriteFile(licensePath, licenseData)
+	checkAndWriteFile(readmePath, readmeData)
+
+	// free up memory after writing the files
+	cfPyData = nil
+	cfLogicPyData = nil
+	requirementsTxtData = nil
+	licenseData = nil
+	readmeData = nil
+}
+
 func pipInstallRequirements(reqTxtFilePath string) {
 	venvPath := getVenvDirPath()
-	// delete venv if it exists
 	if iofuncs.PathExists(venvPath) {
+		// delete venv if it exists
 		err := os.RemoveAll(venvPath)
 		if err != nil {
 			panicHandler(err)
@@ -71,7 +104,7 @@ func pipInstallRequirements(reqTxtFilePath string) {
 	}
 }
 
-func checkAndWriteFile(filePath string, embeddedData []byte, isReqTxt bool) {
+func checkAndWriteFile(filePath string, embeddedData []byte) {
 	if iofuncs.PathExists(filePath) {
 		localData, err := os.ReadFile(filePath)
 		if err != nil {
@@ -88,73 +121,7 @@ func checkAndWriteFile(filePath string, embeddedData []byte, isReqTxt bool) {
 		panicHandler(err)
 	}
 
-	if isReqTxt {
+	if filepath.Base(filePath) == requirementsTxtFilename {
 		pipInstallRequirements(filePath)
 	}
-}
-
-func InitFiles() {
-	cfDirPath := getCfDirPath()
-	os.MkdirAll(cfDirPath, constants.DEFAULT_PERMS)
-
-	requirementsTxtPath := filepath.Join(cfDirPath, "requirements.txt")
-	mainPyPath := filepath.Join(cfDirPath, "cf.py")
-	cfLogicPyPath := filepath.Join(cfDirPath, "cf_logic.py")
-
-	checkAndWriteFile(requirementsTxtPath, requirementsTxtData, true)
-	checkAndWriteFile(mainPyPath, cfPyData, false)
-	checkAndWriteFile(cfLogicPyPath, cfLogicPyData, false)
-
-	requirementsTxtData = nil
-	cfPyData = nil
-	cfLogicPyData = nil
-}
-
-var (
-	ErrPyExitCode       = errors.New("python script exited with non-zero exit code")
-	ErrVenvDoesNotExist = fmt.Errorf("venv does not exist at %s", getVenvDirPath())
-)
-
-func CallScript(ctx context.Context, timeout float64, args CfArgs) (string, error) {
-	cfDirPath := getCfDirPath()
-	mainPyPath := filepath.Join(cfDirPath, "cf.py")
-
-	venvPath := getVenvDirPath()
-	if !iofuncs.PathExists(venvPath) {
-		return "", ErrVenvDoesNotExist
-	}
-
-	cmd := exec.CommandContext(ctx, filepath.Join(venvPath, "Scripts", "python"), mainPyPath)
-	cmd.Args = append(cmd.Args, args.ParseCmdArgs()...)
-	utils.PrepareCmdForBgTask(cmd)
-
-	err := cmd.Run()
-	if err != nil {
-		if _, ok := err.(*exec.ExitError); ok {
-			// Since the error should already be logged
-			// by the Python script, we just return the error here.
-			return "", ErrPyExitCode
-		}
-		if errors.Is(err, context.DeadlineExceeded) {
-			if sigErr := utils.InterruptProcess(cmd); sigErr != nil {
-				logger.LogError(
-					fmt.Errorf(
-						"error %d: failed to send SIGINT to process, more info => %w", 
-						cdlerrors.OS_ERROR, 
-						sigErr,
-					), 
-					logger.ERROR,
-				)
-			}
-		}
-		return "", err
-	}
-
-	stdout, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-
-	cookieFilePath := strings.TrimPrefix(string(stdout), "cookies saved to ")
-	return cookieFilePath, nil
 }

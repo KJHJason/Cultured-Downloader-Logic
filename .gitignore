@@ -35,4 +35,4 @@ __pycache__/
 venv/
 
 # cf bypasser logs
-api/cf/*.log
+api/cf/**/*.log

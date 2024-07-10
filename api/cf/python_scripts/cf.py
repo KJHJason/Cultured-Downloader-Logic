@@ -1,10 +1,7 @@
 # Author: KJHJason <contact@kjhjason.com>.
 # License: GNU GPL v3.
 
-"""Simple script to bypass Cloudflare protection using DrissionPage.
-
-Note: Logic based on https://github.com/sarperavci/CloudflareBypassForScraping
-"""
+"""Simple script to bypass Cloudflare protection using DrissionPage."""
 
 import sys
 import json
@@ -72,6 +69,12 @@ def create_arg_parser() -> argparse.ArgumentParser:
         "--version", 
         action="version", 
         version=f"%(prog)s v{__version__}",
+    )
+    parser.add_argument(
+        "--attempts",
+        type=int,
+        help="Number of attempts to try and bypass Cloudflare (0 for infinite attempts)",
+        default=0,
     )
     parser.add_argument(
         "--log-path",
@@ -149,6 +152,7 @@ def main(args_parser: argparse.ArgumentParser) -> None:
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
 
+    attempts: int = args.attempts
     browser_path: str = args.browser_path
     headless: bool = args.headless
     target_url: str = args.target_url
@@ -161,9 +165,11 @@ def main(args_parser: argparse.ArgumentParser) -> None:
     driver = get_driver(browser_path, ua, headless)
     try:
         driver.get(target_url)
-        cf_logic.bypass_cf(driver, target_url)
-        cookies = driver.cookies(as_dict=False, all_domains=False, all_info=True)
-        save_cookies(cookies)
+        if cf_logic.bypass_cf(driver, target_url, attempts):
+            cookies = driver.cookies(as_dict=False, all_domains=False, all_info=True)
+            save_cookies(cookies)
+        else:
+            logging.error("Failed to bypass Cloudflare protection, max attempts reached...")
     except KeyboardInterrupt:
         logging.info("Script interrupted.")
     except Exception as e:

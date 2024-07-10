@@ -1,4 +1,4 @@
-package api
+package cf
 
 import (
 	"context"
@@ -11,14 +11,28 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/cf"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
 )
 
-func HasBypassed(website string, ctx context.Context) (bool, error) {
+// go test -v -run ^DemoPyScript$ github.com/KJHJason/Cultured-Downloader-Logic/api
+func TestPyScript(t *testing.T) {
+	t.Log("Initialsing Python files")
+	InitFiles()
+	website := "https://nopecha.com/demo/cloudflare"
+
+	t.Log("Calling Cloudflare solver script...")
+	args := NewCfArgs(website)
+	cookies, err := CallScript(args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Cookies: %v", cookies)
+}
+
+func hasBypassed(website string, ctx context.Context) (bool, error) {
 	if website == "https://www.fanbox.cc/" {
 		// Fanbox has custom Cloudflare page
 		anchorCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -42,12 +56,9 @@ func HasBypassed(website string, ctx context.Context) (bool, error) {
 	return !strings.Contains(strings.ToLower(title), "just a moment"), nil
 }
 
-func DemoPyScript(t *testing.T) {
-	cf.InitFiles()
-}
-
+// go test -v -run ^DemoChromedp$ github.com/KJHJason/Cultured-Downloader-Logic/api
 // Doesn't work as it is detected by Cloudflare as a webdriver
-func DemoChromedp(t *testing.T) {
+func TestChromedp(t *testing.T) {
 	// Set up Chrome options
 	userAgent := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
@@ -84,7 +95,7 @@ func DemoChromedp(t *testing.T) {
 			}
 		} else {
 			time.Sleep(5 * time.Second)
-			if hasBypassed, err := HasBypassed(website, ctx); err != nil {
+			if hasBypassed, err := hasBypassed(website, ctx); err != nil {
 				t.Fatal(err)
 			} else if hasBypassed {
 				t.Log("Cloudflare bypassed")

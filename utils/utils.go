@@ -2,8 +2,11 @@ package utils
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -161,4 +164,89 @@ func DetectOtherExtDLLink(text, postFolderPath string) bool {
 		}
 	}
 	return false
+}
+
+var CachedChromeExecPath string
+
+// Mainly from https://github.com/chromedp/chromedp/blob/ebf842c7bc28db77d0bf4d757f5948d769d0866f/allocate.go#L349-L395
+func GetChromeExecPath() (string, error) {
+	if CachedChromeExecPath != "" {
+		if found, err := exec.LookPath(CachedChromeExecPath); err == nil {
+			return found, nil
+		}
+	}
+
+	if chromeExec := os.Getenv("CHROME_EXECUTABLE"); chromeExec != "" {
+		if found, err := exec.LookPath(chromeExec); err == nil {
+			CachedChromeExecPath = chromeExec
+			return found, nil
+		}
+	}
+
+	var locations []string
+	switch runtime.GOOS {
+	case "darwin":
+		locations = []string{
+			"/Applications/Chromium.app/Contents/MacOS/Chromium",
+			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+		}
+	case "windows":
+		userProfile := os.Getenv("USERPROFILE")
+		locations = []string{
+			`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
+			`C:\Program Files\Google\Chrome\Application\chrome.exe`,
+			filepath.Join(userProfile, `AppData\Local\Google\Chrome\Application\chrome.exe`),
+			filepath.Join(userProfile, `AppData\Local\Chromium\Application\chrome.exe`),
+		}
+	default:
+		locations = []string{
+			"headless_shell",
+			"headless-shell",
+			"chromium",
+			"chromium-browser",
+			"google-chrome",
+			"google-chrome-stable",
+			"google-chrome-beta",
+			"google-chrome-unstable",
+			"/usr/bin/google-chrome",
+			"/usr/local/bin/chrome",
+			"/snap/bin/chromium",
+			"chrome",
+		}
+	}
+
+	for _, path := range locations {
+		if found, err := exec.LookPath(path); err == nil {
+			CachedChromeExecPath = path
+			return found, nil
+		}
+	}
+	return "", cdlerrors.ErrChromeNotFound
+}
+
+func CheckPythonExec() bool {
+	if _, err := exec.LookPath("python"); err != nil {
+		return false
+	}
+	return true
+}
+
+func CheckPrerequisites(panicHandler func(msg string)) {
+	if _, err := GetChromeExecPath(); err != nil {
+		panicHandler(
+			fmt.Sprintf(
+				"error %d: Google Chrome executable not found, please install Google Chrome or set the CHROME_EXECUTABLE environment variable",
+				cdlerrors.STARTUP_ERROR,
+			),
+		)
+	}
+
+	if !CheckPythonExec() {
+		panicHandler(
+			fmt.Sprintf(
+				"error %d: Python executable not found, please install Python and ensure it's in the PATH environment variable",
+				cdlerrors.STARTUP_ERROR,
+			),
+		)
+	}
 }
