@@ -49,7 +49,6 @@ def get_driver(browser_path: str, ua: str, headless: bool) -> ChromiumPage:
     return driver
 
 def get_default_ua() -> str:
-    ua_os = ""
     match platform.system():
         case "Linux":
             ua_os = "X11; Linux x86_64"
