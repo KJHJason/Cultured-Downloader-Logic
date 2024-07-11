@@ -5,6 +5,7 @@
 
 import time
 import logging
+import functools
 from DrissionPage import (
     ChromiumPage,
 )
@@ -13,29 +14,68 @@ from DrissionPage.common import (
 )
 
 CF_WRAPPER_XPATH = ".cf-turnstile-wrapper"
+LOGGER_NAME = "cf_bypass"
 
-def __is_bypassed(driver: ChromiumPage, target_url: str) -> None:
-    logging.info("Checking if bypassed...")
-    if target_url == "https://www.fanbox.cc":
-        return driver.wait.ele_displayed(r"xpath://a[@href='/']",timeout=2.5)
+def configure_logger(log_path: str) -> None:
+    logger = logging.getLogger(LOGGER_NAME)
+    logger.setLevel(logging.INFO)
+
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+
+def get_logger() -> logging.Logger:
+    return logging.getLogger(LOGGER_NAME)
+
+@functools.lru_cache
+def get_base_url(url: str) -> str:
+    try:
+        url = url.split("/", maxsplit=3)
+        url = "/".join(url[:3])
+    except IndexError:
+        pass
+    return url
+
+def __is_bypassed(page: ChromiumPage, logger: logging.Logger) -> None:
+    logger.info("Checking if bypassed...")
+    if not page.wait.doc_loaded(timeout=30):
+        logger.error("Page failed to load, retrying...")
+        return False
+
+    for packet in page.listen.steps(count=1, timeout=4.5):
+        if packet.response.status != 403:
+            return True
+        return False
+    # The only edge case is where the 
+    # target url redirects to another url
+    # which shouldn't happen since it's kinda weird.
+    logger.warning("No packets received with listener...")
+
+    # # old code for fanbox.cc
+    # if target_url == "https://www.fanbox.cc":
+    #     return page.wait.ele_displayed(r"xpath://a[@href='/']",timeout=2.5)
 
     # Note: doesn't work for custom pages
-    html_lang = driver.ele("tag:html", timeout=1.5).attr("lang")
+    html_lang = page.ele("tag:html", timeout=1.5).attr("lang")
     if html_lang == "en" or html_lang == "en-US":
-        title = driver.title.lower()
+        title = page.title.lower()
         return "just a moment" not in title
 
     # in the event the user's system is not set to en-US
-    return not driver.wait.ele_displayed(CF_WRAPPER_XPATH, timeout=2.5)
+    return not page.wait.ele_displayed(CF_WRAPPER_XPATH, timeout=2.5)
 
-def __bypass_logic(driver: ChromiumPage) -> None:
-    if not driver.wait.ele_displayed(CF_WRAPPER_XPATH, timeout=1.5):
-        logging.error(f"{CF_WRAPPER_XPATH} Element not found at {driver.url} retrying...")
-        logging.info(f"HTML Content for reference:\n{driver.html}\n")
+def __bypass_logic(page: ChromiumPage, logger: logging.Logger) -> None:
+    if not page.wait.ele_displayed(CF_WRAPPER_XPATH, timeout=1.5):
+        logger.error(f"{CF_WRAPPER_XPATH} Element not found at {page.url} retrying...")
+        logger.info(f"HTML Content for reference:\n{page.html}\n")
         return
 
     time.sleep(1.5)
-    actions = Actions(driver)
+    actions = Actions(page)
 
     # Move mouse to the CF Wrapper
     actions.move_to(CF_WRAPPER_XPATH, duration=0.75)
@@ -58,48 +98,48 @@ def __bypass_logic(driver: ChromiumPage) -> None:
     #     ShadowRoot,
     # )
     # try:
-    #     cf_wrapper: ShadowRoot | None = driver.ele(CF_WRAPPER_XPATH).shadow_root
+    #     cf_wrapper: ShadowRoot | None = page.ele(CF_WRAPPER_XPATH).shadow_root
     #     if cf_wrapper is None:
-    #         logging.error("cf wrapper ShadowRoot not found, retrying...")
+    #         logger.error("cf wrapper ShadowRoot not found, retrying...")
     #         return
     # except drission_errors.ElementNotFoundError:
-    #     logging.error("cf wrapper element not found, retrying...")
+    #     logger.error("cf wrapper element not found, retrying...")
     #     return
 
     # try:
     #     iframe: ChromiumElement = cf_wrapper.ele("tag:iframe", timeout=2.5)
     # except drission_errors.ElementNotFoundError:
-    #     logging.error("iframe element not found, retrying...")
+    #     logger.error("iframe element not found, retrying...")
     #     return
 
     # try:
     #     iframe.ele("tag:input", timeout=2.5).click()
     # except drission_errors.ElementNotFoundError:
-    #     logging.error("checkbox element not found, retrying...")
+    #     logger.error("checkbox element not found, retrying...")
     #     return
 
-def __bypass(driver: ChromiumPage, target_url: str, attempts: int) -> bool:
-    if __is_bypassed(driver, target_url):
-        logging.info("Bypassed!")
+def __bypass(page: ChromiumPage, attempts: int, logger: logging.Logger) -> bool:
+    if __is_bypassed(page, logger):
+        logger.info("Bypassed!")
         return True
 
-    logging.info("Challenge page detected...")
+    logger.info("Challenge page detected...")
     time.sleep(4)
-    logging.info("trying to bypass...")
-    __bypass_logic(driver)
+    logger.info("trying to bypass...")
+    __bypass_logic(page, logger)
     time.sleep(4)
 
-    logging.error(f"Failed to bypass after {attempts} attempts")
+    logger.error(f"Failed to bypass after {attempts} attempts")
     return False
 
-def bypass_cf(driver: ChromiumPage, target_url: str, attempts: int) -> bool:
+def bypass_cf(page: ChromiumPage, attempts: int, logger: logging.Logger = get_logger()) -> bool:
     time.sleep(4)
     if attempts > 0:
         for _ in range(attempts):
-            if __bypass(driver, target_url, attempts):
+            if __bypass(page, attempts, logger):
                 return True
         return False
 
     while True:
-        if __bypass(driver, target_url, attempts):
+        if __bypass(page, attempts, logger):
             return True

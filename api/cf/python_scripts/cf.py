@@ -5,6 +5,7 @@
 
 import sys
 import json
+import shutil
 import typing
 import tempfile
 import logging
@@ -15,15 +16,19 @@ import cf_logic
 from DrissionPage import (
     ChromiumPage, 
     ChromiumOptions,
+    errors as drission_errors,
 )
 import validators.url as url_validator
 
 __version__ = "0.1.0"
+DEFAULT_TARGET_URL = "https://nopecha.com/demo/cloudflare"
 
-def get_driver(browser_path: str, ua: str, headless: bool) -> ChromiumPage:
+def get_chromium_page(browser_path: str, ua: str, headless: bool) -> ChromiumPage:
     options = ChromiumOptions()
     options.set_paths(browser_path=browser_path)
     options.headless(headless)
+    if platform.system() == "Linux":
+        options.set_argument("no-sandbox")
     options.set_user_agent(ua)
 
     args = (
@@ -43,10 +48,10 @@ def get_driver(browser_path: str, ua: str, headless: bool) -> ChromiumPage:
     for arg in args:
         options.set_argument(arg)
 
-    driver = ChromiumPage(addr_or_opts=options)
+    page = ChromiumPage(addr_or_opts=options)
     if headless:
-        driver.set.window.max()
-    return driver
+        page.set.window.max()
+    return page
 
 def get_default_ua() -> str:
     match platform.system():
@@ -70,10 +75,23 @@ def create_arg_parser() -> argparse.ArgumentParser:
         version=f"%(prog)s v{__version__}",
     )
     parser.add_argument(
+        "-tc",
+        "--test-connection",
+        action="store_true",
+        help="Run the script to test if it works as unix system commonly faces BrowserConnectError",
+        default=False,
+    )
+    parser.add_argument(
         "--attempts",
         type=int,
         help="Number of attempts to try and bypass Cloudflare (0 for infinite attempts)",
         default=0,
+    )
+    parser.add_argument(
+        "--virtual-display", 
+        action="store_true", 
+        help="Run the browser in a virtual display using xvfb (Linux only)",
+        default=False,
     )
     parser.add_argument(
         "--log-path",
@@ -97,7 +115,7 @@ def create_arg_parser() -> argparse.ArgumentParser:
         "--target-url", 
         type=str, 
         help="URL to visit and bypass", 
-        default="https://nopecha.com/demo/cloudflare",
+        default=DEFAULT_TARGET_URL,
     )
     parser.add_argument(
         "-ua", 
@@ -108,75 +126,162 @@ def create_arg_parser() -> argparse.ArgumentParser:
     )
     return parser
 
-def __handle_err(msg: str) -> typing.NoReturn:
+class CfError(Exception):
+    def __init__(self, msg: str) -> None:
+        self.msg = msg
+
+    def __str__(self) -> str:
+        return self.msg
+
+class TestResults(Exception):
+    def __init__(self, success: bool) -> None:
+        self.success = success
+
+    def __str__(self) -> str:
+        return f"Test {'succeeded' if self.success else 'failed'}"
+
+    def handle_result(self, logger: logging.Logger) -> typing.NoReturn:
+        if self.success:
+            logger.info("Test succeeded")
+            print("Test succeeded")
+            sys.exit(0)
+        else:
+            logger.error("Test failed")
+            print("Test failed")
+            sys.exit(1)
+
+def __handle_err(msg: str, logger: logging.Logger) -> None:
     print(msg)
-    logging.error(msg)
-    sys.exit(1)
+    logger.error(msg)
+    raise CfError(msg)
 
-def validate_url(url: str) -> bool:
+def validate_url(url: str, logger: logging.Logger) -> bool:
     if not url_validator(url):
-        __handle_err(f"input error: invalid url, {url}, provided")
+        __handle_err(f"input error: invalid url, {url}, provided", logger)
 
-def validate_browser_path(browser_path_value: str) -> bool:
+def validate_browser_path(browser_path_value: str, logger: logging.Logger) -> bool:
     try:
         browser_path = pathlib.Path(browser_path_value).resolve()
     except TypeError:
-        __handle_err(f"input error: invalid browser path, {browser_path}, provided")
+        __handle_err(f"input error: invalid browser path, {browser_path}, provided", logger)
 
     if not browser_path.exists():
-        __handle_err(f"input error: provided browser path, {browser_path}, does not exist")
+        __handle_err(f"input error: provided browser path, {browser_path}, does not exist", logger)
 
     if not browser_path.is_file():
-        __handle_err(f"input error: provided browser path, {browser_path}, is not a file")
+        __handle_err(f"input error: provided browser path, {browser_path}, is not a file", logger)
 
-def save_cookies(cookies: dict) -> None:
-    logging.info("Saving cookies...")
+def save_cookies(cookies: list[dict[str, str | float | bool | int]], logger: logging.Logger) -> None:
+    logger.info("Saving cookies...")
     with tempfile.NamedTemporaryFile(mode="w", prefix="kjhjason-cf-", delete=False, delete_on_close=False) as f:
         json.dump(cookies, f)
         msg = f"cookies saved to {f.name}"
         print(msg)
-        logging.info(msg)
+        logger.info(msg)
 
-def main(args_parser: argparse.ArgumentParser) -> None:
-    args = args_parser.parse_args()
+def __main(browser_path: str, ua: str, headless: bool, target_url: str, attempts: int, test_connection: bool, logger: logging.Logger) -> list[dict[str, str | float | bool | int]]:
+    logger.info("Starting Cloudflare Bypass...")
 
+    try:
+        page = get_chromium_page(browser_path, ua, headless)
+    except drission_errors.BrowserConnectError as e:
+        logger.error(f"Failed to connect to browser:\n{e}\n")
+        if test_connection:
+            raise TestResults(success=False)
+        raise e
+    finally:
+        if test_connection:
+            page.quit()
+            raise TestResults(success=True)
+
+    cookies: list[dict[str, str | float | bool | int]] = []
+    try:
+        page.listen.start(
+            targets=cf_logic.get_base_url(target_url), 
+            method="GET", 
+            res_type="Document",
+        )
+        page.get(target_url)
+        if cf_logic.bypass_cf(page, attempts, logger):
+            cookies = page.cookies(as_dict=False, all_domains=False, all_info=True)
+            save_cookies(cookies, logger)
+        else:
+            logger.error("Failed to bypass Cloudflare protection, max attempts reached...")
+    except KeyboardInterrupt:
+        logger.info("Script interrupted.")
+    except Exception as e:
+        logger.error(f"An error occurred:\n{e}\n")
+        raise e
+    finally:
+        logger.info("Closing browser...")
+        page.listen.stop()
+        page.quit()
+
+    return cookies
+
+def main(args: argparse.Namespace) -> list[dict[str, str | float | bool | int]]:
     log_path_arg: str = args.log_path
     log_path = pathlib.Path(log_path_arg).resolve()
     if not (log_path_dir := log_path.parent).exists():
         log_path_dir.mkdir(parents=True)
 
-    logging.basicConfig(
-        filename=log_path,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
+    cf_logic.configure_logger(log_path)
+    logger = cf_logic.get_logger()
 
+    sys_name = platform.system()
+    virtual_display: bool = args.virtual_display
+    if sys_name != "Linux" and virtual_display:
+        logger.warning("Virtual display is only supported on Linux systems, ignoring --virtual-display flag...")
+        virtual_display = False
+    elif virtual_display and shutil.which("xvfb-run") is None:
+        logger.warning("xvfb-run not found, ignoring --virtual-display flag...")
+        virtual_display = False
+
+    headless: bool = args.headless
+    if headless and virtual_display:
+        logger.warning("no need to use virtual display with headless mode, ignoring --virtual-display flag...")
+        virtual_display = False
+
+    test_connection: bool = args.test_connection
     attempts: int = args.attempts
     browser_path: str = args.browser_path
-    headless: bool = args.headless
     target_url: str = args.target_url
     ua: str = args.user_agent
 
-    validate_browser_path(browser_path)
-    validate_url(target_url)
+    validate_browser_path(browser_path, logger)
+    validate_url(target_url, logger)
 
-    logging.info("Starting Cloudflare Bypass...")
-    driver = get_driver(browser_path, ua, headless)
+    if not virtual_display:
+        try:
+            return __main(
+                browser_path=browser_path,
+                ua=ua,
+                headless=headless,
+                target_url=target_url,
+                attempts=attempts,
+                logger=logger,
+                test_connection=test_connection,
+            )
+        except TestResults as e:
+            e.handle_result(logger)
+
+    import pyvirtualdisplay
     try:
-        driver.get(target_url)
-        if cf_logic.bypass_cf(driver, target_url, attempts):
-            cookies = driver.cookies(as_dict=False, all_domains=False, all_info=True)
-            save_cookies(cookies)
-        else:
-            logging.error("Failed to bypass Cloudflare protection, max attempts reached...")
-    except KeyboardInterrupt:
-        logging.info("Script interrupted.")
-    except Exception as e:
-        logging.error(f"An error occurred:\n{e}\n")
-        raise e
-    finally:
-        logging.info("Closing browser...")
-        driver.quit()
+        with pyvirtualdisplay.Display(visible=0, backend="xvfb", size=(1024, 768)):
+            return __main(
+                browser_path=browser_path,
+                ua=ua,
+                headless=False,
+                target_url=target_url,
+                attempts=attempts,
+                logger=logger,
+                test_connection=test_connection,
+            )
+    except TestResults as e:
+        e.handle_result(logger)
 
 if __name__ == "__main__":
-    main(create_arg_parser())
+    try:
+        main(args=create_arg_parser().parse_args())
+    except CfError:
+        sys.exit(1)

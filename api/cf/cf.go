@@ -43,6 +43,10 @@ func getCfDirPath() string {
 	return filepath.Join(iofuncs.APP_PATH, "kjhjason-cf-py")
 }
 
+func getCfPyPath() string {
+	return filepath.Join(getCfDirPath(), cfPyFilename)
+}
+
 func getVenvDirPath() string {
 	return filepath.Join(getCfDirPath(), "venv")
 }
@@ -70,6 +74,10 @@ func InitFiles() {
 	requirementsTxtData = nil
 	licenseData = nil
 	readmeData = nil
+
+	if err := TestScript(); err != nil {
+		panicHandler(err)
+	}
 }
 
 func pipInstallRequirements(reqTxtFilePath string) {
@@ -95,7 +103,8 @@ func pipInstallRequirements(reqTxtFilePath string) {
 
 	installCtx, installCancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer installCancel()
-	cmd = exec.CommandContext(installCtx, filepath.Join(venvPath, "Scripts", "pip"), "install", "-r", reqTxtFilePath)
+	pipPath := filepath.Join(venvPath, getPyVenvBinDirName(), "pip")
+	cmd = exec.CommandContext(installCtx, pipPath, "install", "-r", reqTxtFilePath)
 	utils.PrepareCmdForBgTask(cmd)
 
 	err = cmd.Run()

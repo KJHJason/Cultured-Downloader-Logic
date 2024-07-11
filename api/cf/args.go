@@ -9,7 +9,6 @@ import (
 )
 
 type CfArgs struct {
-	Version     bool
 	Attempts    int
 	BrowserPath string
 	Headless    bool
@@ -22,9 +21,6 @@ func (args CfArgs) ParseCmdArgs() []string {
 		"--log-path", logger.CfPyLogFilePath,
 	}
 
-	if args.Version {
-		cmdArgs = append(cmdArgs, "-v")
-	}
 	if args.Attempts > 0 {
 		cmdArgs = append(cmdArgs, "--attempts", strconv.Itoa(args.Attempts))
 	}
@@ -51,7 +47,6 @@ func NewCfArgs(url string) *CfArgs {
 }
 
 func (args *CfArgs) Default() {
-	args.Version = false
 	args.Attempts = 4
 	args.Headless = true
 	args.UserAgent = httpfuncs.DEFAULT_USER_AGENT

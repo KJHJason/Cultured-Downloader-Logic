@@ -225,10 +225,8 @@ func GetChromeExecPath() (string, error) {
 }
 
 func CheckPythonExec() bool {
-	if _, err := exec.LookPath("python"); err != nil {
-		return false
-	}
-	return true
+	_, err := exec.LookPath("python")
+	return err == nil
 }
 
 func CheckPrerequisites(panicHandler func(msg string)) {
