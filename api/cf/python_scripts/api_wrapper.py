@@ -50,7 +50,7 @@ def bypass(data: CfArgs):
             args=argparse.Namespace(
                 attempts=data.attempts,
                 virtual_display=True,
-                test=False,
+                test_connection=False,
                 log_path=random_log_path,
                 browser_path=CHROME_PATH,
                 headless=data.headless,
