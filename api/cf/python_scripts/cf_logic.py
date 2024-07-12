@@ -118,7 +118,7 @@ def __bypass_logic(page: ChromiumPage, logger: logging.Logger) -> None:
     #     logger.error("checkbox element not found, retrying...")
     #     return
 
-def __bypass(page: ChromiumPage, attempts: int, logger: logging.Logger) -> bool:
+def __bypass(page: ChromiumPage, logger: logging.Logger) -> bool:
     if __is_bypassed(page, logger):
         logger.info("Bypassed!")
         return True
@@ -128,18 +128,17 @@ def __bypass(page: ChromiumPage, attempts: int, logger: logging.Logger) -> bool:
     logger.info("trying to bypass...")
     __bypass_logic(page, logger)
     time.sleep(4)
-
-    logger.error(f"Failed to bypass after {attempts} attempts")
     return False
 
 def bypass_cf(page: ChromiumPage, attempts: int, logger: logging.Logger = get_logger()) -> bool:
     time.sleep(4)
     if attempts > 0:
         for _ in range(attempts):
-            if __bypass(page, attempts, logger):
+            if __bypass(page, logger):
                 return True
+        logger.error(f"Failed to bypass after {attempts} attempts")
         return False
 
     while True:
-        if __bypass(page, attempts, logger):
+        if __bypass(page, logger):
             return True
