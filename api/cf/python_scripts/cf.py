@@ -1,8 +1,9 @@
 # Author: KJHJason <contact@kjhjason.com>.
 # License: GNU GPL v3.
 
-"""Simple script to bypass Cloudflare protection using DrissionPage."""
+"""Simple script to bypass CF protection using DrissionPage."""
 
+import os
 import sys
 import json
 import shutil
@@ -24,7 +25,7 @@ import validators.url as url_validator
 __version__ = "0.1.0"
 DEFAULT_TARGET_URL = "https://nopecha.com/demo/cloudflare"
 
-def get_chromium_page(browser_path: str, ua: str, headless: bool) -> ChromiumPage:
+def get_chromium_page(browser_path: str, ua: str, headless: bool, no_sandbox: bool = False) -> ChromiumPage:
     options = ChromiumOptions()
     options.auto_port()
     options.set_paths(browser_path=browser_path)
@@ -32,27 +33,39 @@ def get_chromium_page(browser_path: str, ua: str, headless: bool) -> ChromiumPag
     options.set_user_agent(ua)
 
     os_name = platform.system()
-    if os_name == "Linux" or os_name == "Darwin":
-        options.set_argument("no-sandbox")
+    is_unix = os_name == "Linux" or os_name == "Darwin"
+    if is_unix and (os.environ.get("KJHJASON_CF_SANDBOX") == "1" or os.geteuid() != 0):
+        # --no-sandbox is required if not running as root user.
+        # Otherwise, the browser may have errors trying to launch as root.
+        options.set_argument("--no-sandbox")
+        no_sandbox = True
 
     args = (
-        "-no-first-run",
-        "-force-color-profile=srgb",
-        "-metrics-recording-only",
-        "-password-store=basic",
-        "-use-mock-keychain",
-        "-export-tagged-pdf",
-        "-no-default-browser-check",
-        "-disable-background-mode",
-        "-enable-features=NetworkService,NetworkServiceInProcess,LoadCryptoTokenExtension,PermuteTLSExtensions",
-        "-disable-features=FlashDeprecationWarning,EnablePasswordsAccountStorage",
-        "-deny-permission-prompts",
-        "-disable-gpu",
+        "--no-first-run",
+        "--force-color-profile=srgb",
+        "--metrics-recording-only",
+        "--password-store=basic",
+        "--use-mock-keychain",
+        "--export-tagged-pdf",
+        "--no-default-browser-check",
+        "--disable-background-mode",
+        "--enable-features=NetworkService,NetworkServiceInProcess,LoadCryptoTokenExtension,PermuteTLSExtensions",
+        "--disable-features=FlashDeprecationWarning,EnablePasswordsAccountStorage",
+        "--deny-permission-prompts",
+        "--disable-gpu",
+        "--accept-lang=en-US",
     )
     for arg in args:
         options.set_argument(arg)
 
-    page = ChromiumPage(addr_or_opts=options)
+    try:
+        page = ChromiumPage(addr_or_opts=options)
+    except drission_errors.BrowserConnectError as e:
+        if is_unix and not no_sandbox:
+            # Try again with --no-sandbox flag
+            return get_chromium_page(browser_path, ua, headless, no_sandbox=True)
+        raise e
+
     if headless:
         page.set.window.max()
     return page
@@ -69,8 +82,8 @@ def get_default_ua() -> str:
 
 def create_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="Cloudflare Bypass", 
-        description="Cloudflare Bypass Script by KJHJason",
+        prog="CF Bypass", 
+        description="CF Bypass Script by KJHJason",
     )
     parser.add_argument(
         "-v",
@@ -88,7 +101,7 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--attempts",
         type=int,
-        help="Number of attempts to try and bypass Cloudflare (0 for infinite attempts)",
+        help="Number of attempts to try and bypass CF (0 for infinite attempts)",
         default=0,
     )
     parser.add_argument(
@@ -184,7 +197,7 @@ def save_cookies(cookies: list[dict[str, str | float | bool | int]], logger: log
         logger.info(msg)
 
 def __main(browser_path: str, ua: str, headless: bool, target_url: str, attempts: int, test_connection: bool, logger: logging.Logger) -> list[dict[str, str | float | bool | int]]:
-    logger.info("Starting Cloudflare Bypass...")
+    logger.info("Starting CF Bypass...")
 
     try:
         page = get_chromium_page(browser_path, ua, headless)
@@ -210,7 +223,7 @@ def __main(browser_path: str, ua: str, headless: bool, target_url: str, attempts
             cookies = page.cookies(as_dict=False, all_domains=False, all_info=True)
             save_cookies(cookies, logger)
         else:
-            logger.error("Failed to bypass Cloudflare protection, max attempts reached...")
+            logger.error("Failed to bypass CF protection, max attempts reached...")
     except KeyboardInterrupt:
         logger.info("Script interrupted.")
     except Exception as e:

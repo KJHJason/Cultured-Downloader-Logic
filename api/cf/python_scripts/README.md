@@ -1,10 +1,10 @@
-# Cloudflare Solver by KJHJason
+# CF Solver by KJHJason
 
 [![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](https://opensource.org/license/gpl-3-0)
 
 Repository: [KJHJason/Cultured-Downloader-Logic](https://github.com/KJHJason/Cultured-Downloader-Logic/tree/main/api/cf/python_scripts)
 
-Simple script to bypass Cloudflare protection using [DrissionPage](https://github.com/g1879/DrissionPage).
+Simple script to bypass CF protection using [DrissionPage](https://github.com/g1879/DrissionPage).
 
 Notes:
 - Logic originally based on [sarperavci/CloudflareBypassForScraping](https://github.com/sarperavci/CloudflareBypassForScraping)

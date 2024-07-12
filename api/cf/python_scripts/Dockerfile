@@ -3,14 +3,18 @@ FROM python:3.12-slim-bullseye
 COPY . /app
 WORKDIR /app
 
-# Install some other dependencies
-RUN apt update && \
-    apt install -y wget curl procps vim xvfb unzip
+ENV KJHJASON_CF_SANDBOX=1
 
-# Install Chrome browser binary
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    dpkg -i google-chrome-stable_current_amd64.deb || apt --fix-broken install -y && \
-    rm -rf google-chrome-stable_current_amd64.deb
+# Install some other dependencies
+RUN apt-get update && \
+    apt-get install -y xvfb gnupg2 curl wget unzip ca-certificates
+
+# Install Google Chrome browser
+RUN curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get -y update && \
+    apt-get -y install google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
 RUN pip install --no-cache-dir fastapi -r requirements.txt 

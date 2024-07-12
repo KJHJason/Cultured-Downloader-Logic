@@ -1,7 +1,7 @@
 # Author: KJHJason <contact@kjhjason.com>.
 # License: GNU GPL v3.
 
-"""Simple script to bypass Cloudflare protection using DrissionPage."""
+"""Simple script to bypass CF protection using DrissionPage."""
 
 import time
 import logging
