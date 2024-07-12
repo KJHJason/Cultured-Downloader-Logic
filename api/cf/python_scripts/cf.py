@@ -5,7 +5,7 @@
 
 import os
 import sys
-import json
+import orjson
 import shutil
 import typing
 import tempfile
@@ -191,7 +191,12 @@ def validate_browser_path(browser_path_value: str, logger: logging.Logger) -> bo
 def save_cookies(cookies: list[dict[str, str | float | bool | int]], logger: logging.Logger) -> None:
     logger.info("Saving cookies...")
     with tempfile.NamedTemporaryFile(mode="w", prefix="kjhjason-cf-", delete=False, delete_on_close=False) as f:
-        json.dump(cookies, f)
+        serialised_cookies = orjson.dumps(
+            cookies, 
+            option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY,
+        )
+        f.write(serialised_cookies.decode("utf-8"))
+
         msg = f"cookies saved to {f.name}"
         print(msg)
         logger.info(msg)
