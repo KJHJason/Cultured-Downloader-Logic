@@ -12,6 +12,7 @@ import logging
 import pathlib
 import platform
 import argparse
+import subprocess
 import cf_logic
 from DrissionPage import (
     ChromiumPage, 
@@ -25,11 +26,14 @@ DEFAULT_TARGET_URL = "https://nopecha.com/demo/cloudflare"
 
 def get_chromium_page(browser_path: str, ua: str, headless: bool) -> ChromiumPage:
     options = ChromiumOptions()
+    options.auto_port()
     options.set_paths(browser_path=browser_path)
     options.headless(headless)
-    if platform.system() == "Linux":
-        options.set_argument("no-sandbox")
     options.set_user_agent(ua)
+
+    os_name = platform.system()
+    if os_name == "Linux" or os_name == "Darwin":
+        options.set_argument("no-sandbox")
 
     args = (
         "-no-first-run",
@@ -219,6 +223,17 @@ def __main(browser_path: str, ua: str, headless: bool, target_url: str, attempts
 
     return cookies
 
+def check_for_xvfb(logger: logging.Logger) -> bool:
+    if shutil.which("xvfb-run") is not None:
+        return True
+
+    try:
+        subprocess.run(["Xvfb", "-help"], check=True)
+    except subprocess.CalledProcessError:
+        logger.warning("xvfb-run not found, ignoring --virtual-display flag...")
+        return False
+    return True
+
 def main(args: argparse.Namespace) -> list[dict[str, str | float | bool | int]]:
     log_path_arg: str = args.log_path
     log_path = pathlib.Path(log_path_arg).resolve()
@@ -228,13 +243,12 @@ def main(args: argparse.Namespace) -> list[dict[str, str | float | bool | int]]:
     cf_logic.configure_logger(log_path)
     logger = cf_logic.get_logger()
 
-    sys_name = platform.system()
+    os_name = platform.system()
     virtual_display: bool = args.virtual_display
-    if sys_name != "Linux" and virtual_display:
-        logger.warning("Virtual display is only supported on Linux systems, ignoring --virtual-display flag...")
+    if os_name not in ("Linux", "Darwin",) and virtual_display:
+        logger.warning("Virtual display is only supported on unix-like systems, ignoring --virtual-display flag...")
         virtual_display = False
-    elif virtual_display and shutil.which("xvfb-run") is None:
-        logger.warning("xvfb-run not found, ignoring --virtual-display flag...")
+    elif virtual_display and not check_for_xvfb(logger):
         virtual_display = False
 
     headless: bool = args.headless

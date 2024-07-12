@@ -1,21 +1,19 @@
-FROM python:latest
+FROM python:3.12-slim-bullseye
 
 COPY . /app
 WORKDIR /app
 
-# Install chrome and other dependencies like xvfb
-RUN apt-get update && \
-    apt-get install -y wget xvfb \
-        libgl1-mesa-dri chromium chromium-common chromium-driver && \
-    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt-get install -y ./google-chrome-stable_current_amd64.deb && \
-    rm ./google-chrome-stable_current_amd64.deb && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install some other dependencies
+RUN apt update && \
+    apt install -y wget curl procps vim xvfb unzip
 
-# Install depends
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install fastapi pydantic uvicorn
+# Install Chrome browser binary
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    dpkg -i google-chrome-stable_current_amd64.deb || apt --fix-broken install -y && \
+    rm -rf google-chrome-stable_current_amd64.deb
+
+# Install python dependencies
+RUN pip install --no-cache-dir fastapi -r requirements.txt 
 
 EXPOSE 8080
 

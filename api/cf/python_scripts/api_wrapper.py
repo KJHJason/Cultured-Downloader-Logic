@@ -11,7 +11,9 @@ from cf import (
 )
 from fastapi import (
     FastAPI,
-    responses,
+)
+from fastapi.responses import (
+    ORJSONResponse,
 )
 from pydantic import (
     BaseModel,
@@ -23,11 +25,14 @@ class CfArgs(BaseModel):
     target_url: str = DEFAULT_TARGET_URL
     user_agent: str = get_default_ua()
 
-app = FastAPI()
+app = FastAPI(
+    default_response_class=ORJSONResponse,
+)
 
-CHROME_PATH = shutil.which("google-chrome-stable")
+CHROME_PATH = shutil.which("google-chrome")
 if CHROME_PATH is None:
-    raise FileNotFoundError("Google Chrome Stable not found")
+    raise FileNotFoundError("Google Chrome not found")
+print(f"Google Chrome path: {CHROME_PATH}")
 
 def __read_log(log_path: str) -> str:
     if not os.path.exists(log_path):
@@ -42,7 +47,7 @@ def __read_log(log_path: str) -> str:
         except:
             pass
 
-@app.post("/", response_class=responses.JSONResponse)
+@app.post("/")
 def bypass(data: CfArgs):
     random_log_path = f"cf-{uuid.uuid4()}.log"
     try:
@@ -59,12 +64,12 @@ def bypass(data: CfArgs):
             ),
         )
     except CfError:
-        return responses.JSONResponse(
+        return ORJSONResponse(
             content={"error": str(CfError)},
             status_code=500,
         )
     except Exception as e:
-        return responses.JSONResponse(
+        return ORJSONResponse(
             content={
                 "error": "An unknown error occurred",
                 "exception": str(e),
@@ -78,10 +83,10 @@ def bypass(data: CfArgs):
         "values": values,
     }
 
-@app.get("/", response_class=responses.JSONResponse)
+@app.get("/")
 def root():
     return {"version": __version__}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080, limit_concurrency=2)
+    uvicorn.run(app, host="0.0.0.0", port=8080)
