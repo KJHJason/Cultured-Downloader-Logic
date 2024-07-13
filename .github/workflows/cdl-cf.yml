@@ -26,10 +26,12 @@ jobs:
       id: read_version
       run: |
         VERSION=$(jq -r '.version' api/cf/python_scripts/info.json)
+        echo "cdl-cf:v$VERSION"
         echo "VERSION=$VERSION" >> $GITHUB_ENV
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v6
       with:
         push: true
+        file: api/cf/python_scripts/Dockerfile
         tags: ${{ vars.DOCKERHUB_USERNAME }}/cdl-cf:v${{ env.VERSION }}
