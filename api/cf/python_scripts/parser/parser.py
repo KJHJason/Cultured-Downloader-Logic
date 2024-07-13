@@ -1,12 +1,16 @@
-import argparse
+import typing
 import logging
 import pathlib
+import argparse
 
 import utils
 import errors
 import constants
 
 import validators.url as url_validator
+
+def parse_bool(s: str) -> bool:
+    return s == "true" or s == "True"
 
 def create_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -52,9 +56,9 @@ def create_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--headless", 
-        action="store_true", 
+        type=parse_bool,
         help="Run the browser in headless mode",
-        default=False,
+        default=str(constants.IS_DOCKER),
     )
     parser.add_argument(
         "--target-url", 
@@ -71,11 +75,15 @@ def create_arg_parser() -> argparse.ArgumentParser:
     )
     return parser
 
-def validate_url(url: str, logger: logging.Logger) -> bool:
+def validate_headless(headless:bool, logger: logging.Logger) -> None | typing.NoReturn:
+    if constants.IS_DOCKER and not headless:
+        errors.handle_err("input error: headless mode cannot be used in docker, use --virtual-display or set --headless=false instead", logger)
+
+def validate_url(url: str, logger: logging.Logger) -> None | typing.NoReturn:
     if not url_validator(url):
         errors.handle_err(f"input error: invalid url, {url}, provided", logger)
 
-def validate_browser_path(browser_path_value: str, logger: logging.Logger) -> bool:
+def validate_browser_path(browser_path_value: str, logger: logging.Logger) -> None | typing.NoReturn:
     try:
         browser_path = pathlib.Path(browser_path_value).resolve()
     except TypeError:

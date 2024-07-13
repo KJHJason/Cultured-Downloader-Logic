@@ -85,6 +85,7 @@ def main(args: argparse.Namespace) -> _types.Cookies:
     target_url: str = args.target_url
     ua: str = args.user_agent
 
+    parser.validate_headless(headless, logger)
     parser.validate_url(target_url, logger)
     parser.validate_browser_path(browser_path, logger)
 
