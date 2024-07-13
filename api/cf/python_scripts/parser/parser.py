@@ -10,7 +10,7 @@ import constants
 import validators.url as url_validator
 
 def parse_bool(s: str) -> bool:
-    return s == "true" or s == "True"
+    return s == "true" or s == "True" or s == "1"
 
 def create_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -57,8 +57,9 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--headless", 
         type=parse_bool,
+        choices=["true", "True", "1", "false", "False", "0"],
         help="Run the browser in headless mode",
-        default=str(constants.IS_DOCKER),
+        default=constants.IS_DOCKER,
     )
     parser.add_argument(
         "--target-url", 
