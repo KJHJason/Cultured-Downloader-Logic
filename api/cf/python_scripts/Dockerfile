@@ -4,6 +4,8 @@ COPY . /app
 WORKDIR /app
 
 ENV KJHJASON_CF_SANDBOX=1
+ENV KJHJASON_CF_ADD_NAV_EXT=1
+ENV KJHJASON_CF_SET_MAX_WINDOW=1
 
 # Install some other dependencies
 RUN apt-get update && \
@@ -17,8 +19,6 @@ RUN curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-ke
     rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
-RUN pip install --no-cache-dir fastapi -r requirements.txt 
+RUN pip install --no-cache-dir -r requirements.txt 
 
-EXPOSE 8080
-
-CMD ["python", "api_wrapper.py"]
+ENTRYPOINT [ "python", "main.py" ]

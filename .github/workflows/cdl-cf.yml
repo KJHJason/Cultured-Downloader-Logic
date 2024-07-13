@@ -1,0 +1,35 @@
+name: Build and Push cdl-cf Docker Image
+
+on:
+  push:
+    paths:
+      - 'api/cf/python_scripts/info.json'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ vars.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Read version from JSON file
+      id: read_version
+      run: |
+        VERSION=$(jq -r '.version' api/cf/python_scripts/info.json)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        push: true
+        tags: ${{ vars.DOCKERHUB_USERNAME }}/cdl-cf:v${{ env.VERSION }}

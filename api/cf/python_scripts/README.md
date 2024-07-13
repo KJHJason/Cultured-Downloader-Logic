@@ -7,7 +7,8 @@ Repository: [KJHJason/Cultured-Downloader-Logic](https://github.com/KJHJason/Cul
 Simple script to bypass CF protection using [DrissionPage](https://github.com/g1879/DrissionPage).
 
 Notes:
-- Logic originally based on [sarperavci/CloudflareBypassForScraping](https://github.com/sarperavci/CloudflareBypassForScraping)
+
+- Logic based on one of the repositories by [sarperavci](https://github.com/sarperavci).
 - This script will NOT work if your IP address already has a bad reputation!
 
 ## Virtual Displays
@@ -18,7 +19,9 @@ Hence, this script uses [pyvirtualdisplay](https://github.com/ponty/pyvirtualdis
 
 Caveats of using virtual displays:
 
-- This script will not work on Windows as it requires `xvfb` to create a virtual display.
+- For Windows, the script will ignore the `--virtual-display` flag as it requires `xvfb` to create a virtual display.
+  - Note: `xvfb` is not available for Windows.
+  - You can run the script using the provided Docker image.
 - For Linux, you will need to install `xvfb`.
   - `sudo apt-get install xvfb`
   - Run `xvfb-run` to check if `xvfb` is installed and working.
@@ -27,3 +30,4 @@ Caveats of using virtual displays:
   - You might need to add `/usr/X11/bin` to your PATH.
   - Run `which xvfb` to check if `xvfb` is installed.
   - If you're facing issues, look up for a fix on StackOverflow as I don't have a MacOS device to test this.
+  - Alternatively, you can run the script using the provided Docker image.

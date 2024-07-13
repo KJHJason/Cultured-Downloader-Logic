@@ -1,0 +1,18 @@
+{
+    "manifest_version": 3,
+    "name": "KJHJason-Navigator",
+    "version": "1.0",
+    "content_scripts": [
+        {
+            "js": [
+                "./script.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ],
+            "run_at": "document_start",
+            "all_frames": true,
+            "world": "MAIN"
+        }
+    ]
+}

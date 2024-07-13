@@ -6,18 +6,15 @@
 import time
 import logging
 import functools
+
+import constants
+
 from DrissionPage import (
     ChromiumPage,
 )
-from DrissionPage.common import (
-    Actions,
-)
-
-CF_WRAPPER_XPATH = ".cf-turnstile-wrapper"
-LOGGER_NAME = "cf_bypass"
 
 def configure_logger(log_path: str) -> None:
-    logger = logging.getLogger(LOGGER_NAME)
+    logger = logging.getLogger(constants.LOGGER_NAME)
     logger.setLevel(logging.INFO)
 
     file_handler = logging.FileHandler(log_path, encoding="utf-8")
@@ -29,7 +26,7 @@ def configure_logger(log_path: str) -> None:
     logger.addHandler(file_handler)
 
 def get_logger() -> logging.Logger:
-    return logging.getLogger(LOGGER_NAME)
+    return logging.getLogger(constants.LOGGER_NAME)
 
 @functools.lru_cache
 def get_base_url(url: str) -> str:
@@ -55,7 +52,7 @@ def __is_bypassed(page: ChromiumPage, logger: logging.Logger) -> None:
     # which shouldn't happen since it's kinda weird.
     logger.warning("No packets received with listener...")
 
-    # # old code for fanbox.cc
+    # old code for fanbox.cc
     # if target_url == "https://www.fanbox.cc":
     #     return page.wait.ele_displayed(r"xpath://a[@href='/']",timeout=2.5)
 
@@ -66,19 +63,19 @@ def __is_bypassed(page: ChromiumPage, logger: logging.Logger) -> None:
         return "just a moment" not in title
 
     # in the event the user's system is not set to en-US
-    return not page.wait.ele_displayed(CF_WRAPPER_XPATH, timeout=2.5)
+    return not page.wait.ele_displayed(constants.CF_WRAPPER_XPATH, timeout=2.5)
 
 def __bypass_logic(page: ChromiumPage, logger: logging.Logger) -> None:
-    if not page.wait.ele_displayed(CF_WRAPPER_XPATH, timeout=1.5):
-        logger.error(f"{CF_WRAPPER_XPATH} Element not found at {page.url} retrying...")
+    if not page.wait.ele_displayed(constants.CF_WRAPPER_XPATH, timeout=1.5):
+        logger.error(f"{constants.CF_WRAPPER_XPATH} Element not found at {page.url} retrying...")
         logger.info(f"HTML Content for reference:\n{page.html}\n")
         return
 
     time.sleep(1.5)
-    actions = Actions(page)
+    actions = page.actions
 
     # Move mouse to the CF Wrapper
-    actions.move_to(CF_WRAPPER_XPATH, duration=0.75)
+    actions.move_to(constants.CF_WRAPPER_XPATH, duration=0.75)
 
     # Tries to move 120px to the left
     # from current position in a human-like manner
@@ -98,7 +95,7 @@ def __bypass_logic(page: ChromiumPage, logger: logging.Logger) -> None:
     #     ShadowRoot,
     # )
     # try:
-    #     cf_wrapper: ShadowRoot | None = page.ele(CF_WRAPPER_XPATH).shadow_root
+    #     cf_wrapper: ShadowRoot | None = page.ele(constants.CF_WRAPPER_XPATH).shadow_root
     #     if cf_wrapper is None:
     #         logger.error("cf wrapper ShadowRoot not found, retrying...")
     #         return
