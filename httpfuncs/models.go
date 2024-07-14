@@ -17,7 +17,7 @@ type versionInfo struct {
 	Patch int
 }
 
-// Max and Min time in milliseconds
+// Max and Min time in nano-seconds (refer to time.Duration)
 type RetryDelay struct {
 	Max time.Duration
 	Min time.Duration
