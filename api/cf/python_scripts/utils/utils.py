@@ -102,12 +102,14 @@ def get_chromium_page(browser_path: str, os_name: str, user_agent: str, headless
     options.headless(headless)
     options.set_user_agent(user_agent)
 
-    if constants.IS_UNIX and (os.environ.get("KJHJASON_CF_SANDBOX") == "1" or os.geteuid() != 0):
+    if not no_sandbox and constants.IS_UNIX and (os.environ.get("KJHJASON_CF_SANDBOX") == "1" or os.geteuid() != 0):
         # --no-sandbox is required if not running as root user.
         # Otherwise, the browser may have errors trying to launch as root.
-        options.set_argument("--no-sandbox")
-        logging.info("Running with no-sandbox mode...")
         no_sandbox = True
+
+    if no_sandbox:
+        logging.info("Running with no-sandbox mode...")
+        options.set_argument("--no-sandbox")
 
     args = (
         "--no-first-run",
