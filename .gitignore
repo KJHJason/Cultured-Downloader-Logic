@@ -15,6 +15,7 @@
 # anything with test in the name except for test cases
 *test*
 !*test.go
+!api/cf/python_scripts/test/
 
 # secrets
 *.env

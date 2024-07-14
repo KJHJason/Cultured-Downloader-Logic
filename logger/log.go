@@ -25,7 +25,7 @@ var (
 	MainLogger      Logger
 	logFolder       = filepath.Join(iofuncs.APP_PATH, "logs")
 	logFilePath     = filepath.Join(logFolder, getLogFileName())
-	CfPyLogFilePath = filepath.Join(logFolder, getCfPyLogFileName())
+	CdlCfLogFilePath = filepath.Join(logFolder, getCdlCfLogFileName())
 )
 
 func getFilenameDateFmt() string {
@@ -40,9 +40,9 @@ func getLogFileName() string {
 	)
 }
 
-func getCfPyLogFileName() string {
+func getCdlCfLogFileName() string {
 	return fmt.Sprintf(
-		"kjhjason-cf-py_%s.log",
+		"kjhjason-cdl-cf_%s.log",
 		getFilenameDateFmt(),
 	)
 }

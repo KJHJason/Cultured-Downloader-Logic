@@ -17,9 +17,14 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// go test -v -run ^DemoPyScript$ github.com/KJHJason/Cultured-Downloader-Logic/api
+func TestInitFiles(t *testing.T) {
+	t.Log("Initialising Python files")
+	InitFiles()
+}
+
+// go test -v -run ^DemoPyScript$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
 func TestPyScript(t *testing.T) {
-	t.Log("Initialsing Python files")
+	t.Log("Initialising Python files")
 	InitFiles()
 	website := "https://nopecha.com/demo/cloudflare"
 
@@ -56,7 +61,7 @@ func hasBypassed(website string, ctx context.Context) (bool, error) {
 	return !strings.Contains(strings.ToLower(title), "just a moment"), nil
 }
 
-// go test -v -run ^DemoChromedp$ github.com/KJHJason/Cultured-Downloader-Logic/api
+// go test -v -run ^DemoChromedp$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
 // Doesn't work as it is detected by Cloudflare as a webdriver
 func TestChromedp(t *testing.T) {
 	// Set up Chrome options

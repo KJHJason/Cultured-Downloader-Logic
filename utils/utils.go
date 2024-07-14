@@ -187,30 +187,22 @@ func GetChromeExecPath() (string, error) {
 	switch runtime.GOOS {
 	case "darwin":
 		locations = []string{
-			"/Applications/Chromium.app/Contents/MacOS/Chromium",
 			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 		}
 	case "windows":
-		userProfile := os.Getenv("USERPROFILE")
 		locations = []string{
 			`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
 			`C:\Program Files\Google\Chrome\Application\chrome.exe`,
-			filepath.Join(userProfile, `AppData\Local\Google\Chrome\Application\chrome.exe`),
-			filepath.Join(userProfile, `AppData\Local\Chromium\Application\chrome.exe`),
+			filepath.Join(os.Getenv("USERPROFILE"), `AppData\Local\Google\Chrome\Application\chrome.exe`),
 		}
 	default:
 		locations = []string{
-			"headless_shell",
-			"headless-shell",
-			"chromium",
-			"chromium-browser",
 			"google-chrome",
 			"google-chrome-stable",
 			"google-chrome-beta",
 			"google-chrome-unstable",
 			"/usr/bin/google-chrome",
 			"/usr/local/bin/chrome",
-			"/snap/bin/chromium",
 			"chrome",
 		}
 	}

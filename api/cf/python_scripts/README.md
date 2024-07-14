@@ -31,3 +31,8 @@ Caveats of using virtual displays:
   - Run `which xvfb` to check if `xvfb` is installed.
   - If you're facing issues, look up for a fix on StackOverflow as I don't have a MacOS device to test this.
   - Alternatively, you can run the script using the provided Docker image.
+
+## Missing Dockerfile?
+
+It is likely that you're viewing the source code locally from the Cultured Downloader config directory which does not contain the Dockerfile during compilation.
+Please refer to my GitHub repository at [KJHJason/Cultured-Downloader-Logic](https://github.com/KJHJason/Cultured-Downloader-Logic/tree/main/api/cf/python_scripts) for the Dockerfile.

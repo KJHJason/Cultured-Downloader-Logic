@@ -18,7 +18,7 @@ type CfArgs struct {
 
 func (args CfArgs) ParseCmdArgs() []string {
 	cmdArgs := []string{
-		"--log-path", logger.CfPyLogFilePath,
+		"--log-path", logger.CdlCfLogFilePath,
 	}
 
 	if args.Attempts > 0 {

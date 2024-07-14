@@ -9,6 +9,10 @@ ENV KJHJASON_CF_SANDBOX=1
 ENV KJHJASON_CF_ADD_NAV_EXT=1
 ENV KJHJASON_CF_SET_MAX_WINDOW=1
 
+# Install python dependencies
+RUN python -m pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt 
+
 # Install dependencies for xvfb and for installing Google Chrome from source
 RUN apt-get update && \
     apt-get install -y xvfb gnupg2 curl wget unzip ca-certificates
@@ -19,8 +23,5 @@ RUN curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-ke
     apt-get -y update && \
     apt-get -y install google-chrome-stable && \
     rm -rf /var/lib/apt/lists/*
-
-# Install python dependencies
-RUN pip install --no-cache-dir -r requirements.txt 
 
 ENTRYPOINT [ "python", "main.py" ]

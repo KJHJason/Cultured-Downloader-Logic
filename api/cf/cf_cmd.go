@@ -11,10 +11,7 @@ import (
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
-)
-
-var (
-	ErrVenvDoesNotExist = fmt.Errorf("venv does not exist at %s", getVenvDirPath())
+	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
 func getPyVenvBinDirName() string {
@@ -27,14 +24,27 @@ func getPyVenvBinDirName() string {
 }
 
 func TestScript() error {
-	cfPyPath := getCfPyPath()
-
+	cfPyPath := getMainPyPath()
 	venvPath := getVenvDirPath()
 	if !iofuncs.PathExists(venvPath) {
-		return ErrVenvDoesNotExist
+		return cdlerrors.ErrVenvDoesNotExist
 	}
 
-	cmd := exec.Command(filepath.Join(venvPath, getPyVenvBinDirName(), "python"), cfPyPath, "--tc")
+	chromePath, err := utils.GetChromeExecPath()
+	if err != nil {
+		// chrome exec path check should have been done
+		// at the start of the program. Hence, the panic here.
+		panic(err)
+	}
+
+	cmd := exec.Command(
+		filepath.Join(venvPath, getPyVenvBinDirName(), "python"), 
+		cfPyPath, 
+		"--test-connection", 
+		"--headless=true",
+		"--browser-path", chromePath, 
+		"--log-path", logger.CdlCfLogFilePath,
+	)
 	utils.PrepareCmdForBgTask(cmd)
 	if err := cmd.Run(); err != nil {
 		return err
@@ -47,10 +57,10 @@ func CallScript(args *CfArgs) (Cookies, error) {
 		return nil, fmt.Errorf("error %d: args is nil", cdlerrors.UNEXPECTED_ERROR)
 	}
 
-	cfPyPath := getCfPyPath()
+	cfPyPath := getMainPyPath()
 	venvPath := getVenvDirPath()
 	if !iofuncs.PathExists(venvPath) {
-		return nil, ErrVenvDoesNotExist
+		return nil, cdlerrors.ErrVenvDoesNotExist
 	}
 
 	parsedCfArgs := args.ParseCmdArgs()
