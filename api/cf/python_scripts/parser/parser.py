@@ -1,6 +1,14 @@
+"""
+@Author   : KJHJason
+@Contact  : contact@kjhjason.com
+@Copyright: (c) 2024 by KJHJason. All Rights Reserved.
+@License  : GNU GPL v3
+"""
+
 import typing
 import logging
 import pathlib
+import platform
 import argparse
 
 import utils
@@ -10,7 +18,7 @@ import constants
 import validators.url as url_validator
 
 def parse_bool(s: str) -> bool:
-    return s == "true" or s == "True" or s == "1"
+    return s == "1" or s == "true" or s == "True"
 
 def create_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -22,6 +30,20 @@ def create_arg_parser() -> argparse.ArgumentParser:
         "--version", 
         action="version", 
         version=f"%(prog)s v{constants.__version__}",
+    )
+    parser.add_argument(
+        "-os",
+        "--os-name",
+        type=str,
+        choices=constants.OS_CHOICES,
+        default=constants.PLATFORM_NAME.lower(),
+        help="Define the OS for navigator.platform (Required if spoofing user-agent of another OS)",
+    )
+    parser.add_argument(
+        "-ak",
+        "--app-key",
+        type=str,
+        default="",
     )
     parser.add_argument(
         "-tc",
@@ -56,10 +78,10 @@ def create_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--headless", 
-        type=parse_bool,
-        choices=["true", "True", "1", "false", "False", "0"],
+        type=str,
+        choices=constants.ARGS_BOOLEAN_CHOICE,
         help="Run the browser in headless mode",
-        default=constants.IS_DOCKER,
+        default=str(constants.IS_DOCKER),
     )
     parser.add_argument(
         "--target-url", 

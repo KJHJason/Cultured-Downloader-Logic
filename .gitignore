@@ -36,3 +36,4 @@ venv/
 
 # cf bypasser logs
 api/cf/**/*.log
+api/cf/python_scripts/extensions/Navigator/navigator.js

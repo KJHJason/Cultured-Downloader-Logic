@@ -21,7 +21,7 @@ Caveats of using virtual displays:
 
 - For Windows, the script will ignore the `--virtual-display` flag as it requires `xvfb` to create a virtual display.
   - Note: `xvfb` is not available for Windows.
-  - You can run the script using the provided Docker image.
+  - However, you can run the script using the provided Docker image instead for virtual display using `xvfb` .
 - For Linux, you will need to install `xvfb`.
   - `sudo apt-get install xvfb`
   - Run `xvfb-run` to check if `xvfb` is installed and working.

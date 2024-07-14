@@ -1,7 +1,9 @@
-# Author: KJHJason <contact@kjhjason.com>.
-# License: GNU GPL v3.
-
-"""Simple script to bypass CF protection using DrissionPage."""
+"""
+@Author   : KJHJason
+@Contact  : contact@kjhjason.com
+@Copyright: (c) 2024 by KJHJason. All Rights Reserved.
+@License  : GNU GPL v3
+"""
 
 import time
 import logging

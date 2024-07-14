@@ -1,4 +1,4 @@
 Object.defineProperty(navigator, "platform", {
-    get: function () { return "Linux x86_64"; },
+    get: function () { return "<OS_NAME>"; },
     set: function (a) {},
 });
