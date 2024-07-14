@@ -10,8 +10,8 @@ import (
 
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 func getPyVenvBinDirName() string {
@@ -38,11 +38,11 @@ func TestScript() error {
 	}
 
 	cmd := exec.Command(
-		filepath.Join(venvPath, getPyVenvBinDirName(), "python"), 
-		cfPyPath, 
-		"--test-connection", 
+		filepath.Join(venvPath, getPyVenvBinDirName(), "python"),
+		cfPyPath,
+		"--test-connection",
 		"--headless=true",
-		"--browser-path", chromePath, 
+		"--browser-path", chromePath,
 		"--log-path", logger.CdlCfLogFilePath,
 	)
 	utils.PrepareCmdForBgTask(cmd)

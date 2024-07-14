@@ -22,9 +22,9 @@ const (
 )
 
 var (
-	MainLogger      Logger
-	logFolder       = filepath.Join(iofuncs.APP_PATH, "logs")
-	logFilePath     = filepath.Join(logFolder, getLogFileName())
+	MainLogger       Logger
+	logFolder        = filepath.Join(iofuncs.APP_PATH, "logs")
+	logFilePath      = filepath.Join(logFolder, getLogFileName())
 	CdlCfLogFilePath = filepath.Join(logFolder, getCdlCfLogFileName())
 )
 
