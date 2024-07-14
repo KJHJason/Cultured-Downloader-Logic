@@ -17,12 +17,13 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
+// go test -v -run ^TestInitFiles$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
 func TestInitFiles(t *testing.T) {
 	t.Log("Initialising Python files")
 	InitFiles()
 }
 
-// go test -v -run ^DemoPyScript$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
+// go test -v -run ^TestPyScript$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
 func TestPyScript(t *testing.T) {
 	t.Log("Initialising Python files")
 	InitFiles()
