@@ -10,8 +10,8 @@ const (
 	DEBUG_MODE             = false // Will save a copy of all JSON response from the API
 	DEFAULT_PERMS          = 0755  // Owner: rwx, Group: rx, Others: rx
 	VERSION                = "1.2.0"
-	MAX_RETRY_DELAY        = 3
-	MIN_RETRY_DELAY        = 1
+	MAX_RETRY_DELAY        = 3000 * time.Millisecond
+	MIN_RETRY_DELAY        = 1000 * time.Millisecond
 	HTTP3_MAX_RETRY        = 2
 	RETRY_COUNTER          = 4
 	GITHUB_API_URL_FORMAT  = "https://api.github.com/repos/%s/releases/latest"
@@ -92,7 +92,9 @@ const (
 	KEMONO_URL                   = "https://kemono.su"
 	KEMONO_API_URL               = "https://kemono.su/api/v1"
 	KEMONO_RANGE_SUPPORTED       = true
-	KEMONO_HEAD_REQ_TIMEOUT      = 60 // to avoid the common issue of context deadline exceeded (Client.Timeout exceeded while awaiting headers) as the default 15s is too short
+	KEMONO_HEAD_REQ_TIMEOUT      = 60                           // to avoid the common issue of context deadline exceeded (Client.Timeout exceeded while awaiting headers) as the default 15s is too short
+	KEMONO_RETRY_MIN_DELAY       = 60 * 1000 * time.Millisecond // Kemono limits to 3 attachments downloads per minute
+	KEMONO_RETRY_MAX_DELAY       = KEMONO_RETRY_MIN_DELAY * 2
 	KEMONO_BASE_REGEX_STR        = `https://kemono\.su/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)`
 	KEMONO_POST_SUFFIX_REGEX_STR = `/post/(?P<postId>\d+)`
 	KEMONO_SERVICE_GROUP_NAME    = "service"

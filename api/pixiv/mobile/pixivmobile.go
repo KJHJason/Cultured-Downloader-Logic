@@ -72,7 +72,7 @@ func (pixiv *PixivMobile) SetUseCacheDb(useCacheDb bool) {
 // Additionally, pixiv.net is protected by cloudflare, so
 // to prevent the user's IP reputation from going down, delays are added.
 func (pixiv *PixivMobile) Sleep() {
-	time.Sleep(httpfuncs.GetRandomTime(1.0, 1.5))
+	time.Sleep(httpfuncs.GetRandomTimeIntMs(1000, 1500))
 }
 
 // Get the required headers to communicate with the Pixiv API

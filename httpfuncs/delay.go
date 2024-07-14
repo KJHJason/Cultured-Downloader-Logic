@@ -8,9 +8,19 @@ import (
 )
 
 // Returns a random time.Duration between the given min and max arguments
-func GetRandomTime(min, max float32) time.Duration {
-	randomDelay := min + rand.Float32()*(max-min)
-	return time.Duration(randomDelay*1000) * time.Millisecond
+//
+// Note: If you're not explicitly using the time.Duration type, the arguments will be treated as *nanoseconds*
+func GetRandomTime(min, max time.Duration) time.Duration {
+	return min + rand.N(max-min)
+}
+
+// Converts the given min and max arguments in *milliseconds*
+// to time.Duration and returns a random time.Duration between them
+func GetRandomTimeIntMs(min, max uint32) time.Duration {
+	return GetRandomTime(
+		time.Duration(min)*time.Millisecond,
+		time.Duration(max)*time.Millisecond,
+	)
 }
 
 // Returns a random time.Duration between the given min and max arguments in the RetryDelay struct

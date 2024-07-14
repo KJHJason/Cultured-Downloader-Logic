@@ -63,13 +63,16 @@ func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDl
 		cancelled, err := httpfuncs.DownloadUrls(
 			toDownload,
 			&httpfuncs.DlOptions{
-				Context:         dlOptions.GetContext(),
-				MaxConcurrency:  constants.KEMONO_MAX_CONCURRENCY,
-				Cookies:         dlOptions.Base.SessionCookies,
-				UseHttp3:        httpfuncs.IsHttp3Supported(constants.KEMONO, false),
-				SupportRange:    constants.KEMONO_RANGE_SUPPORTED,
-				HeadReqTimeout:  constants.KEMONO_HEAD_REQ_TIMEOUT,
-				RetryDelay:      &httpfuncs.RetryDelay{Min: 25, Max: 35},
+				Context:        dlOptions.GetContext(),
+				MaxConcurrency: constants.KEMONO_MAX_CONCURRENCY,
+				Cookies:        dlOptions.Base.SessionCookies,
+				UseHttp3:       httpfuncs.IsHttp3Supported(constants.KEMONO, false),
+				SupportRange:   constants.KEMONO_RANGE_SUPPORTED,
+				HeadReqTimeout: constants.KEMONO_HEAD_REQ_TIMEOUT,
+				RetryDelay: &httpfuncs.RetryDelay{
+					Min: constants.KEMONO_RETRY_MIN_DELAY,
+					Max: constants.KEMONO_RETRY_MAX_DELAY,
+				},
 				SetMetadata:     dlOptions.Base.SetMetadata,
 				Filters:         dlOptions.Base.Filters,
 				ProgressBarInfo: dlOptions.Base.ProgressBarInfo,

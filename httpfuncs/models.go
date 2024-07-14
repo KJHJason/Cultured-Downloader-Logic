@@ -3,6 +3,7 @@ package httpfuncs
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
@@ -16,9 +17,10 @@ type versionInfo struct {
 	Patch int
 }
 
+// Max and Min time in milliseconds
 type RetryDelay struct {
-	Max float32
-	Min float32
+	Max time.Duration
+	Min time.Duration
 }
 
 type ToDownload struct {
