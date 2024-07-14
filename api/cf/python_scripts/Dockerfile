@@ -1,4 +1,5 @@
-FROM python:3.12-slim-bullseye
+ARG PYTHON_VERSION=3.12
+FROM python:${PYTHON_VERSION}-slim-bullseye
 
 COPY . /app
 WORKDIR /app
@@ -8,7 +9,7 @@ ENV KJHJASON_CF_SANDBOX=1
 ENV KJHJASON_CF_ADD_NAV_EXT=1
 ENV KJHJASON_CF_SET_MAX_WINDOW=1
 
-# Install some other dependencies
+# Install dependencies for xvfb and for installing Google Chrome from source
 RUN apt-get update && \
     apt-get install -y xvfb gnupg2 curl wget unzip ca-certificates
 
