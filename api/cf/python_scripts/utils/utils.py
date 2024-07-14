@@ -102,7 +102,7 @@ def get_chromium_page(browser_path: str, os_name: str, user_agent: str, headless
     options.headless(headless)
     options.set_user_agent(user_agent)
 
-    if not no_sandbox and constants.IS_UNIX and (os.environ.get("KJHJASON_CF_SANDBOX") == "1" or os.geteuid() != 0):
+    if not no_sandbox and constants.IS_UNIX and (os.getenv("KJHJASON_CF_SANDBOX") == "1" or os.geteuid() != 0):
         # --no-sandbox is required if not running as root user.
         # Otherwise, the browser may have errors trying to launch as root.
         no_sandbox = True
@@ -129,7 +129,7 @@ def get_chromium_page(browser_path: str, os_name: str, user_agent: str, headless
     for arg in args:
         options.set_argument(arg)
 
-    if os.environ.get("KJHJASON_CF_ADD_NAV_EXT") == "1" or os_name != constants.PLATFORM_NAME.lower():
+    if os.getenv("KJHJASON_CF_ADD_NAV_EXT") == "1" or os_name != constants.PLATFORM_NAME.lower():
         edit_navigator_js_with_os_name(os_name)
         options.add_extension(constants.NAVIGATOR_EXT_DIR)
 
@@ -147,6 +147,6 @@ def get_chromium_page(browser_path: str, os_name: str, user_agent: str, headless
             )
         raise e
 
-    if headless or os.environ.get("KJHJASON_CF_SET_MAX_WINDOW") == "1":
+    if headless or os.getenv("KJHJASON_CF_SET_MAX_WINDOW") == "1":
         page.set.window.max()
     return page

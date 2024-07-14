@@ -11,7 +11,7 @@ import platform
 __version__ = "0.1.0"
 PLATFORM_NAME = platform.system()
 IS_UNIX = PLATFORM_NAME in ("Linux", "Darwin",)
-IS_DOCKER = os.environ.get("KJHJASON_CF_DOCKER") == "1"
+IS_DOCKER = os.getenv("KJHJASON_CF_DOCKER") == "1"
 
 ARGS_BOOLEAN_CHOICE = ("true", "True", "1", "false", "False", "0",)
 OS_CHOICES = ("linux", "darwin", "windows",) # from Golang's runtime.GOOS
