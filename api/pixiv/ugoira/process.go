@@ -195,9 +195,9 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	prog.UpdateMax(downloadInfoLen)
 	defer prog.SnapshotTask()
 	prog.Start()
-	for i, ugoira := range ugoiraArgs.ToDownload {
+	for _, ugoira := range ugoiraArgs.ToDownload {
 		wg.Add(1)
-		go func(ugoira *Ugoira, i int) {
+		go func() {
 			defer func() {
 				wg.Done()
 				<-queue
@@ -208,7 +208,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 				errChan <- err
 			}
 			prog.Increment()
-		}(ugoira, i)
+		}()
 	}
 	wg.Wait()
 	close(queue)

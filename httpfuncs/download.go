@@ -459,7 +459,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	defer progress.SnapshotTask()
 	for _, urlInfo := range urlInfoSlice {
 		wg.Add(1)
-		go func(urlInfo *ToDownload) {
+		go func() {
 			defer func() {
 				wg.Done()
 				<-queue
@@ -498,7 +498,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 			if !errors.Is(err, context.Canceled) {
 				progress.Increment()
 			}
-		}(urlInfo)
+		}()
 	}
 	wg.Wait()
 	close(queue)

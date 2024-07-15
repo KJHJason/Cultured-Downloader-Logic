@@ -196,7 +196,7 @@ func GetMultiplePosts(posts []*KemonoPostToDl, dlOptions *KemonoDlOptions) (urls
 	defer progress.SnapshotTask()
 	for _, post := range posts {
 		wg.Add(1)
-		go func(post *KemonoPostToDl) {
+		go func() {
 			defer func() {
 				progress.Increment()
 				wg.Done()
@@ -215,7 +215,7 @@ func GetMultiplePosts(posts []*KemonoPostToDl, dlOptions *KemonoDlOptions) (urls
 				urlsToDownload: toDownload,
 				gdriveLinks:    foundGdriveLinks,
 			}
-		}(post)
+		}()
 	}
 	wg.Wait()
 	close(queue)

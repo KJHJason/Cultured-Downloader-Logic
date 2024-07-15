@@ -198,9 +198,9 @@ func (f *FantiaDl) GetFanclubsContents(fanclubIds []string, pageNums []string, c
 		progress.UpdateErrorMsg("Something went wrong while getting " + contentType + " ID(s) from Fanclub, " + fanclubId + ", on Fantia.\nPlease refer to the logs for more details.")
 	}
 	progress.Start()
-	for idx, fanclubId := range fanclubIds {
+	for pageNumIdx, fanclubId := range fanclubIds {
 		wg.Add(1)
-		go func(fanclubId string, pageNumIdx int) {
+		go func() {
 			defer func() {
 				wg.Done()
 				<-queue
@@ -220,7 +220,7 @@ func (f *FantiaDl) GetFanclubsContents(fanclubIds []string, pageNums []string, c
 			}
 
 			progress.Increment()
-		}(fanclubId, idx)
+		}()
 	}
 	wg.Wait()
 	close(queue)

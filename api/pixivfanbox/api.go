@@ -119,7 +119,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 		}
 
 		wg.Add(1)
-		go func(postId, cacheKey string) {
+		go func() {
 			defer func() {
 				progress.Increment()
 				wg.Done()
@@ -148,7 +148,7 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 					gdriveUrls: postGdriveLinks,
 				}
 			}
-		}(postId, cacheKey)
+		}()
 	}
 	wg.Wait()
 	close(queue)
@@ -309,14 +309,14 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 		}
 
 		wg.Add(1)
-		go func(reqUrl string) {
+		go func() {
 			defer func() {
 				wg.Done()
 				<-queue
 			}()
 			queue <- struct{}{}
-			resChan <- getFanboxPostsLogic(reqUrl, headers, dlOptions, useHttp3)
-		}(paginatedUrl)
+			resChan <- getFanboxPostsLogic(paginatedUrl, headers, dlOptions, useHttp3)
+		}()
 	}
 	wg.Wait()
 	close(queue)

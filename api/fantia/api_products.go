@@ -117,9 +117,9 @@ func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownl
 	resChan := make(chan []*httpfuncs.ToDownload, productIdsLen)
 	errChan := make(chan error, productIdsLen)
 
-	for idx, productId := range f.ProductIds {
+	for _, productId := range f.ProductIds {
 		wg.Add(1)
-		go func(productId string, pageNumIdx int) {
+		go func() {
 			defer func() {
 				wg.Done()
 				<-queue
@@ -134,7 +134,7 @@ func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownl
 			}
 
 			progress.Increment()
-		}(productId, idx)
+		}()
 	}
 	wg.Wait()
 	close(queue)

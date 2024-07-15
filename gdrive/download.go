@@ -256,7 +256,7 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 	prog.Start()
 	for _, file := range allowedForDownload {
 		wg.Add(1)
-		go func(file *GdriveFileToDl) {
+		go func() {
 			defer func() {
 				wg.Done()
 				<-queue
@@ -296,7 +296,7 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 			}
 
 			prog.Increment()
-		}(file)
+		}()
 	}
 	wg.Wait()
 	close(queue)
