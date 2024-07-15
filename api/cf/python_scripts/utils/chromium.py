@@ -87,6 +87,7 @@ def save_cookies(cookies: _types.Cookies) -> None:
         print(msg)
         logger.info(msg)
 
+@atexit.register
 def __remove_navigator_js() -> None:
     if os.path.exists(constants.NAVIGATOR_JS_PATH):
         os.remove(constants.NAVIGATOR_JS_PATH)
@@ -185,7 +186,6 @@ def get_chromium_page(
     if os.getenv("KJHJASON_CF_ADD_NAV_EXT") == "1" or os_name != constants.PLATFORM_NAME.lower():
         __create_navigator_js_with_os_name(os_name)
         options.add_extension(constants.NAVIGATOR_EXT_DIR)
-        atexit.register(__remove_navigator_js)
 
     try:
         page = ChromiumPage(addr_or_opts=options)
