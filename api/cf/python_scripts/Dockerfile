@@ -24,4 +24,7 @@ RUN curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-ke
     apt-get -y install google-chrome-stable && \
     rm -rf /var/lib/apt/lists/*
 
+# Test the script to see if it runs and also to generate .pyc files
+RUN python main.py --version
+
 ENTRYPOINT [ "python", "main.py" ]

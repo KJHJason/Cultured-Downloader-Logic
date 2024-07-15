@@ -28,6 +28,7 @@ var (
 	//go:embed python_scripts/README.md
 	//go:embed python_scripts/requirements.txt
 	//go:embed python_scripts/main.py
+	//go:embed python_scripts/_logger/*.py
 	//go:embed python_scripts/_types/*.py
 	//go:embed python_scripts/constants/*.py
 	//go:embed python_scripts/errors/*.py

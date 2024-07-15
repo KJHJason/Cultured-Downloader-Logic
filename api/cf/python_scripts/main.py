@@ -9,7 +9,6 @@ Simple script to bypass CF protection using DrissionPage.
 
 import os
 import sys
-import logging
 import pathlib
 import argparse
 
@@ -19,6 +18,7 @@ import utils
 import _types
 import errors
 import parser
+import _logger
 import constants
 
 from DrissionPage import (
@@ -33,11 +33,12 @@ def __main(
     target_url: str, 
     attempts: int, 
     test_connection: bool, 
-    logger: logging.Logger,
     app_key: str = "",
 ) -> None:
+    logger = _logger.get_logger()
     logger.info("Starting CF Bypass...")
-    utils.check_container(app_key, logger)
+
+    utils.check_container(app_key)
     try:
         page = utils.get_chromium_page(
             os_name=os_name,
@@ -57,14 +58,14 @@ def __main(
 
     try:
         page.listen.start(
-            targets=logic.get_base_url(target_url), 
+            targets=utils.get_base_url(target_url), 
             method="GET", 
             res_type="Document",
         )
         page.get(target_url)
-        if logic.bypass_cf(page, attempts, logger):
+        if logic.bypass_cf(page, attempts, target_url):
             cookies: _types.Cookies = page.cookies(as_dict=False, all_domains=False, all_info=True)
-            utils.save_cookies(cookies, logger)
+            utils.save_cookies(cookies)
         else:
             logger.error("Failed to bypass CF protection, max attempts reached...")
     except KeyboardInterrupt:
@@ -83,14 +84,14 @@ def main(args: argparse.Namespace) -> None:
     if not (log_path_dir := log_path.parent).exists():
         log_path_dir.mkdir(parents=True)
 
-    logic.configure_logger(log_path)
-    logger = logic.get_logger()
+    _logger.configure_logger(log_path)
+    logger = _logger.get_logger()
 
     virtual_display: bool = args.virtual_display
     if not constants.IS_UNIX and virtual_display:
         logger.warning("Virtual display is only supported on unix-like systems, ignoring --virtual-display flag...")
         virtual_display = False
-    elif virtual_display and not utils.check_for_xvfb(logger):
+    elif virtual_display and not utils.check_for_xvfb():
         virtual_display = False
 
     headless_val: str = args.headless
@@ -107,9 +108,9 @@ def main(args: argparse.Namespace) -> None:
     user_agent: str = args.user_agent
     app_key: str = args.app_key
 
-    parser.validate_headless(headless, logger)
-    parser.validate_url(target_url, logger)
-    parser.validate_browser_path(browser_path, logger)
+    parser.validate_headless(headless)
+    parser.validate_url(target_url)
+    parser.validate_browser_path(browser_path)
 
     if not virtual_display:
         try:
@@ -120,12 +121,11 @@ def main(args: argparse.Namespace) -> None:
                 headless=headless,
                 target_url=target_url,
                 attempts=attempts,
-                logger=logger,
                 test_connection=test_connection,
                 app_key=app_key,
             )
         except test.Results as e:
-            e.handle_result(logger)
+            e.handle_result()
         return
 
     import pyvirtualdisplay
@@ -137,12 +137,11 @@ def main(args: argparse.Namespace) -> None:
                 headless=False,
                 target_url=target_url,
                 attempts=attempts,
-                logger=logger,
                 test_connection=test_connection,
                 app_key=app_key,
             )
     except test.Results as e:
-        e.handle_result(logger)
+        e.handle_result()
 
 if __name__ == "__main__":
     try:

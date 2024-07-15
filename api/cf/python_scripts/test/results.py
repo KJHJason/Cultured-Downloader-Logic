@@ -6,7 +6,8 @@
 
 import sys
 import typing
-import logging
+
+import _logger
 
 class Results(Exception):
     def __init__(self, success: bool) -> None:
@@ -15,7 +16,8 @@ class Results(Exception):
     def __str__(self) -> str:
         return f"Test {'succeeded' if self.success else 'failed'}"
 
-    def handle_result(self, logger: logging.Logger) -> typing.NoReturn:
+    def handle_result(self) -> typing.NoReturn:
+        logger = _logger.get_logger()
         if self.success:
             logger.info("Test succeeded")
             print("Test succeeded")

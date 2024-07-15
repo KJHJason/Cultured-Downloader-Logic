@@ -10,10 +10,12 @@ import shutil
 import typing
 import logging
 import tempfile
+import functools
 import subprocess
 
 import _types
 import errors
+import _logger
 import constants
 
 import orjson
@@ -22,6 +24,15 @@ from DrissionPage import (
     ChromiumOptions,
     errors as drission_errors,
 )
+
+@functools.lru_cache(maxsize=1)
+def get_base_url(url: str) -> str:
+    try:
+        url = url.split("/", maxsplit=3)
+        url = "/".join(url[:3])
+    except IndexError:
+        pass
+    return url
 
 def get_default_chrome_path() -> str:
     match constants.PLATFORM_NAME:
@@ -34,24 +45,25 @@ def get_default_chrome_path() -> str:
         case _:
             raise ValueError("Unsupported OS")
 
-def check_for_xvfb(logger: logging.Logger) -> bool:
+def check_for_xvfb() -> bool:
     if shutil.which("xvfb-run") is not None:
         return True
 
     try:
         subprocess.run(["Xvfb", "-help"], check=True)
     except subprocess.CalledProcessError:
-        logger.warning("xvfb-run not found, ignoring --virtual-display flag...")
+        _logger.get_logger().warning("xvfb-run not found, ignoring --virtual-display flag...")
         return False
     return True
 
-def check_container(app_key: str, logger: logging.Logger) -> None | typing.NoReturn:
+def check_container(app_key: str) -> None | typing.NoReturn:
     # Mainly just for obfuscation purposes to make it harder to run the script in a container.
     if constants.IS_DOCKER and app_key != "fzN9Hvkb9s+mwPGCDd5YFnLiqKx8WhZfWoZE5nZC":
-        errors.handle_err("Failed to connect to browser...", logger)
+        errors.handle_err("Failed to connect to browser...")
         return
 
-def save_cookies(cookies: _types.Cookies, logger: logging.Logger) -> None:
+def save_cookies(cookies: _types.Cookies) -> None:
+    logger = _logger.get_logger()
     logger.info("Saving cookies...")
     with tempfile.NamedTemporaryFile(mode="w", prefix="kjhjason-cf-", delete=False, delete_on_close=False) as f:
         serialised_cookies = orjson.dumps(

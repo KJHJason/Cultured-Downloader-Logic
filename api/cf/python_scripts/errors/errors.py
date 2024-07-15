@@ -5,7 +5,7 @@
 @License  : GNU GPL v3
 """
 
-import logging
+import _logger
 
 class CfError(Exception):
     def __init__(self, msg: str) -> None:
@@ -14,7 +14,7 @@ class CfError(Exception):
     def __str__(self) -> str:
         return self.msg
 
-def handle_err(msg: str, logger: logging.Logger) -> None:
+def handle_err(msg: str) -> None:
     print(msg)
-    logger.error(msg)
+    _logger.get_logger().error(msg)
     raise CfError(msg)
