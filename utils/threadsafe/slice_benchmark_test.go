@@ -47,7 +47,6 @@ func BenchmarkBufferedChannelSmall(b *testing.B) {
 	}
 }
 
-
 func threadSafeSliceBenchmarkLogic(elLen int) {
 	slice := NewSlice[int]()
 	wg := sync.WaitGroup{}
@@ -73,7 +72,6 @@ func threadSafeSliceWithCapBenchmarkLogic(elLen int) {
 	}
 	wg.Wait()
 }
-
 
 func bufferedChannelBenchmarkLogic(elLen int) {
 	ch := make(chan int, elLen)
