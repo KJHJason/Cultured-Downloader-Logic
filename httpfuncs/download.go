@@ -27,6 +27,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 )
 
 func getFullFilePath(res *http.Response, filePath string) (string, error) {
@@ -422,8 +423,8 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, dlOptions.MaxConcurrency)
-	errChan := make(chan error, urlsLen)
-	cacheChan := make(chan *cacheEl, urlsLen)
+	errTsSlice := threadsafe.NewSlice[error]()
+	cacheTsSlice := threadsafe.NewSliceWithCapacity[*cacheEl](urlsLen)
 
 	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
 	ctx, cancel := context.WithCancel(dlOptions.Context)
@@ -485,14 +486,14 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 			)
 			hasErr := err != nil
 			if hasErr {
-				errChan <- err
+				errTsSlice.Append(err)
 			}
 			if urlInfo.CacheKey != "" {
-				cacheChan <- &cacheEl{
+				cacheTsSlice.Append(&cacheEl{
 					hasErr:   hasErr,
 					cacheKey: urlInfo.CacheKey,
 					cacheFn:  urlInfo.CacheFn,
-				}
+				})
 			}
 
 			if !errors.Is(err, context.Canceled) {
@@ -502,8 +503,6 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	}
 	wg.Wait()
 	close(queue)
-	close(errChan)
-	close(cacheChan)
 
 	// since the CacheKey in the ToDownload struct can belong to multiple URLs
 	// E.g. CacheKey of "https://example.com/post/123456" for all elements,
@@ -513,9 +512,11 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	// ]
 	// we have to make sure all the request for that particular cache key has no errors to assume that the download was successful
 	var hasSeenCacheKey map[string]*cacheEl
-	if len(cacheChan) > 0 {
+	if cacheTsSlice.LenUnsafe() > 0 {
 		hasSeenCacheKey = make(map[string]*cacheEl)
-		for cacheEl := range cacheChan {
+		cacheElIter := cacheTsSlice.NewIter()
+		for cacheElIter.Next() {
+			cacheEl := cacheElIter.Item()
 			if _, ok := hasSeenCacheKey[cacheEl.cacheKey]; ok {
 				if cacheEl.hasErr {
 					hasSeenCacheKey[cacheEl.cacheKey].hasErr = true
@@ -538,10 +539,10 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	}
 
 	hasErr := false
-	if len(errChan) > 0 {
+	if errTsSlice.LenUnsafe() > 0 {
 		hasErr = true
 		var hasCancelled bool
-		if hasCancelled, errorSlice = logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
+		if hasCancelled, errorSlice = logger.LogSliceErrors(logger.ERROR, errTsSlice); hasCancelled {
 			progress.StopInterrupt("Stopped downloading files (incomplete downloads will be resumed later or be deleted)...")
 			return true, errorSlice
 		}

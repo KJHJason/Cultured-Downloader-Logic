@@ -13,6 +13,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 )
 
 // Returns a defined request header needed to communicate with Pixiv Fanbox's API
@@ -82,8 +83,8 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	}
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, maxConcurrency)
-	urlsChan := make(chan *urlsChanVal, postIdsLen)
-	errChan := make(chan error, postIdsLen)
+	urlsTsSlice := threadsafe.NewSliceWithCapacity[*urlsChanVal](postIdsLen)
+	errTsSlice := threadsafe.NewSlice[error]()
 
 	baseMsg := "Getting and processing post details from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", postIdsLen)
 	progress := dlOptions.Base.MainProgBar()
@@ -129,13 +130,13 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 			queue <- struct{}{}
 			res, parsedCacheKey, err := getPostDetails(cacheKey, postId, url, dlOptions, useHttp3)
 			if err != nil {
-				errChan <- err
+				errTsSlice.Append(err)
 				return
 			}
 
 			postUrls, postGdriveLinks, err := processFanboxPostJson(res, dlOptions)
 			if err != nil {
-				errChan <- err
+				errTsSlice.Append(err)
 			} else {
 				if dlOptions.Base.UseCacheDb && parsedCacheKey != "" {
 					for _, url := range postUrls {
@@ -143,24 +144,22 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 						url.CacheFn = database.CachePost
 					}
 				}
-				urlsChan <- &urlsChanVal{
+				urlsTsSlice.Append(&urlsChanVal{
 					postUrls:   postUrls,
 					gdriveUrls: postGdriveLinks,
-				}
+				})
 			}
 		}()
 	}
 	wg.Wait()
 	close(queue)
-	close(urlsChan)
-	close(errChan)
 
-	hasErr := len(errChan) > 0
+	hasErr := errTsSlice.LenUnsafe() > 0
 	hasCancelled := false
 	var errSlice []error
 	if hasErr {
 		var errCtxCancelled bool
-		if errCtxCancelled, errSlice = logger.LogChanErrors(logger.ERROR, errChan); errCtxCancelled {
+		if errCtxCancelled, errSlice = logger.LogSliceErrors(logger.ERROR, errTsSlice); errCtxCancelled {
 			hasCancelled = true
 		}
 	}
@@ -172,7 +171,9 @@ func (pf *PixivFanboxDl) GetPostDetails(dlOptions *PixivFanboxDlOptions) ([]*htt
 	progress.Stop(hasErr)
 
 	var urlsSlice, gdriveUrls []*httpfuncs.ToDownload
-	for urls := range urlsChan {
+	urlsIter := urlsTsSlice.NewIter()
+	for urlsIter.Next() {
+		urls := urlsIter.Item()
 		urlsSlice = append(urlsSlice, urls.postUrls...)
 		gdriveUrls = append(gdriveUrls, urls.gdriveUrls...)
 	}
@@ -298,7 +299,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 		maxConcurrency = len(paginatedUrls)
 	}
 	queue := make(chan struct{}, maxConcurrency)
-	resChan := make(chan *resStruct, len(paginatedUrls))
+	resTsSlice := threadsafe.NewSliceWithCapacity[*resStruct](len(paginatedUrls))
 	for idx, paginatedUrl := range paginatedUrls {
 		curPage := idx + 1
 		if curPage < minPage {
@@ -315,15 +316,18 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 				<-queue
 			}()
 			queue <- struct{}{}
-			resChan <- getFanboxPostsLogic(paginatedUrl, headers, dlOptions, useHttp3)
+			resTsSlice.Append(
+				getFanboxPostsLogic(paginatedUrl, headers, dlOptions, useHttp3),
+			)
 		}()
 	}
 	wg.Wait()
 	close(queue)
-	close(resChan)
 
 	// parse the JSON response
-	for res := range resChan {
+	resIter := resTsSlice.NewIter()
+	for resIter.Next() {
+		res := resIter.Item()
 		if res.err != nil {
 			errSlice = append(errSlice, res.err)
 			continue

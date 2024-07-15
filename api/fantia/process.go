@@ -425,17 +425,14 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(3)
-	var fanclubName string
-	go func() {
-		defer wg.Done()
-		fanclubName = getFanclubNameFromProductPage(productId, doc)
-	}()
+	wg.Add(2)
 
+	var fanclubName string
 	var previewContentUrls []string
 	var thumbnailUrl, productName string
 	go func() {
 		defer wg.Done()
+		fanclubName = getFanclubNameFromProductPage(productId, doc)
 		productName, thumbnailUrl, previewContentUrls = getProductDetails(productId, doc)
 	}()
 

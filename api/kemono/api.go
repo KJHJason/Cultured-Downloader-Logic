@@ -14,6 +14,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -173,7 +174,7 @@ func GetMultiplePosts(posts []*KemonoPostToDl, dlOptions *KemonoDlOptions) (urls
 	}
 	wg := sync.WaitGroup{}
 	queue := make(chan struct{}, maxConcurrency)
-	resChan := make(chan *kemonoChanRes, postLen)
+	resTsSlice := threadsafe.NewSliceWithCapacity[*kemonoChanRes](postLen)
 
 	baseMsg := "Getting post details from Kemono [%d/" + fmt.Sprintf("%d]...", postLen)
 	progress := dlOptions.Base.MainProgBar()
@@ -206,23 +207,24 @@ func GetMultiplePosts(posts []*KemonoPostToDl, dlOptions *KemonoDlOptions) (urls
 			queue <- struct{}{}
 			toDownload, foundGdriveLinks, err := getPostDetails(post, dlOptions)
 			if err != nil {
-				resChan <- &kemonoChanRes{
+				resTsSlice.Append(&kemonoChanRes{
 					err: err,
-				}
+				})
 				return
 			}
-			resChan <- &kemonoChanRes{
+			resTsSlice.Append(&kemonoChanRes{
 				urlsToDownload: toDownload,
 				gdriveLinks:    foundGdriveLinks,
-			}
+			})
 		}()
 	}
 	wg.Wait()
 	close(queue)
-	close(resChan)
 
 	hasError, hasCancelled := false, false
-	for res := range resChan {
+	resIter := resTsSlice.NewIter()
+	for resIter.Next() {
+		res := resIter.Item()
 		if res.err == nil {
 			urlsToDownload = append(urlsToDownload, res.urlsToDownload...)
 			gdriveLinks = append(gdriveLinks, res.gdriveLinks...)

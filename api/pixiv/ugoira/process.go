@@ -23,6 +23,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 )
 
 // Map the Ugoira frame delays to their respective filenames
@@ -172,7 +173,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	}
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, maxConcurrency)
-	errChan := make(chan error, downloadInfoLen)
+	errTsSlice := threadsafe.NewSlice[error]()
 
 	baseMsg := fmt.Sprintf("Converting Ugoira to %s ", ugoiraOptions.OutputFormat) + "[%d/" + fmt.Sprintf("%d]...", downloadInfoLen)
 	prog := ugoiraArgs.MainProgBar
@@ -205,20 +206,19 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 			queue <- struct{}{}
 			err := convertUgoira(ctx, ugoira, ugoiraOptions, config)
 			if err != nil {
-				errChan <- err
+				errTsSlice.Append(err)
 			}
 			prog.Increment()
 		}()
 	}
 	wg.Wait()
 	close(queue)
-	close(errChan)
 
 	var errSlice []error
-	hasErr := len(errChan) > 0
+	hasErr := errTsSlice.LenUnsafe() > 0
 	if hasErr {
 		var hasCancelled bool
-		if hasCancelled, errSlice = logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
+		if hasCancelled, errSlice = logger.LogSliceErrors(logger.ERROR, errTsSlice); hasCancelled {
 			prog.StopInterrupt(
 				fmt.Sprintf("Stopped converting ugoira to %s!", ugoiraOptions.OutputFormat),
 			)

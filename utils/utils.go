@@ -169,6 +169,8 @@ func DetectOtherExtDLLink(text, postFolderPath string) bool {
 var CachedChromeExecPath string
 
 // Mainly from https://github.com/chromedp/chromedp/blob/ebf842c7bc28db77d0bf4d757f5948d769d0866f/allocate.go#L349-L395
+//
+// Note: This is not thread-safe
 func GetChromeExecPath() (string, error) {
 	if CachedChromeExecPath != "" {
 		if found, err := exec.LookPath(CachedChromeExecPath); err == nil {
@@ -216,9 +218,20 @@ func GetChromeExecPath() (string, error) {
 	return "", cdlerrors.ErrChromeNotFound
 }
 
-func CheckPythonExec() bool {
+func checkPythonExec() bool {
 	_, err := exec.LookPath("python")
 	return err == nil
+}
+
+func checkDockerExec() bool {
+	_, err := exec.LookPath("docker")
+	return err == nil
+}
+
+func checkDockerDaemonIsRunning() bool {
+	cmd := exec.Command("docker", "version")
+	PrepareCmdForBgTask(cmd)
+	return cmd.Run() == nil
 }
 
 func CheckPrerequisites(panicHandler func(msg string)) {
@@ -231,12 +244,33 @@ func CheckPrerequisites(panicHandler func(msg string)) {
 		)
 	}
 
-	if !CheckPythonExec() {
-		panicHandler(
-			fmt.Sprintf(
-				"error %d: Python executable not found, please install Python and ensure it's in the PATH environment variable",
-				cdlerrors.STARTUP_ERROR,
-			),
-		)
+	useDockerArg := os.Getenv("CDL_CF_USE_DOCKER")
+	useDocker := useDockerArg == "1" || useDockerArg == "true"
+	if runtime.GOOS == "linux" && !useDocker {
+		if !checkPythonExec() {
+			panicHandler(
+				fmt.Sprintf(
+					"error %d: Python executable not found, please install Python and ensure it's in the PATH environment variable",
+					cdlerrors.STARTUP_ERROR,
+				),
+			)
+		}
+	} else {
+		if !checkDockerExec() {
+			panicHandler(
+				fmt.Sprintf(
+					"error %d: Docker executable not found, please install Docker and ensure it's in the PATH environment variable",
+					cdlerrors.STARTUP_ERROR,
+				),
+			)
+		}
+		if !checkDockerDaemonIsRunning() {
+			panicHandler(
+				fmt.Sprintf(
+					"error %d: Docker is not running, please start Docker daemon",
+					cdlerrors.STARTUP_ERROR,
+				),
+			)
+		}
 	}
 }

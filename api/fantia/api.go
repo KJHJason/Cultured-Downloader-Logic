@@ -13,6 +13,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -167,8 +168,8 @@ func (f *FantiaDl) GetFanclubsContents(fanclubIds []string, pageNums []string, c
 		maxConcurrency = fanclubIdsLen
 	}
 	queue := make(chan struct{}, maxConcurrency)
-	resChan := make(chan []string, fanclubIdsLen)
-	errChan := make(chan error, fanclubIdsLen)
+	resTsSlice := threadsafe.NewSliceWithCapacity[[]string](fanclubIdsLen)
+	errTsSlice := threadsafe.NewSlice[error]()
 
 	progress := dlOptions.Base.MainProgBar()
 	if fanclubIdsLen > 1 {
@@ -214,9 +215,9 @@ func (f *FantiaDl) GetFanclubsContents(fanclubIds []string, pageNums []string, c
 				contentType,
 			)
 			if err != nil {
-				errChan <- err
+				errTsSlice.Append(err)
 			} else {
-				resChan <- contentIds
+				resTsSlice.Append(contentIds)
 			}
 
 			progress.Increment()
@@ -224,18 +225,12 @@ func (f *FantiaDl) GetFanclubsContents(fanclubIds []string, pageNums []string, c
 	}
 	wg.Wait()
 	close(queue)
-	close(resChan)
-	close(errChan)
 
 	var errorSlice []error
 	hasErr, hasCancelled := false, false
-	if len(errChan) > 0 {
+	if errTsSlice.LenUnsafe() > 0 {
 		hasErr = true
-		if errCtxCancelled, errSlice := logger.LogChanErrors(logger.ERROR, errChan); !hasCancelled && errCtxCancelled {
-			hasCancelled = true
-		} else {
-			errorSlice = append(errorSlice, errSlice...)
-		}
+		hasCancelled, errorSlice = logger.LogSliceErrors(logger.ERROR, errTsSlice)
 	}
 	if hasCancelled {
 		dlOptions.CancelCtx()
@@ -246,7 +241,9 @@ func (f *FantiaDl) GetFanclubsContents(fanclubIds []string, pageNums []string, c
 	progress.Stop(hasErr)
 	progress.SnapshotTask()
 
-	for contentIdsRes := range resChan {
+	resIter := resTsSlice.NewIter()
+	for resIter.Next() {
+		contentIdsRes := resIter.Item()
 		if contentType == PRODUCTS {
 			f.ProductIds = append(f.ProductIds, contentIdsRes...)
 		} else {

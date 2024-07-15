@@ -22,6 +22,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 )
 
 func md5HashFile(file *os.File) (string, error) {
@@ -172,15 +173,19 @@ func filterDownloads(files []*GdriveFileToDl, filters *filters.Filters) []*Gdriv
 	return allowedForDownload
 }
 
-func (gdrive *GDrive) processGdriveDlError(errChan chan *GdriveError, prog progress.ProgressBar) []error {
+func (gdrive *GDrive) processGdriveDlError(errTsSlice *threadsafe.Slice[*GdriveError], prog progress.ProgressBar) []error {
 	defer prog.SnapshotTask()
-	if len(errChan) == 0 {
+	if errTsSlice.LenUnsafe() == 0 {
 		return nil
 	}
 
 	killProgram := false
-	errSlice := make([]error, 0, len(errChan))
-	for errInfo := range errChan {
+	errSlice := make([]error, 0, errTsSlice.LenUnsafe())
+	defer errTsSlice.ClearUnsafe()
+
+	errIter := errTsSlice.NewIter()
+	for errIter.Next() {
+		errInfo := errIter.Item()
 		if errors.Is(errInfo.Err, context.Canceled) {
 			if !killProgram {
 				killProgram = true
@@ -234,7 +239,7 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 	}
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, maxConcurrency)
-	errChan := make(chan *GdriveError, dlLen)
+	errTsSlice := threadsafe.NewSlice[*GdriveError]()
 
 	baseMsg := "Downloading GDrive files [%d/" + fmt.Sprintf("%d]...", dlLen)
 	prog := progBarInfo.MainProgressBar
@@ -282,13 +287,13 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 					"failed to download file: %s (ID: %s, MIME Type: %s)\nRefer to error details below:\n%w",
 					file.Name, file.Id, file.MimeType, err,
 				)
-				errChan <- &GdriveError{
+				errTsSlice.Append(&GdriveError{
 					Err: err,
 					FilePath: filepath.Join(
 						file.FilePath,
 						constants.GDRIVE_ERROR_FILENAME,
 					),
-				}
+				})
 			}
 
 			if !hasErr && gdrive.useCacheDb {
@@ -300,14 +305,13 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 	}
 	wg.Wait()
 	close(queue)
-	close(errChan)
 
 	hasErr := false
-	if len(errChan) > 0 {
+	if errTsSlice.LenUnsafe() > 0 {
 		hasErr = true
 	}
 	prog.Stop(hasErr)
-	return gdrive.processGdriveDlError(errChan, prog)
+	return gdrive.processGdriveDlError(errTsSlice, prog)
 }
 
 // Uses regex to extract the file ID and the file type (type: file, folder) from the given URL

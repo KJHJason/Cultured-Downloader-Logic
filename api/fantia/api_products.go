@@ -12,6 +12,7 @@ import (
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 )
 
 func getFantiaProductPaidContent(purchaseRelativeUrl, productId string, dlOptions *FantiaDlOptions) (*http.Response, error) {
@@ -114,8 +115,8 @@ func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownl
 		maxConcurrency = productIdsLen
 	}
 	queue := make(chan struct{}, maxConcurrency)
-	resChan := make(chan []*httpfuncs.ToDownload, productIdsLen)
-	errChan := make(chan error, productIdsLen)
+	resTsSlice := threadsafe.NewSliceWithCapacity[[]*httpfuncs.ToDownload](productIdsLen)
+	errTsSlice := threadsafe.NewSlice[error]()
 
 	for _, productId := range f.ProductIds {
 		wg.Add(1)
@@ -128,9 +129,9 @@ func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownl
 			queue <- struct{}{}
 			productToDownload, err := getProduct(productId, dlOptions)
 			if err != nil {
-				errChan <- err
+				errTsSlice.Append(err)
 			} else {
-				resChan <- productToDownload
+				resTsSlice.Append(productToDownload)
 			}
 
 			progress.Increment()
@@ -138,14 +139,12 @@ func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownl
 	}
 	wg.Wait()
 	close(queue)
-	close(resChan)
-	close(errChan)
 
 	var errorSlice []error
-	hasErr := len(errChan) > 0
+	hasErr := errTsSlice.LenUnsafe() > 0
 	if hasErr {
 		var hasCancelled bool
-		if hasCancelled, errorSlice = logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
+		if hasCancelled, errorSlice = logger.LogSliceErrors(logger.ERROR, errTsSlice); hasCancelled {
 			dlOptions.CancelCtx()
 			progress.StopInterrupt(
 				fmt.Sprintf("Stopped getting %d product content from Fantia...", productIdsLen),
@@ -156,8 +155,9 @@ func (f *FantiaDl) GetProducts(dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownl
 	progress.Stop(hasErr)
 
 	var productUrls []*httpfuncs.ToDownload
-	for productToDownload := range resChan {
-		productUrls = append(productUrls, productToDownload...)
+	resSliceIter := resTsSlice.NewIter()
+	for resSliceIter.Next() {
+		productUrls = append(productUrls, resSliceIter.Item()...)
 	}
 	return productUrls, errorSlice
 }
