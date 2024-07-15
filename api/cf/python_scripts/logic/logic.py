@@ -5,14 +5,58 @@
 @License  : GNU GPL v3
 """
 
+import os
 import time
+import random
 
 import _logger
 import constants
 
+import pyautogui
 from DrissionPage import (
     ChromiumPage,
 )
+from DrissionPage._elements.chromium_element import (
+    ChromiumElement,
+)
+
+def __generate_offset(n: int) -> int:
+    # We need the offset so that it doesn't click on the edge of the element
+    return (n // 2) + random.randint(0, 10)
+
+def __move_mouse(page: ChromiumPage, el: ChromiumElement) -> None:
+    logger = _logger.get_logger()
+    el_location: tuple[int, int] = el.rect.screen_location
+    screen_x, screen_y = el_location
+
+    page_x, page_y = page.rect.page_location
+
+    size: tuple[float, float] = el.rect.size
+    width, height = size
+
+    offset_x = __generate_offset(int(width - 1))
+    offset_y = __generate_offset(int(height - 1))
+    logger.info(
+        f"[__move_mouse] Offset [{offset_x}, {offset_y}]"
+    )
+
+    click_x, click_y = (
+        screen_x + page_x + offset_x,
+        screen_y + page_y + offset_y,
+    )
+    logger.info(
+        f"[__move_mouse] Screen point [{screen_x}, {screen_y}]"
+    )
+    logger.info(
+        f"[__move_mouse] Page point[{page_x}, {page_y}]"
+    )
+    logger.info(
+        f"[__move_mouse] Click point [{click_x}, {click_y}]"
+    )
+    pyautogui.moveTo(
+        click_x, click_y, duration=0.75, tween=pyautogui.easeInElastic
+    )
+    pyautogui.click()
 
 def __is_bypassed(page: ChromiumPage, target_url: str) -> None:
     logger = _logger.get_logger()
@@ -55,18 +99,22 @@ def __bypass_logic(page: ChromiumPage) -> None:
     # sleep to wait for the checkbox to appear
     time.sleep(3)
 
-    actions = page.actions
+    if os.getenv(constants.USING_PY_AUTO_GUI_KEY) == "1":
+        element = page.ele(constants.CF_WRAPPER_XPATH)
+        __move_mouse(page, element)
+    else:
+        actions = page.actions
 
-    # Move mouse to the CF Wrapper
-    actions.move_to(constants.CF_WRAPPER_XPATH, duration=0.75)
+        # Move mouse to the CF Wrapper
+        actions.move_to(constants.CF_WRAPPER_XPATH, duration=0.75)
 
-    # Tries to move 120px to the left
-    # from current position in a human-like manner
-    actions.left(130).wait(0.15, 0.45).right(10)
+        # Tries to move 120px to the left
+        # from current position in a human-like manner
+        actions.left(130).wait(0.15, 0.45).right(10)
 
-    # left click and hold for 
-    # 0.01~0.15 seconds (randomised) before releasing
-    actions.hold().wait(0.01, 0.15).release()
+        # left click and hold for 
+        # 0.01~0.15 seconds (randomised) before releasing
+        actions.hold().wait(0.01, 0.15).release()
 
     # sleep for the cf to verify the click
     time.sleep(4.5)

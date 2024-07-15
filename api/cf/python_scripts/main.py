@@ -7,6 +7,7 @@
 Simple script to bypass CF protection using DrissionPage.
 """
 
+import os
 import pathlib
 import argparse
 
@@ -18,6 +19,7 @@ import parser
 import _logger
 import constants
 
+import pyautogui
 from DrissionPage import (
     errors as drission_errors,
 )
@@ -76,8 +78,8 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
     logger = _logger.get_logger()
 
     virtual_display: bool = args.virtual_display
-    if not constants.IS_UNIX and virtual_display:
-        logger.warning("Virtual display is only supported on unix-like systems, ignoring --virtual-display flag...")
+    if not constants.IS_LINUX and virtual_display:
+        logger.warning("Virtual display is only supported on linux systems, ignoring --virtual-display flag...")
         virtual_display = False
     elif virtual_display and not utils.check_for_xvfb():
         virtual_display = False
@@ -95,6 +97,10 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
     target_url: str = args.target_url
     user_agent: str = args.user_agent
     app_key: str = args.app_key
+    use_mouse: bool = args.use_mouse
+
+    if use_mouse:
+        os.environ[constants.USING_PY_AUTO_GUI_KEY] = "1"
 
     parser.validate_headless(headless)
     parser.validate_url(target_url)
@@ -116,11 +122,16 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
             e.handle_result()
         return
 
-    import pyvirtualdisplay
+    import Xlib.display # type: ignore
+    import pyvirtualdisplay # type: ignore
     try:
+        if not use_mouse:
+            os.environ[constants.USING_PY_AUTO_GUI_KEY] = "1"
+        pyautogui._pyautogui_x11._display = Xlib.display.Display(os.environ["DISPLAY"])
         with pyvirtualdisplay.Display(visible=0, backend="xvfb", size=(constants.WINDOW_SIZE_X, constants.WINDOW_SIZE_Y)):
             __main(
                 browser_path=browser_path,
+                os_name=os_name,
                 user_agent=user_agent,
                 headless=False,
                 target_url=target_url,

@@ -45,6 +45,12 @@ def create_arg_parser() -> argparse.ArgumentParser:
         default="",
     )
     parser.add_argument(
+        "--use-mouse",
+        action="store_true",
+        help="Run the script with mouse movements using pyautogui",
+        default=False,
+    )
+    parser.add_argument(
         "-tc",
         "--test-connection",
         action="store_true",
