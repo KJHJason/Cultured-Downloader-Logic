@@ -166,6 +166,11 @@ func DetectOtherExtDLLink(text, postFolderPath string) bool {
 	return false
 }
 
+func CheckIsArm() bool {
+	return runtime.GOARCH == "arm" || runtime.GOARCH == "arm64" ||
+		runtime.GOARCH == "arm64be" || runtime.GOARCH == "armbe"
+}
+
 var CachedChromeExecPath string
 
 // Mainly from https://github.com/chromedp/chromedp/blob/ebf842c7bc28db77d0bf4d757f5948d769d0866f/allocate.go#L349-L395

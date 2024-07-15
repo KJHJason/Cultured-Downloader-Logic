@@ -33,5 +33,6 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         push: true
+        platforms: linux/amd64,linux/arm64
         file: api/cf/python_scripts/Dockerfile
         tags: ${{ vars.DOCKERHUB_USERNAME }}/cdl-cf:v${{ env.VERSION }}

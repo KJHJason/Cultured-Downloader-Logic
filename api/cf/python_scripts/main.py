@@ -118,7 +118,7 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
 
     import pyvirtualdisplay
     try:
-        with pyvirtualdisplay.Display(visible=0, backend="xvfb", size=(1024, 768)):
+        with pyvirtualdisplay.Display(visible=0, backend="xvfb", size=(constants.WINDOW_SIZE_X, constants.WINDOW_SIZE_Y)):
             __main(
                 browser_path=browser_path,
                 user_agent=user_agent,

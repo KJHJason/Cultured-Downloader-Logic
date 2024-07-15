@@ -1,6 +1,7 @@
 package cf
 
 import (
+	"runtime"
 	"strconv"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -9,32 +10,42 @@ import (
 )
 
 type CfArgs struct {
-	Attempts    int
-	BrowserPath string
-	Headless    bool
-	TargetUrl   string
-	UserAgent   string
+	Attempts       int
+	BrowserPath    string
+	Headless       bool
+	VirtualDisplay bool
+	TargetUrl      string
 }
 
 func (args CfArgs) ParseCmdArgs() []string {
 	cmdArgs := []string{
 		"--log-path", logger.CdlCfLogFilePath,
+		"--os-name", runtime.GOOS,
+		"--user-agent", httpfuncs.DEFAULT_USER_AGENT,
+		// yes, it is hardcoded mainly to make the docker image harder to run
+		"--app-key", "fzN9Hvkb9s+mwPGCDd5YFnLiqKx8WhZfWoZE5nZC",
 	}
 
 	if args.Attempts > 0 {
 		cmdArgs = append(cmdArgs, "--attempts", strconv.Itoa(args.Attempts))
 	}
+
 	if args.BrowserPath != "" {
 		cmdArgs = append(cmdArgs, "--browser-path", args.BrowserPath)
 	}
+
 	if args.Headless {
-		cmdArgs = append(cmdArgs, "--headless")
+		cmdArgs = append(cmdArgs, "--headless", "1")
+	} else {
+		cmdArgs = append(cmdArgs, "--headless", "0")
 	}
+
+	if args.VirtualDisplay {
+		cmdArgs = append(cmdArgs, "--virtual-display")
+	}
+
 	if args.TargetUrl != "" {
 		cmdArgs = append(cmdArgs, "--target-url", args.TargetUrl)
-	}
-	if args.UserAgent != "" {
-		cmdArgs = append(cmdArgs, "-ua", args.UserAgent)
 	}
 	return cmdArgs
 }
@@ -48,8 +59,8 @@ func NewCfArgs(url string) *CfArgs {
 
 func (args *CfArgs) Default() {
 	args.Attempts = 4
-	args.Headless = true
-	args.UserAgent = httpfuncs.DEFAULT_USER_AGENT
+	args.VirtualDisplay = runtime.GOOS == "linux"
+	args.Headless = !args.VirtualDisplay
 
 	browserPath, err := utils.GetChromeExecPath()
 	if err != nil {

@@ -7,7 +7,6 @@ WORKDIR /app
 ENV KJHJASON_CF_DOCKER=1
 ENV KJHJASON_CF_SANDBOX=1
 ENV KJHJASON_CF_ADD_NAV_EXT=1
-ENV KJHJASON_CF_SET_MAX_WINDOW=1
 
 # Install python dependencies
 RUN python -m pip install --upgrade pip

@@ -37,7 +37,7 @@ def check_for_xvfb() -> bool:
     return True
 
 def check_container(app_key: str) -> None | typing.NoReturn:
-    # Mainly just for obfuscation purposes to make it harder to run the script in a container.
+    # Mainly just to make it harder to run the script in a container.
     if constants.IS_DOCKER and app_key != "fzN9Hvkb9s+mwPGCDd5YFnLiqKx8WhZfWoZE5nZC":
         handle_err("Failed to connect to browser...")
         return

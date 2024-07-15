@@ -132,10 +132,10 @@ func TestChromedp(t *testing.T) {
 		checkboxCtx, checkboxCancel := context.WithTimeout(iframeCtx, 3*time.Second)
 		defer checkboxCancel()
 
-		const checkboxSelector = `input[type='checkbox']`
+		const CHECKBOX_SELECTOR = `input[type='checkbox']`
 		err = chromedp.Run(checkboxCtx,
-			chromedp.WaitVisible(checkboxSelector, chromedp.ByQuery),
-			chromedp.Click(checkboxSelector, chromedp.ByQuery),
+			chromedp.WaitVisible(CHECKBOX_SELECTOR, chromedp.ByQuery),
+			chromedp.Click(CHECKBOX_SELECTOR, chromedp.ByQuery),
 		)
 		if err != nil {
 			t.Fatal(err)

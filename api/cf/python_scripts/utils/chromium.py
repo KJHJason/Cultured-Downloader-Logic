@@ -178,6 +178,10 @@ def get_chromium_page(
         "--disable-features=FlashDeprecationWarning,EnablePasswordsAccountStorage",
         "--deny-permission-prompts",
         "--disable-gpu",
+        "--disable-infobars",
+        "--disable-suggestions-ui",
+        "--hide-crash-restore-bubble",
+        f"--window-size={constants.WINDOW_SIZE_X},{constants.WINDOW_SIZE_Y}",
         "--accept-lang=en-US",
     )
     for arg in args:
@@ -201,7 +205,5 @@ def get_chromium_page(
             )
         raise e
 
-    if headless or os.getenv("KJHJASON_CF_SET_MAX_WINDOW") == "1":
-        page.set.window.max()
     atexit.register(__close_chromium_page, page=page)
     return page
