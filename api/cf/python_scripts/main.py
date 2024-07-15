@@ -7,8 +7,6 @@
 Simple script to bypass CF protection using DrissionPage.
 """
 
-import os
-import sys
 import pathlib
 import argparse
 
@@ -16,7 +14,6 @@ import test
 import logic
 import utils
 import _types
-import errors
 import parser
 import _logger
 import constants
@@ -53,15 +50,10 @@ def __main(
         raise e
     else:
         if test_connection:
-            page.quit()
             raise test.Results(success=True)
 
     try:
-        page.listen.start(
-            targets=utils.get_base_url(target_url), 
-            method="GET", 
-            res_type="Document",
-        )
+        utils.start_listener(page, target_url)
         page.get(target_url)
         if logic.bypass_cf(page, attempts, target_url):
             cookies: _types.Cookies = page.cookies(as_dict=False, all_domains=False, all_info=True)
@@ -73,12 +65,8 @@ def __main(
     except Exception as e:
         logger.error(f"An error occurred:\n{e}\n")
         raise e
-    finally:
-        logger.info("Closing browser...")
-        page.listen.stop()
-        page.quit()
 
-def main(args: argparse.Namespace) -> None:
+def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> None:
     log_path_arg: str = args.log_path
     log_path = pathlib.Path(log_path_arg).resolve()
     if not (log_path_dir := log_path.parent).exists():
@@ -144,10 +132,4 @@ def main(args: argparse.Namespace) -> None:
         e.handle_result()
 
 if __name__ == "__main__":
-    try:
-        main(args=parser.create_arg_parser().parse_args())
-    except errors.CfError:
-        sys.exit(1)
-    finally:
-        if os.path.exists(constants.NAVIGATOR_JS_PATH):
-            os.remove(constants.NAVIGATOR_JS_PATH)
+    main()

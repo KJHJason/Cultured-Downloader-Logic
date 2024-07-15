@@ -5,4 +5,6 @@
 @License  : GNU GPL v3
 """
 
-from .utils import *
+from .general import *
+from .chromium import *
+from .errors import *

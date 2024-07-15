@@ -8,9 +8,9 @@
 import typing
 import pathlib
 import argparse
+import functools
 
 import utils
-import errors
 import constants
 
 import validators.url as url_validator
@@ -18,6 +18,7 @@ import validators.url as url_validator
 def parse_bool(s: str) -> bool:
     return s == "1" or s == "true" or s == "True"
 
+@functools.cache
 def create_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="CF Bypass", 
@@ -98,20 +99,20 @@ def create_arg_parser() -> argparse.ArgumentParser:
 
 def validate_headless(headless: bool) -> None | typing.NoReturn:
     if constants.IS_DOCKER and not headless:
-        errors.handle_err("input error: headless mode cannot be used in docker, use --virtual-display or set --headless=false instead")
+        utils.handle_err("input error: headless mode cannot be used in docker, use --virtual-display or set --headless=false instead")
 
 def validate_url(url: str) -> None | typing.NoReturn:
     if not url_validator(url):
-        errors.handle_err(f"input error: invalid url, {url}, provided")
+        utils.handle_err(f"input error: invalid url, {url}, provided")
 
 def validate_browser_path(browser_path_value: str) -> None | typing.NoReturn:
     try:
         browser_path = pathlib.Path(browser_path_value).resolve()
     except TypeError:
-        errors.handle_err(f"input error: invalid browser path, {browser_path}, provided")
+        utils.handle_err(f"input error: invalid browser path, {browser_path}, provided")
 
     if not browser_path.exists():
-        errors.handle_err(f"input error: provided browser path, {browser_path}, does not exist")
+        utils.handle_err(f"input error: provided browser path, {browser_path}, does not exist")
 
     if not browser_path.is_file():
-        errors.handle_err(f"input error: provided browser path, {browser_path}, is not a file")
+        utils.handle_err(f"input error: provided browser path, {browser_path}, is not a file")

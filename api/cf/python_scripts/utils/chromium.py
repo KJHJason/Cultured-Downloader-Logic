@@ -6,17 +6,16 @@
 """
 
 import os
+import atexit
 import shutil
-import typing
-import logging
 import tempfile
-import functools
-import subprocess
 
 import _types
-import errors
 import _logger
 import constants
+from .general import (
+    get_base_url,
+)
 
 import orjson
 from DrissionPage import (
@@ -24,15 +23,6 @@ from DrissionPage import (
     ChromiumOptions,
     errors as drission_errors,
 )
-
-@functools.lru_cache(maxsize=1)
-def get_base_url(url: str) -> str:
-    try:
-        url = url.split("/", maxsplit=3)
-        url = "/".join(url[:3])
-    except IndexError:
-        pass
-    return url
 
 def get_default_chrome_path() -> str:
     match constants.PLATFORM_NAME:
@@ -45,37 +35,6 @@ def get_default_chrome_path() -> str:
         case _:
             raise ValueError("Unsupported OS")
 
-def check_for_xvfb() -> bool:
-    if shutil.which("xvfb-run") is not None:
-        return True
-
-    try:
-        subprocess.run(["Xvfb", "-help"], check=True)
-    except subprocess.CalledProcessError:
-        _logger.get_logger().warning("xvfb-run not found, ignoring --virtual-display flag...")
-        return False
-    return True
-
-def check_container(app_key: str) -> None | typing.NoReturn:
-    # Mainly just for obfuscation purposes to make it harder to run the script in a container.
-    if constants.IS_DOCKER and app_key != "fzN9Hvkb9s+mwPGCDd5YFnLiqKx8WhZfWoZE5nZC":
-        errors.handle_err("Failed to connect to browser...")
-        return
-
-def save_cookies(cookies: _types.Cookies) -> None:
-    logger = _logger.get_logger()
-    logger.info("Saving cookies...")
-    with tempfile.NamedTemporaryFile(mode="w", prefix="kjhjason-cf-", delete=False, delete_on_close=False) as f:
-        serialised_cookies = orjson.dumps(
-            cookies, 
-            option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY,
-        )
-        f.write(serialised_cookies.decode("utf-8"))
-
-        msg = f"cookies saved to {f.name}"
-        print(msg)
-        logger.info(msg)
-
 def get_default_ua() -> str:
     match constants.PLATFORM_NAME:
         case "Linux":
@@ -86,7 +45,53 @@ def get_default_ua() -> str:
             ua_os = "Windows NT 10.0; Win64; x64"
     return f"Mozilla/5.0 ({ua_os}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 
-def edit_navigator_js_with_os_name(os_name: str) -> None:
+def __stop_listener(page: ChromiumPage) -> None:
+    _logger.get_logger().info("Stopping listener...")
+    page.listen.stop()
+
+def start_listener(page: ChromiumPage, target_url: str) -> None:
+    """
+    Start a listener on the specified target URL.
+
+    Mainly used to listen for GET responses that is returning a HTML document from the target URL. 
+
+    Note that `.listen.stop` will be registered with atexit to ensure the listener is stopped so you don't have to manually call `.listen.stop()`.
+
+    Args:
+        page (ChromiumPage): 
+            ChromiumPage object.
+        target_url (str): 
+            Target URL to listen on.
+
+    Returns:
+        None
+    """
+    page.listen.start(
+        targets=get_base_url(target_url), 
+        method="GET", 
+        res_type="Document",
+    )
+    atexit.register(__stop_listener, page=page)
+
+def save_cookies(cookies: _types.Cookies) -> None:
+    logger = _logger.get_logger()
+    logger.info("Saving cookies...")
+    with tempfile.NamedTemporaryFile(mode="w", prefix="kjhjason-cf-", delete=False, delete_on_close=False) as f:
+        serialised_cookies = orjson.dumps(
+            cookies, 
+            option=orjson.OPT_NON_STR_KEYS,
+        )
+        f.write(serialised_cookies.decode("utf-8"))
+
+        msg = f"cookies saved to {f.name}"
+        print(msg)
+        logger.info(msg)
+
+def __remove_navigator_js() -> None:
+    if os.path.exists(constants.NAVIGATOR_JS_PATH):
+        os.remove(constants.NAVIGATOR_JS_PATH)
+
+def __create_navigator_js_with_os_name(os_name: str) -> None:
     if os.path.exists(constants.NAVIGATOR_JS_PATH):
         return
 
@@ -107,7 +112,42 @@ def edit_navigator_js_with_os_name(os_name: str) -> None:
     with open(constants.NAVIGATOR_JS_PATH, "w", encoding="utf-8") as f:
         f.write(navigator_js)
 
-def get_chromium_page(browser_path: str, os_name: str, user_agent: str, headless: bool, no_sandbox: bool = False) -> ChromiumPage:
+def __close_chromium_page(page: ChromiumPage) -> None:
+    _logger.get_logger().info("Closing browser...")
+    page.quit()
+
+def get_chromium_page(
+    browser_path: str, 
+    os_name: str, 
+    user_agent: str, 
+    headless: bool, 
+    no_sandbox: bool = False,
+) -> ChromiumPage:
+    """
+    Get an initialised ChromiumPage object with the specified options.
+
+    Note that `.quit()` will be registered with atexit to ensure the browser is closed so you don't have to manually call `.quit()`.
+
+    Args:
+        browser_path (str): 
+            Path to the browser executable.
+        os_name (str): 
+            OS name to spoof in navigator.platform (should match the user-agent).
+        user_agent (str): 
+            User-agent to use.
+        headless (bool): 
+            Run the browser in headless mode.
+        no_sandbox (bool, optional): 
+            Run the browser with no-sandbox mode. Defaults to False.
+            Use this if running as a non-root user on unix-like systems.
+
+    Returns:
+        ChromiumPage: ChromiumPage object.
+
+    Raises:
+        drission_errors.BrowserConnectError: 
+            If unable to connect to the browser.
+    """
     options = ChromiumOptions()
     options.auto_port()
     options.set_paths(browser_path=browser_path)
@@ -119,8 +159,9 @@ def get_chromium_page(browser_path: str, os_name: str, user_agent: str, headless
         # Otherwise, the browser may have errors trying to launch as root.
         no_sandbox = True
 
+    logger = _logger.get_logger()
     if no_sandbox:
-        logging.info("Running with no-sandbox mode...")
+        logger.info("Running with no-sandbox mode...")
         options.set_argument("--no-sandbox")
 
     args = (
@@ -142,8 +183,9 @@ def get_chromium_page(browser_path: str, os_name: str, user_agent: str, headless
         options.set_argument(arg)
 
     if os.getenv("KJHJASON_CF_ADD_NAV_EXT") == "1" or os_name != constants.PLATFORM_NAME.lower():
-        edit_navigator_js_with_os_name(os_name)
+        __create_navigator_js_with_os_name(os_name)
         options.add_extension(constants.NAVIGATOR_EXT_DIR)
+        atexit.register(__remove_navigator_js)
 
     try:
         page = ChromiumPage(addr_or_opts=options)
@@ -161,4 +203,5 @@ def get_chromium_page(browser_path: str, os_name: str, user_agent: str, headless
 
     if headless or os.getenv("KJHJASON_CF_SET_MAX_WINDOW") == "1":
         page.set.window.max()
+    atexit.register(__close_chromium_page, page=page)
     return page

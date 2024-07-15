@@ -16,6 +16,9 @@ def configure_logger(log_path: str) -> None:
 
     file_handler = logging.FileHandler(log_path, encoding="utf-8")
     file_handler.setLevel(logging.INFO)
+    if file_handler.stream.tell() > 0:
+        # add a newline for better readability
+        file_handler.stream.write("\n")
 
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(formatter)
