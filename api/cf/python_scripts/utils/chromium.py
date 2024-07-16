@@ -15,7 +15,6 @@ import _logger
 import constants
 from .general import (
     get_base_url,
-    reset_mouse_position,
 )
 
 import orjson
@@ -183,15 +182,10 @@ def get_chromium_page(
         "--disable-suggestions-ui",
         "--hide-crash-restore-bubble",
         "--accept-lang=en-US",
+        f"--window-size={constants.WINDOW_SIZE_X},{constants.WINDOW_SIZE_Y}",
     )
     for arg in args:
         options.set_argument(arg)
-
-    if os.getenv(constants.USING_PY_AUTO_GUI_KEY) == "1":
-        options.set_argument("--start-fullscreen")
-        reset_mouse_position()
-    else:
-        options.set_argument(f"--window-size={constants.WINDOW_SIZE_X},{constants.WINDOW_SIZE_Y}")
 
     if os.getenv("KJHJASON_CF_ADD_NAV_EXT") == "1" or os_name != constants.PLATFORM_NAME.lower():
         __create_navigator_js_with_os_name(os_name)

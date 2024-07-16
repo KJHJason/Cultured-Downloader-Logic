@@ -45,12 +45,6 @@ def create_arg_parser() -> argparse.ArgumentParser:
         default="",
     )
     parser.add_argument(
-        "--use-mouse",
-        action="store_true",
-        help="Run the script with mouse movements using pyautogui",
-        default=False,
-    )
-    parser.add_argument(
         "-tc",
         "--test-connection",
         action="store_true",
@@ -103,9 +97,9 @@ def create_arg_parser() -> argparse.ArgumentParser:
     )
     return parser
 
-def validate_headless(headless: bool) -> None | typing.NoReturn:
-    if constants.IS_DOCKER and not headless:
-        utils.handle_err("input error: headless mode cannot be used in docker, use --virtual-display or set --headless=false instead")
+def validate_headless(headless: bool, virtual_display: bool) -> None | typing.NoReturn:
+    if constants.IS_DOCKER and not headless and not virtual_display:
+        utils.handle_err("input error: headless mode cannot be disabled without virtual displays in docker, use --virtual-display or set --headless=1 instead")
 
 def validate_url(url: str) -> None | typing.NoReturn:
     if not url_validator(url):

@@ -17,7 +17,6 @@ IS_DOCKER = os.getenv("KJHJASON_CF_DOCKER") == "1"
 
 WINDOW_SIZE_X = 1920
 WINDOW_SIZE_Y = 1080
-USING_PY_AUTO_GUI_KEY = "USING_PY_AUTO_GUI"
 
 ARGS_BOOLEAN_CHOICE = ("true", "True", "1", "false", "False", "0",)
 OS_CHOICES = ("linux", "darwin", "windows",) # from Golang's runtime.GOOS

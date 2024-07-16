@@ -7,7 +7,6 @@
 Simple script to bypass CF protection using DrissionPage.
 """
 
-import os
 import pathlib
 import argparse
 
@@ -19,7 +18,6 @@ import parser
 import _logger
 import constants
 
-import pyautogui
 from DrissionPage import (
     errors as drission_errors,
 )
@@ -56,7 +54,6 @@ def __main(
 
     try:
         utils.start_listener(page, target_url)
-        page.get(target_url)
         if logic.bypass_cf(page, attempts, target_url):
             cookies: _types.Cookies = page.cookies(as_dict=False, all_domains=False, all_info=True)
             utils.save_cookies(cookies)
@@ -97,12 +94,8 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
     target_url: str = args.target_url
     user_agent: str = args.user_agent
     app_key: str = args.app_key
-    use_mouse: bool = args.use_mouse
 
-    if use_mouse:
-        os.environ[constants.USING_PY_AUTO_GUI_KEY] = "1"
-
-    parser.validate_headless(headless)
+    parser.validate_headless(headless, virtual_display)
     parser.validate_url(target_url)
     parser.validate_browser_path(browser_path)
 
@@ -122,12 +115,8 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
             e.handle_result()
         return
 
-    import Xlib.display # type: ignore
     import pyvirtualdisplay # type: ignore
     try:
-        if not use_mouse:
-            os.environ[constants.USING_PY_AUTO_GUI_KEY] = "1"
-        pyautogui._pyautogui_x11._display = Xlib.display.Display(os.environ["DISPLAY"])
         with pyvirtualdisplay.Display(visible=0, backend="xvfb", size=(constants.WINDOW_SIZE_X, constants.WINDOW_SIZE_Y)):
             __main(
                 browser_path=browser_path,
