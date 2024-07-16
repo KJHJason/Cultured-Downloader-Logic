@@ -5,9 +5,11 @@
 @License  : GNU GPL v3
 """
 
+import io
 import os
 import atexit
 import shutil
+import pathlib
 import tempfile
 
 import _types
@@ -73,19 +75,26 @@ def start_listener(page: ChromiumPage, target_url: str) -> None:
     )
     atexit.register(__stop_listener, page=page)
 
-def save_cookies(cookies: _types.Cookies) -> None:
-    logger = _logger.get_logger()
-    logger.info("Saving cookies...")
-    with tempfile.NamedTemporaryFile(mode="w", prefix="kjhjason-cf-", delete=False, delete_on_close=False) as f:
-        serialised_cookies = orjson.dumps(
-            cookies, 
-            option=orjson.OPT_NON_STR_KEYS,
-        )
-        f.write(serialised_cookies.decode("utf-8"))
+def __save_cookies(cookies: _types.Cookies, f: io.TextIOWrapper | tempfile._TemporaryFileWrapper) -> None:
+    serialised_cookies = orjson.dumps(
+        cookies, 
+        option=orjson.OPT_NON_STR_KEYS,
+    )
+    f.write(serialised_cookies.decode("utf-8"))
 
-        msg = f"cookies saved to {f.name}"
-        print(msg)
-        logger.info(msg)
+    msg = f"cookies saved to {f.name}"
+    print(msg)
+    _logger.get_logger().info(msg)
+
+def save_cookies(cookies: _types.Cookies, cookie_path: pathlib.Path | None) -> None:
+    _logger.get_logger().info("Saving cookies...")
+    if cookie_path is not None:
+        with open(cookie_path, "w", encoding="utf-8") as f:
+            __save_cookies(cookies, f)
+        return
+
+    with tempfile.NamedTemporaryFile(mode="w", prefix="kjhjason-cf-", delete=False, delete_on_close=False) as f:
+        __save_cookies(cookies, f)
 
 @atexit.register
 def __remove_navigator_js() -> None:

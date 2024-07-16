@@ -38,8 +38,8 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		fmt.Sprintf("reCAPTCHA detected for the current %s session! Trying to solve it automatically...", readableSite),
 	)
 
-	configs := captchaOptions.GetConfigs()
-	allocCtx, cancel := api.GetDefaultChromedpAlloc(configs.UserAgent, captchaOptions.GetContext())
+	captchaConfigs := captchaOptions.GetConfigs()
+	allocCtx, cancel := api.GetDefaultChromedpAlloc(captchaConfigs.UserAgent, captchaOptions.GetContext())
 	defer cancel()
 
 	actions := []chromedp.Action{

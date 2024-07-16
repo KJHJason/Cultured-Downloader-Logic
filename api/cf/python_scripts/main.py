@@ -23,6 +23,7 @@ from DrissionPage import (
 )
 
 def __main(
+    cookie_path: pathlib.Path | None,
     browser_path: str, 
     os_name: str,
     user_agent: str, 
@@ -56,7 +57,7 @@ def __main(
         utils.start_listener(page, target_url)
         if logic.bypass_cf(page, attempts, target_url):
             cookies: _types.Cookies = page.cookies(as_dict=False, all_domains=False, all_info=True)
-            utils.save_cookies(cookies)
+            utils.save_cookies(cookies, cookie_path)
         else:
             logger.error("Failed to bypass CF protection, max attempts reached...")
     except KeyboardInterrupt:
@@ -67,9 +68,18 @@ def __main(
 
 def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> None:
     log_path_arg: str = args.log_path
+    log_path_arg = log_path_arg.strip()
     log_path = pathlib.Path(log_path_arg).resolve()
     if not (log_path_dir := log_path.parent).exists():
         log_path_dir.mkdir(parents=True)
+
+    cookie_path_arg: str = args.cookie_path
+    cookie_path_arg = cookie_path_arg.strip()
+    cookie_path: pathlib.Path | None = None
+    if cookie_path_arg != "":
+        cookie_path = pathlib.Path(cookie_path_arg).resolve()
+        if not (cookie_path_dir := cookie_path.parent).exists():
+            cookie_path_dir.mkdir(parents=True)
 
     _logger.configure_logger(log_path)
     logger = _logger.get_logger()
@@ -102,6 +112,7 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
     if not virtual_display:
         try:
             __main(
+                cookie_path=cookie_path,
                 browser_path=browser_path,
                 os_name=os_name,
                 user_agent=user_agent,
@@ -119,6 +130,7 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
     try:
         with pyvirtualdisplay.Display(visible=0, backend="xvfb", size=(constants.WINDOW_SIZE_X, constants.WINDOW_SIZE_Y)):
             __main(
+                cookie_path=cookie_path,
                 browser_path=browser_path,
                 os_name=os_name,
                 user_agent=user_agent,

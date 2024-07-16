@@ -64,6 +64,8 @@ func CallScript(args *CfArgs) (Cookies, error) {
 	}
 
 	parsedCfArgs := args.ParseCmdArgs()
+	parsedCfArgs = AddDefaultLogPath(parsedCfArgs)
+
 	cmdArgs := make([]string, 0, len(parsedCfArgs)+1)
 	cmdArgs = append(cmdArgs, cfPyPath)
 	cmdArgs = append(cmdArgs, parsedCfArgs...)

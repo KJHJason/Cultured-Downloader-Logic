@@ -19,11 +19,7 @@ type CfArgs struct {
 
 func (args CfArgs) ParseCmdArgs() []string {
 	cmdArgs := []string{
-		"--log-path", logger.CdlCfLogFilePath,
-		"--os-name", runtime.GOOS,
 		"--user-agent", httpfuncs.DEFAULT_USER_AGENT,
-		// yes, it is hardcoded mainly to make the docker image harder to run
-		"--app-key", "fzN9Hvkb9s+mwPGCDd5YFnLiqKx8WhZfWoZE5nZC",
 	}
 
 	if args.Attempts > 0 {
@@ -48,6 +44,10 @@ func (args CfArgs) ParseCmdArgs() []string {
 		cmdArgs = append(cmdArgs, "--target-url", args.TargetUrl)
 	}
 	return cmdArgs
+}
+
+func AddDefaultLogPath(cmdArgs []string) []string {
+	return append(cmdArgs, "--log-path", logger.CdlCfLogFilePath)
 }
 
 func NewCfArgs(url string) *CfArgs {

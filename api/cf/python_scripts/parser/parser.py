@@ -70,6 +70,12 @@ def create_arg_parser() -> argparse.ArgumentParser:
         default=f"cf-{constants.__version__}.log",
     )
     parser.add_argument(
+        "--cookie-path",
+        type=str,
+        help="Path to save the cookies JSON file (Defaults to your temp directory)",
+        default=""
+    )
+    parser.add_argument(
         "--browser-path", 
         type=str, 
         help="Path to the Google Chrome browser executable", 

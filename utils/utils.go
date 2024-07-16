@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -278,4 +279,15 @@ func CheckPrerequisites(panicHandler func(msg string)) {
 			)
 		}
 	}
+}
+
+func GenerateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const charsetLen = len(charset)
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.IntN(charsetLen)]
+	}
+	return string(b)
 }
