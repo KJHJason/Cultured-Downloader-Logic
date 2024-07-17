@@ -107,7 +107,11 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
 
     parser.validate_headless(headless, virtual_display)
     parser.validate_url(target_url)
-    parser.validate_browser_path(browser_path)
+
+    if constants.IS_DOCKER and browser_path != (default_browser_path := utils.get_default_chrome_path()):
+        browser_path = default_browser_path
+    else:
+        parser.validate_browser_path(browser_path)
 
     if not virtual_display:
         try:

@@ -113,3 +113,13 @@ func RemoveContainer(ctx context.Context, cli *client.Client, containerId string
 	}
 	return cli.ContainerRemove(ctx, containerId, options)
 }
+
+func WaitForContainer(ctx context.Context, cli *client.Client, containerId string) (*container.WaitResponse, error) {
+	statusCh, errCh := cli.ContainerWait(ctx, containerId, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		return nil, err
+	case waitRes := <-statusCh:
+		return &waitRes, nil
+	}
+}

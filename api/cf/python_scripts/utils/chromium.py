@@ -11,6 +11,7 @@ import atexit
 import shutil
 import pathlib
 import tempfile
+import functools
 
 import _types
 import _logger
@@ -26,6 +27,7 @@ from DrissionPage import (
     errors as drission_errors,
 )
 
+@functools.cache
 def get_default_chrome_path() -> str:
     match constants.PLATFORM_NAME:
         case "Linux":

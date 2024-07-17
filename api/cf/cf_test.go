@@ -17,8 +17,8 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// go test -v -run ^TestInitFiles$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
-func TestInitFiles(t *testing.T) {
+// go test -v -run ^TestInitPyFiles$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
+func TestInitPyFiles(t *testing.T) {
 	t.Log("Initialising Python files")
 	InitFiles()
 }
@@ -32,6 +32,16 @@ func TestPyScript(t *testing.T) {
 	t.Log("Calling Cloudflare solver script...")
 	args := NewCfArgs(website)
 	cookies, err := CallScript(args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Cookies: %v", cookies)
+}
+
+func TestDockerImage(t *testing.T) {
+	website := "https://nopecha.com/demo/cloudflare"
+	args := NewCfArgs(website)
+	cookies, err := CallCfDockerImage(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}

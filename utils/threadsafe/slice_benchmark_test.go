@@ -6,45 +6,47 @@ import (
 )
 
 func BenchmarkThreadsafeSliceBig(b *testing.B) {
-	elLen := 1_000_000
 	for range b.N {
-		threadSafeSliceBenchmarkLogic(elLen)
+		threadSafeSliceBenchmarkLogic(getBigN())
 	}
 }
 
 func BenchmarkThreadsafeSliceWithCapBig(b *testing.B) {
-	elLen := 1_000_000
 	for range b.N {
-		threadSafeSliceWithCapBenchmarkLogic(elLen)
+		threadSafeSliceWithCapBenchmarkLogic(getBigN())
 	}
 }
 
 func BenchmarkBufferedChannelBig(b *testing.B) {
-	elLen := 1_000_000
 	for range b.N {
-		bufferedChannelBenchmarkLogic(elLen)
+		bufferedChannelBenchmarkLogic(getBigN())
 	}
 }
 
 func BenchmarkThreadsafeSliceSmall(b *testing.B) {
-	elLen := 100
 	for range b.N {
-		threadSafeSliceBenchmarkLogic(elLen)
+		threadSafeSliceBenchmarkLogic(getSmallN())
 	}
 }
 
 func BenchmarkThreadsafeSliceWithCapSmall(b *testing.B) {
-	elLen := 100
 	for range b.N {
-		threadSafeSliceWithCapBenchmarkLogic(elLen)
+		threadSafeSliceWithCapBenchmarkLogic(getSmallN())
 	}
 }
 
 func BenchmarkBufferedChannelSmall(b *testing.B) {
-	elLen := 100
 	for range b.N {
-		bufferedChannelBenchmarkLogic(elLen)
+		bufferedChannelBenchmarkLogic(getSmallN())
 	}
+}
+
+func getSmallN() int {
+	return 100
+}
+
+func getBigN() int {
+	return 1_000_000
 }
 
 func threadSafeSliceBenchmarkLogic(elLen int) {

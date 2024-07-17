@@ -50,11 +50,11 @@ func AddDefaultLogPath(cmdArgs []string) []string {
 	return append(cmdArgs, "--log-path", logger.CdlCfLogFilePath)
 }
 
-func NewCfArgs(url string) *CfArgs {
+func NewCfArgs(url string) CfArgs {
 	cfArgs := CfArgs{}
 	cfArgs.Default()
 	cfArgs.SetTargetUrl(url)
-	return &cfArgs
+	return cfArgs
 }
 
 func (args *CfArgs) Default() {
