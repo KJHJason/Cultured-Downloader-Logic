@@ -52,12 +52,12 @@ func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOption
 		)
 	}
 
-	if res.StatusCode != 200 {
+	if res.Resp.StatusCode != 200 {
 		return nil, "", fmt.Errorf(
 			"pixiv fanbox error %d: failed to get post details for %s due to a %s response",
 			cdlerrors.CONNECTION_ERROR,
 			url,
-			res.Status,
+			res.Resp.Status,
 		)
 	}
 
@@ -65,7 +65,7 @@ func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOption
 		cacheKey = database.ParsePostKey(cacheKey, constants.PIXIV_FANBOX)
 		database.CachePostViaBatch(cacheKey)
 	}
-	return res, cacheKey, nil
+	return res.Resp, cacheKey, nil
 }
 
 type urlsChanVal struct {
@@ -202,7 +202,7 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 			Context:   dlOptions.GetContext(),
 		},
 	)
-	if err != nil || res.StatusCode != 200 {
+	if err != nil || res.Resp.StatusCode != 200 {
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return nil, err
@@ -215,20 +215,20 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 				err,
 			)
 		} else {
-			res.Body.Close()
+			res.Close()
 			err = fmt.Errorf(
 				"%s %d: failed to get creator's posts for %s due to %s response",
 				"pixiv fanbox error",
 				cdlerrors.RESPONSE_ERROR,
 				creatorId,
-				res.Status,
+				res.Resp.Status,
 			)
 		}
 		return nil, err
 	}
 
 	var resJson CreatorPaginatedPostsJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &resJson); err != nil {
 		return nil, err
 	}
 	return resJson.Body, nil
@@ -252,9 +252,9 @@ func getFanboxPostsLogic(reqUrl string, headers map[string]string, dlOptions *Pi
 			Context:   dlOptions.GetContext(),
 		},
 	)
-	if err != nil || res.StatusCode != 200 {
+	if err != nil || res.Resp.StatusCode != 200 {
 		if err == nil {
-			res.Body.Close()
+			res.Close()
 		}
 		if !errors.Is(err, context.Canceled) {
 			logger.LogError(
@@ -270,7 +270,7 @@ func getFanboxPostsLogic(reqUrl string, headers map[string]string, dlOptions *Pi
 	}
 
 	var resJson *FanboxCreatorPostsJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &resJson); err != nil {
 		return &resStruct{err: err}
 	}
 	return &resStruct{json: resJson}

@@ -167,9 +167,15 @@ func DetectOtherExtDLLink(text, postFolderPath string) bool {
 	return false
 }
 
-func CheckIsArm() bool {
-	return runtime.GOARCH == "arm" || runtime.GOARCH == "arm64" ||
-		runtime.GOARCH == "arm64be" || runtime.GOARCH == "armbe"
+func GenerateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const charsetLen = len(charset)
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.IntN(charsetLen)]
+	}
+	return string(b)
 }
 
 var CachedChromeExecPath string
@@ -222,72 +228,4 @@ func GetChromeExecPath() (string, error) {
 		}
 	}
 	return "", cdlerrors.ErrChromeNotFound
-}
-
-func checkPythonExec() bool {
-	_, err := exec.LookPath("python")
-	return err == nil
-}
-
-func checkDockerExec() bool {
-	_, err := exec.LookPath("docker")
-	return err == nil
-}
-
-func checkDockerDaemonIsRunning() bool {
-	cmd := exec.Command("docker", "version")
-	PrepareCmdForBgTask(cmd)
-	return cmd.Run() == nil
-}
-
-func CheckPrerequisites(panicHandler func(msg string)) {
-	if _, err := GetChromeExecPath(); err != nil {
-		panicHandler(
-			fmt.Sprintf(
-				"error %d: Google Chrome executable not found, please install Google Chrome or set the CHROME_EXECUTABLE environment variable",
-				cdlerrors.STARTUP_ERROR,
-			),
-		)
-	}
-
-	useDockerArg := os.Getenv("CDL_CF_USE_DOCKER")
-	useDocker := useDockerArg == "1" || useDockerArg == "true"
-	if runtime.GOOS == "linux" && !useDocker {
-		if !checkPythonExec() {
-			panicHandler(
-				fmt.Sprintf(
-					"error %d: Python executable not found, please install Python and ensure it's in the PATH environment variable",
-					cdlerrors.STARTUP_ERROR,
-				),
-			)
-		}
-	} else {
-		if !checkDockerExec() {
-			panicHandler(
-				fmt.Sprintf(
-					"error %d: Docker executable not found, please install Docker and ensure it's in the PATH environment variable",
-					cdlerrors.STARTUP_ERROR,
-				),
-			)
-		}
-		if !checkDockerDaemonIsRunning() {
-			panicHandler(
-				fmt.Sprintf(
-					"error %d: Docker is not running, please start Docker daemon",
-					cdlerrors.STARTUP_ERROR,
-				),
-			)
-		}
-	}
-}
-
-func GenerateRandomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	const charsetLen = len(charset)
-
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[rand.IntN(charsetLen)]
-	}
-	return string(b)
 }

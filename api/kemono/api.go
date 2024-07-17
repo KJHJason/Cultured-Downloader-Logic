@@ -101,7 +101,7 @@ func getCreatorName(service, userId string, dlOptions *KemonoDlOptions) (string,
 		return userId, err
 	}
 
-	creatorName, err := parseCreatorHtmlAndGetName(res, url)
+	creatorName, err := parseCreatorHtmlAndGetName(res.Resp, url)
 	if err != nil {
 		return userId, err
 	}
@@ -150,7 +150,7 @@ func getPostDetails(post *KemonoPostToDl, dlOptions *KemonoDlOptions) ([]*httpfu
 
 	// https://github.com/KJHJason/Cultured-Downloader-CLI/commit/e8d05e4a8e1db05d721964a93d933ca2504d0e1f
 	var resJson MainKemonoJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &resJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -288,7 +288,7 @@ func getCreatorPosts(creator *KemonoCreatorToDl, dlOptions *KemonoDlOptions) ([]
 		}
 
 		var resJson KemonoJson
-		if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
+		if err := httpfuncs.LoadJsonFromResponse(res.Resp, &resJson); err != nil {
 			return nil, nil, err
 		}
 
@@ -406,7 +406,7 @@ func GetFavourites(dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*http
 	}
 
 	var creatorResJson KemonoFavCreatorJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &creatorResJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &creatorResJson); err != nil {
 		return nil, nil, []error{err}
 	}
 	artistToDl := processFavCreator(creatorResJson)
@@ -420,7 +420,7 @@ func GetFavourites(dlOptions *KemonoDlOptions) ([]*httpfuncs.ToDownload, []*http
 	}
 
 	var postResJson KemonoJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &postResJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &postResJson); err != nil {
 		return nil, nil, []error{err}
 	}
 	urlsToDownload, gdriveLinks := processMultipleJson(postResJson, dlOptions)

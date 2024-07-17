@@ -13,8 +13,9 @@ import (
 )
 
 const (
+	VERSION           = "v0.1.0"
 	CF_DIR_PREFIX     = "kjhjason-cdl-cf"
-	CF_DIR_NAME       = CF_DIR_PREFIX + "-v0.1.0"
+	CF_DIR_NAME       = CF_DIR_PREFIX + "-" + VERSION
 	EMBEDDED_DIR_NAME = "python_scripts"
 )
 

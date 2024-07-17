@@ -89,7 +89,7 @@ func VerifyOAuthCode(code, codeVerifier string, timeout int) (string, error) {
 	}
 
 	var oauthJson OauthFlowJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &oauthJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &oauthJson); err != nil {
 		return "", err
 	}
 	return oauthJson.RefreshToken, nil
@@ -123,14 +123,14 @@ func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (
 			"refresh_token":  refreshToken,
 		},
 	)
-	if err != nil || res.StatusCode != 200 {
+	if err != nil || res.Resp.StatusCode != 200 {
 		if err == nil {
-			res.Body.Close()
+			res.Close()
 			err = fmt.Errorf(
 				"pixiv mobile error %d: failed to refresh token due to %s response from Pixiv\n"+
 					"Please check your refresh token and try again or use the \"-pixiv_start_oauth\" flag to get a new refresh token",
 				cdlerrors.RESPONSE_ERROR,
-				res.Status,
+				res.Resp.Status,
 			)
 		} else {
 			if errors.Is(err, context.Canceled) {
@@ -148,7 +148,7 @@ func RefreshAccessToken(ctx context.Context, timeout int, refreshToken string) (
 	}
 
 	var oauthJson OauthJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &oauthJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &oauthJson); err != nil {
 		return OAuthTokenInfo{}, nil, err
 	}
 

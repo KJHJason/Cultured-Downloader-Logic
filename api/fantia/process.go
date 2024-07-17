@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -135,23 +134,17 @@ func parseDateStrToDateTime(dateStr string) time.Time {
 
 // Process the JSON response from Fantia's API and
 // returns a slice of urls and a slice of gdrive urls to download from
-func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
-	// processes a fantia post
-	// returns a map containing the post id and the url to download the file from
-	var postJson FantiaPost
-	if err := httpfuncs.LoadJsonFromResponse(res, &postJson); err != nil {
+func processFantiaPost(res *httpfuncs.ResponseWrapper, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+	respBody, err := res.GetBody()
+	if err != nil {
 		return nil, nil, err
 	}
 
-	if postJson.Redirect != "" {
-		if postJson.Redirect != "/recaptcha" {
-			return nil, nil, fmt.Errorf(
-				"fantia error %d: unknown redirect url, %q",
-				cdlerrors.UNEXPECTED_ERROR,
-				postJson.Redirect,
-			)
-		}
-		return nil, nil, cdlerrors.ErrRecaptcha
+	// processes a fantia post
+	// returns a map containing the post id and the url to download the file from
+	var postJson FantiaPost
+	if err := httpfuncs.LoadJsonFromBytes(res.Url(), respBody, &postJson); err != nil {
+		return nil, nil, err
 	}
 
 	post := postJson.Post
@@ -213,10 +206,10 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 }
 
 type processIllustArgs struct {
-	res        *http.Response
-	postId     string
-	postIdsLen int
-	msgSuffix  string
+	respWrapper *httpfuncs.ResponseWrapper
+	postId      string
+	postIdsLen  int
+	msgSuffix   string
 }
 
 // Process the JSON response to get the urls to download
@@ -248,13 +241,10 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 	defer progress.SnapshotTask()
 
 	urlsToDownload, gdriveLinks, err := processFantiaPost(
-		illustArgs.res,
+		illustArgs.respWrapper,
 		dlOptions,
 	)
 	if err != nil {
-		if errors.Is(err, cdlerrors.ErrRecaptcha) {
-			progress.UpdateErrorMsg(constants.ERR_RECAPTCHA_STR)
-		}
 		progress.Stop(true)
 		return nil, nil, err
 	}
@@ -263,11 +253,18 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 }
 
 func getAndProcessProductPaidContent(purchaseRelativeUrl, productId string, dlOptions *FantiaDlOptions) ([]string, error) {
-	res, err := getFantiaProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
+	respWrapper, err := getFantiaProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
+	defer respWrapper.Close()
 	if err != nil {
 		return nil, err
 	}
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+
+	respBody, err := respWrapper.GetBodyReader()
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(respBody)
 	if err != nil {
 		err = fmt.Errorf(
 			"fantia error %d: failed to parse response body when getting paid content from Fantia: %w",
@@ -413,9 +410,14 @@ func getProductDetails(productId string, doc *goquery.Document) (productName str
 
 // Note: response body is closed in this function
 // errors returned are usually due to parsing error or context cancellation
-func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, res *http.Response) ([]*httpfuncs.ToDownload, error) {
-	defer res.Body.Close()
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, respWrapper *httpfuncs.ResponseWrapper) ([]*httpfuncs.ToDownload, error) {
+	defer respWrapper.Close()
+	respBody, err := respWrapper.GetBodyReader()
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(respBody)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"fantia error %d: failed to parse response body when getting product page from Fantia: %w",

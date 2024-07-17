@@ -122,10 +122,10 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 	if err != nil {
 		return false, fmt.Errorf("error occurred when trying to verify cookie...\n%w", err)
 	}
-	resp.Body.Close()
+	resp.Close()
 
 	// check if the cookie is valid
-	resUrl := resp.Request.URL.String()
+	resUrl := resp.Url()
 	if website == constants.FANTIA && strings.HasPrefix(resUrl, constants.FANTIA_RECAPTCHA_URL) {
 		// This would still mean that the cookie is still valid.
 		return true, nil

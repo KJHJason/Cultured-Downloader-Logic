@@ -21,7 +21,7 @@ import (
 
 const (
 	CONTAINER_NAME = "cdl-cf"
-	IMAGE_NAME     = "kjhjason/" + CONTAINER_NAME + ":v0.1.0"
+	IMAGE_NAME     = "kjhjason/" + CONTAINER_NAME + ":" + VERSION
 )
 
 func createCfContainer(ctx context.Context, cli *client.Client, createConfig *utils.ContainerConfigs) (string, error) {
@@ -45,7 +45,7 @@ func pullAndCreateCfDockerImage(ctx context.Context, cli *client.Client, createC
 	return createCfContainer(ctx, cli, createConfig)
 }
 
-func CallCfDockerImage(ctx context.Context, args CfArgs) (Cookies, error) {
+func CallDockerImage(ctx context.Context, args CfArgs) (Cookies, error) {
 	cli, err := utils.GetDefaultClient()
 	if err != nil {
 		return nil, err
@@ -54,10 +54,6 @@ func CallCfDockerImage(ctx context.Context, args CfArgs) (Cookies, error) {
 	cdlCfTempDir, err := os.MkdirTemp("", "cdl-cf-")
 	if err != nil {
 		return nil, err
-	}
-	cdlCfTempUnixDirPath := cdlCfTempDir
-	if runtime.GOOS == "windows" {
-		cdlCfTempUnixDirPath = filepath.ToSlash(cdlCfTempUnixDirPath)
 	}
 
 	cdlCfLogFilePath := logger.CdlCfLogFilePath

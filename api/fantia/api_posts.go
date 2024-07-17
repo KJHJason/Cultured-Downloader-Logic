@@ -3,7 +3,6 @@ package fantia
 import (
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
@@ -18,7 +17,7 @@ type fantiaPostArgs struct {
 	url       string
 }
 
-func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (*http.Response, error) {
+func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (*httpfuncs.ResponseWrapper, error) {
 	// Now that we have the post ID, we can query Fantia's API
 	// to get the post's contents from the JSON response.
 	progress := dlOptions.Base.MainProgBar()
@@ -56,20 +55,22 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, true)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:    "GET",
-			Url:       postApiUrl,
-			Cookies:   dlOptions.Base.SessionCookies,
-			Headers:   header,
-			Http2:     !useHttp3,
-			Http3:     useHttp3,
-			UserAgent: dlOptions.Base.Configs.UserAgent,
-			Context:   dlOptions.GetContext(),
+			Method:         "GET",
+			Url:            postApiUrl,
+			Cookies:        dlOptions.Base.SessionCookies,
+			Headers:        header,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			UserAgent:      dlOptions.Base.Configs.UserAgent,
+			Context:        dlOptions.GetContext(),
+			CaptchaCheck:   CaptchaChecker,
+			CaptchaHandler: newCaptchaHandler(dlOptions),
 		},
 	)
-	if err != nil || res.StatusCode != 200 {
+	if err != nil || res.Resp.StatusCode != 200 {
 		errCode := cdlerrors.CONNECTION_ERROR
 		if err == nil {
-			errCode = res.StatusCode
+			errCode = res.Resp.StatusCode
 		}
 
 		errMsg := fmt.Sprintf(
@@ -111,7 +112,7 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 		cacheKey = database.ParsePostKey(url, constants.FANTIA)
 	}
 
-	res, err := getFantiaPostDetails(
+	respWrapper, err := getFantiaPostDetails(
 		&fantiaPostArgs{
 			msgSuffix: msgSuffix,
 			postId:    postId,
@@ -125,23 +126,14 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 
 	urlsToDownload, postGdriveUrls, err := processIllustDetailApiRes(
 		&processIllustArgs{
-			res:        res,
-			postId:     postId,
-			postIdsLen: maxCount,
-			msgSuffix:  msgSuffix,
+			respWrapper: respWrapper,
+			postId:      postId,
+			postIdsLen:  maxCount,
+			msgSuffix:   msgSuffix,
 		},
 		dlOptions,
 	)
-	if errors.Is(err, cdlerrors.ErrRecaptcha) {
-		err = SolveCaptcha(dlOptions)
-		if err != nil {
-			// stop the download if the captcha auto-solving fails
-			dlOptions.CancelCtx()
-			return false, nil, []error{err}
-		}
-
-		return DlFantiaPost(count, maxCount, postId, dlOptions)
-	} else if err != nil {
+	if err != nil {
 		return false, nil, []error{err}
 	}
 

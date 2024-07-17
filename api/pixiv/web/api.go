@@ -34,19 +34,19 @@ func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*
 		)
 	}
 
-	if artworkDetailsRes.StatusCode != 200 {
-		artworkDetailsRes.Body.Close()
+	if artworkDetailsRes.Resp.StatusCode != 200 {
+		artworkDetailsRes.Close()
 		return nil, fmt.Errorf(
 			"pixiv web error %d: failed to get details for artwork ID %s due to %s response from %s",
 			cdlerrors.RESPONSE_ERROR,
 			artworkId,
-			artworkDetailsRes.Status,
+			artworkDetailsRes.Resp.Status,
 			reqArgs.Url,
 		)
 	}
 
 	var artworkDetailsJsonRes ArtworkDetails
-	if err := httpfuncs.LoadJsonFromResponse(artworkDetailsRes, &artworkDetailsJsonRes); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(artworkDetailsRes.Resp, &artworkDetailsJsonRes); err != nil {
 		return nil, fmt.Errorf(
 			"%w\ndetails: failed to read response body for Pixiv artwork ID %s",
 			err,
@@ -78,17 +78,17 @@ func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpf
 		)
 	}
 
-	if artworkUrlsRes.StatusCode != 200 {
-		artworkUrlsRes.Body.Close()
+	if artworkUrlsRes.Resp.StatusCode != 200 {
+		artworkUrlsRes.Close()
 		return nil, fmt.Errorf(
 			"pixiv web error %d: failed to get artwork URLs for ID %s due to %s response from %s",
 			cdlerrors.RESPONSE_ERROR,
 			artworkId,
-			artworkUrlsRes.Status,
+			artworkUrlsRes.Resp.Status,
 			url,
 		)
 	}
-	return artworkUrlsRes, nil
+	return artworkUrlsRes.Resp, nil
 }
 
 // Retrieves details of an artwork ID and returns
@@ -267,18 +267,18 @@ func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions)
 			err,
 		)
 	}
-	if res.StatusCode != 200 {
-		res.Body.Close()
+	if res.Resp.StatusCode != 200 {
+		res.Close()
 		return nil, fmt.Errorf(
 			"pixiv web error %d: failed to get illustrator's posts with an ID of %s due to %s response",
 			cdlerrors.RESPONSE_ERROR,
 			illustratorId,
-			res.Status,
+			res.Resp.Status,
 		)
 	}
 
 	var jsonBody IllustratorJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &jsonBody); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &jsonBody); err != nil {
 		return nil, err
 	}
 	artworkIds, err := processIllustratorPostJson(&jsonBody, pageNum, dlOptions)
@@ -379,7 +379,7 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 			continue
 		}
 
-		tagArtworkIds, err := processTagJsonResults(res)
+		tagArtworkIds, err := processTagJsonResults(res.Resp)
 		if err != nil {
 			errSlice = append(errSlice, err)
 			continue

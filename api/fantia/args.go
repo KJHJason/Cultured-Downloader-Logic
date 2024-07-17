@@ -142,13 +142,15 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:      "GET",
-			Url:         "https://fantia.jp/",
-			Cookies:     f.Base.SessionCookies,
-			Http2:       !useHttp3,
-			Http3:       useHttp3,
-			CheckStatus: true,
-			UserAgent:   userAgent,
+			Method:         "GET",
+			Url:            "https://fantia.jp/",
+			Cookies:        f.Base.SessionCookies,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			CheckStatus:    true,
+			UserAgent:      userAgent,
+			CaptchaCheck:   CaptchaChecker,
+			CaptchaHandler: newCaptchaHandler(f),
 		},
 	)
 	if err != nil {
@@ -159,8 +161,8 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 		)
 	}
 
-	defer res.Body.Close()
-	if res.StatusCode != 200 {
+	defer res.Close()
+	if res.Resp.StatusCode != 200 {
 		return fmt.Errorf(
 			"fantia error %d, failed to get CSRF token from Fantia: %w",
 			cdlerrors.RESPONSE_ERROR,
@@ -169,7 +171,11 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	}
 
 	// parse the response
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+	respBody, err := res.GetBodyReader()
+	if err != nil {
+		return err
+	}
+	doc, err := goquery.NewDocumentFromReader(respBody)
 	if err != nil {
 		return fmt.Errorf(
 			"fantia error %d, failed to parse response body when getting CSRF token from Fantia: %w",

@@ -23,6 +23,10 @@ type FantiaContent struct {
 	Filename    string `json:"filename"`
 }
 
+type CaptchaResponse struct {
+	Redirect string `json:"redirect"` // if get flagged by the system, it will redirect to this recaptcha url
+}
+
 type FantiaPost struct {
 	Post struct {
 		ID       int    `json:"id"`
@@ -41,7 +45,7 @@ type FantiaPost struct {
 		Status       string          `json:"status"`
 		PostContents []FantiaContent `json:"post_contents"`
 	} `json:"post"`
-	Redirect string `json:"redirect"` // if get flagged by the system, it will redirect to this recaptcha url
+	// Redirect string `json:"redirect"`
 }
 
 // found in the head HTML tag.

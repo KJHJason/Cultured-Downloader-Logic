@@ -97,7 +97,7 @@ func (pixiv *PixivMobile) getHeaders(additional map[string]string) map[string]st
 // Sends a request to the Pixiv API and refreshes the access token if required
 //
 // Returns the JSON interface and errors if any
-func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*http.Response, error) {
+func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*httpfuncs.ResponseWrapper, error) {
 	if reqArgs.Method == "" {
 		reqArgs.Method = "GET"
 	}
@@ -143,22 +143,20 @@ func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*http.Res
 				continue
 			}
 			if res.StatusCode == 200 || !reqArgs.CheckStatus {
-				return res, nil
+				return httpfuncs.NewResponseWrapper(res), nil
 			}
 			retryCount++
-			goto retry
+		} else {
+			httpfuncs.Http2FallbackLogic(
+				&isUsingHttp3,
+				&failedHttp3Req,
+				&retryCount,
+				err,
+				reqArgs,
+				client,
+			)
 		}
 
-		httpfuncs.Http2FallbackLogic(
-			&isUsingHttp3,
-			&failedHttp3Req,
-			&retryCount,
-			err,
-			reqArgs,
-			client,
-		)
-
-	retry:
 		time.Sleep(httpfuncs.GetDefaultRandomDelay())
 	}
 	return nil, fmt.Errorf(

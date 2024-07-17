@@ -31,7 +31,7 @@ func TestPyScript(t *testing.T) {
 
 	t.Log("Calling Cloudflare solver script...")
 	args := NewCfArgs(website)
-	cookies, err := CallScript(args)
+	cookies, err := CallPyScript(args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,40 +41,41 @@ func TestPyScript(t *testing.T) {
 func TestDockerImage(t *testing.T) {
 	website := "https://nopecha.com/demo/cloudflare"
 	args := NewCfArgs(website)
-	cookies, err := CallCfDockerImage(context.Background(), args)
+	cookies, err := CallDockerImage(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Cookies: %v", cookies)
 }
 
-func hasBypassed(website string, ctx context.Context) (bool, error) {
-	if website == "https://www.fanbox.cc/" {
-		// Fanbox has custom Cloudflare page
-		anchorCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-		defer cancel()
-
-		var nodes []*cdp.Node // check if the page has <a href="/"> in the html content
-		if err := chromedp.Nodes(`//a[@href="/"]`, &nodes).Do(anchorCtx); err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				return false, nil
-			}
-			return false, fmt.Errorf("CF Solver - failed to get nodes: %w", err)
-		}
-		return len(nodes) == 1, nil
-	}
-
-	// Note: this won't work for custom Cloudflare pages
-	var title string
-	if err := chromedp.Run(ctx, chromedp.Title(&title)); err != nil {
-		return false, fmt.Errorf("CF Solver - failed to get title: %w", err)
-	}
-	return !strings.Contains(strings.ToLower(title), "just a moment"), nil
-}
-
 // go test -v -run ^DemoChromedp$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
 // Doesn't work as it is detected by Cloudflare as a webdriver
+// and Cloudlfare have encapsulated the iframe with multiple closed shadow-root
 func TestChromedp(t *testing.T) {
+	hasBypassed := func(website string, ctx context.Context) (bool, error) {
+		if website == "https://www.fanbox.cc/" {
+			// Fanbox has custom Cloudflare page
+			anchorCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			defer cancel()
+
+			var nodes []*cdp.Node // check if the page has <a href="/"> in the html content
+			if err := chromedp.Nodes(`//a[@href="/"]`, &nodes).Do(anchorCtx); err != nil {
+				if errors.Is(err, context.DeadlineExceeded) {
+					return false, nil
+				}
+				return false, fmt.Errorf("CF Solver - failed to get nodes: %w", err)
+			}
+			return len(nodes) == 1, nil
+		}
+
+		// Note: this won't work for custom Cloudflare pages
+		var title string
+		if err := chromedp.Run(ctx, chromedp.Title(&title)); err != nil {
+			return false, fmt.Errorf("CF Solver - failed to get title: %w", err)
+		}
+		return !strings.Contains(strings.ToLower(title), "just a moment"), nil
+	}
+
 	// Set up Chrome options
 	userAgent := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"sync"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -15,18 +14,20 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 )
 
-func getFantiaProductPaidContent(purchaseRelativeUrl, productId string, dlOptions *FantiaDlOptions) (*http.Response, error) {
+func getFantiaProductPaidContent(purchaseRelativeUrl, productId string, dlOptions *FantiaDlOptions) (*httpfuncs.ResponseWrapper, error) {
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	purchaseUrl := constants.FANTIA_URL + purchaseRelativeUrl // https://fantia.jp/mypage/users/purchases/123456
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:    "GET",
-			Url:       purchaseUrl,
-			Cookies:   dlOptions.Base.SessionCookies,
-			Http2:     !useHttp3,
-			Http3:     useHttp3,
-			UserAgent: dlOptions.Base.Configs.UserAgent,
-			Context:   dlOptions.GetContext(),
+			Method:         "GET",
+			Url:            purchaseUrl,
+			Cookies:        dlOptions.Base.SessionCookies,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			UserAgent:      dlOptions.Base.Configs.UserAgent,
+			Context:        dlOptions.GetContext(),
+			CaptchaCheck:   CaptchaChecker,
+			CaptchaHandler: newCaptchaHandler(dlOptions),
 		},
 	)
 	if err != nil {
@@ -57,13 +58,15 @@ func getProduct(productId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDo
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:    "GET",
-			Url:       productUrl,
-			Cookies:   dlOptions.Base.SessionCookies,
-			Http2:     !useHttp3,
-			Http3:     useHttp3,
-			UserAgent: dlOptions.Base.Configs.UserAgent,
-			Context:   dlOptions.GetContext(),
+			Method:         "GET",
+			Url:            productUrl,
+			Cookies:        dlOptions.Base.SessionCookies,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			UserAgent:      dlOptions.Base.Configs.UserAgent,
+			Context:        dlOptions.GetContext(),
+			CaptchaCheck:   CaptchaChecker,
+			CaptchaHandler: newCaptchaHandler(dlOptions),
 		},
 	)
 	if err != nil {

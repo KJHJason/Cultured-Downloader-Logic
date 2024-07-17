@@ -102,7 +102,7 @@ func Http2FallbackLogic(isUsingHttp3 *bool, failedHttp3Req *int, retryCount *int
 }
 
 // send the request to the target URL and retries if the request was not successful
-func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error) {
+func sendRequest(req *http.Request, reqArgs *RequestArgs) (*ResponseWrapper, error) {
 	reqArgs.EditMu.Lock()
 	AddCookies(reqArgs.Url, reqArgs.Cookies, req)
 	AddHeaders(reqArgs.Headers, reqArgs.UserAgent, req)
@@ -123,24 +123,36 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error
 		}
 
 		if err == nil {
+			respWrapper := NewResponseWrapper(res)
+			if reqArgs.CaptchaCheck != nil {
+				if isCaptcha, captchaErr := reqArgs.CaptchaCheck(respWrapper); captchaErr != nil {
+					res.Body.Close()
+					return nil, captchaErr
+				} else if isCaptcha {
+					captchaErr := reqArgs.CaptchaHandler.Call(req)
+					if captchaErr != nil {
+						return nil, captchaErr
+					}
+					continue
+				}
+			}
+
 			if res.StatusCode == 200 || !reqArgs.CheckStatus {
-				return res, nil
+				return respWrapper, nil
 			}
 			res.Body.Close()
 			retryCount++
-			goto retry
+		} else {
+			Http2FallbackLogic(
+				&isUsingHttp3,
+				&failedHttp3Req,
+				&retryCount,
+				err,
+				reqArgs,
+				client,
+			)
 		}
 
-		Http2FallbackLogic(
-			&isUsingHttp3,
-			&failedHttp3Req,
-			&retryCount,
-			err,
-			reqArgs,
-			client,
-		)
-
-	retry:
 		if retryCount < constants.RETRY_COUNTER {
 			time.Sleep(GetRandomDelay(reqArgs.RetryDelay))
 		}
@@ -171,7 +183,7 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error
 //
 // If the request fails, it will retry the request again up
 // to the defined max retries in the constants.go in utils package
-func CallRequest(reqArgs *RequestArgs) (*http.Response, error) {
+func CallRequest(reqArgs *RequestArgs) (*ResponseWrapper, error) {
 	err := reqArgs.ValidateArgs()
 	if err != nil {
 		return nil, err
@@ -216,7 +228,7 @@ func CheckInternetConnection() error {
 }
 
 // Sends a request with the given data
-func CallRequestWithData(reqArgs *RequestArgs, data map[string]string) (*http.Response, error) {
+func CallRequestWithData(reqArgs *RequestArgs, data map[string]string) (*ResponseWrapper, error) {
 	reqArgs.EditMu.Lock()
 	err := reqArgs.ValidateArgs()
 	if err != nil {

@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
@@ -77,6 +80,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		return fmtErr
 	}
 	notifier.Alert("Successfully solved reCAPTCHA automatically!")
+	solvedTime = time.Now()
 	return nil
 }
 
@@ -100,4 +104,40 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 		)
 	}
 	return autoSolveCaptcha(captchaOptions)
+}
+
+type CaptchaHandler struct {
+	dlOptions *FantiaDlOptions
+}
+
+func newCaptchaHandler(dlOptions *FantiaDlOptions) CaptchaHandler {
+	return CaptchaHandler{dlOptions: dlOptions}
+}
+
+func (ch CaptchaHandler) Call(*http.Request) error {
+	return SolveCaptcha(ch.dlOptions)
+}
+
+func CaptchaChecker(res *httpfuncs.ResponseWrapper) (bool, error) {
+	finalUrl := res.Url()
+	if finalUrl == constants.FANTIA_RECAPTCHA_URL {
+		return true, nil
+	}
+
+	// check if response is json
+	contentType := res.Resp.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "application/json") {
+		return false, nil
+	}
+
+	body, err := res.GetBody()
+	if err != nil {
+		return false, err
+	}
+
+	var captchaResp CaptchaResponse
+	if err := httpfuncs.LoadJsonFromBytes(res.Url(), body, &captchaResp); err != nil {
+		return false, err
+	}
+	return captchaResp.Redirect != "", nil
 }

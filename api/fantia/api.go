@@ -1,10 +1,10 @@
 package fantia
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"sync"
 
@@ -18,10 +18,9 @@ import (
 )
 
 // Parse the HTML response from the Fanclub's page to get the post or product IDs.
-func parseFanclubHtml(res *http.Response, fanclubId, contentType string) ([]string, error) {
+func parseFanclubHtml(resBody *bytes.Reader, fanclubId, contentType string) ([]string, error) {
 	// parse the response
-	doc, err := goquery.NewDocumentFromReader(res.Body)
-	res.Body.Close()
+	doc, err := goquery.NewDocumentFromReader(resBody)
 	if err != nil {
 		err = fmt.Errorf(
 			"fantia error %d, failed to parse response body when getting %s for Fantia Fanclub %s, more info => %w",
@@ -95,15 +94,17 @@ func getFanclubContent(fanclubId, pageNum string, dlOptions *FantiaDlOptions, co
 		// the actual number of pages, the response will still be 200 OK.
 		res, err := httpfuncs.CallRequest(
 			&httpfuncs.RequestArgs{
-				Method:      "GET",
-				Url:         url,
-				Cookies:     dlOptions.Base.SessionCookies,
-				Params:      params,
-				Http2:       !useHttp3,
-				Http3:       useHttp3,
-				CheckStatus: true,
-				UserAgent:   dlOptions.Base.Configs.UserAgent,
-				Context:     dlOptions.GetContext(),
+				Method:         "GET",
+				Url:            url,
+				Cookies:        dlOptions.Base.SessionCookies,
+				Params:         params,
+				Http2:          !useHttp3,
+				Http3:          useHttp3,
+				CheckStatus:    true,
+				UserAgent:      dlOptions.Base.Configs.UserAgent,
+				Context:        dlOptions.GetContext(),
+				CaptchaCheck:   CaptchaChecker,
+				CaptchaHandler: newCaptchaHandler(dlOptions),
 			},
 		)
 		if err != nil {
@@ -119,7 +120,12 @@ func getFanclubContent(fanclubId, pageNum string, dlOptions *FantiaDlOptions, co
 			return nil, err
 		}
 
-		fanclubContentIds, err := parseFanclubHtml(res, fanclubId, contentType)
+		resBody, err := res.GetBodyReader()
+		if err != nil {
+			return nil, err
+		}
+
+		fanclubContentIds, err := parseFanclubHtml(resBody, fanclubId, contentType)
 		if err != nil {
 			return nil, err
 		}

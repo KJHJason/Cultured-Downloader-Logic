@@ -87,7 +87,7 @@ func TestScript() error {
 	return nil
 }
 
-func CallScript(args CfArgs) (Cookies, error) {
+func CallPyScript(args CfArgs) (Cookies, error) {
 	cfPyPath := getMainPyPath()
 	venvPath := getVenvDirPath()
 	if !iofuncs.PathExists(venvPath) {

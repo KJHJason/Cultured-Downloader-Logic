@@ -50,28 +50,27 @@ func LoadJsonFromResponse(res *http.Response, format any) error {
 		return err
 	}
 
+	return LoadJsonFromBytes(
+		res.Request.URL.String(),
+		body,
+		format,
+	)
+}
+
+func LoadJsonFromBytes(url string, body []byte, format any) error {
 	// write to file if debug mode is on
 	if constants.DEBUG_MODE {
 		logJsonResponse(body)
 	}
 
-	if err = json.Unmarshal(body, &format); err != nil {
+	if err := json.Unmarshal(body, &format); err != nil {
+		if url == "" {
+			url = "unknown"
+		}
 		return fmt.Errorf(
 			"error %d: failed to unmarshal json response from %s due to %w\nBody: %s",
 			cdlerrors.RESPONSE_ERROR,
-			res.Request.URL.String(),
-			err,
-			string(body),
-		)
-	}
-	return nil
-}
-
-func LoadJsonFromBytes(body []byte, format any) error {
-	if err := json.Unmarshal(body, &format); err != nil {
-		return fmt.Errorf(
-			"error %d: failed to unmarshal json due to %w\nBody: %s",
-			cdlerrors.JSON_ERROR,
+			url,
 			err,
 			string(body),
 		)

@@ -293,31 +293,6 @@ func DlToFile(res *http.Response, dlRequestInfo *DlRequestInfo, filePath string,
 func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, overwriteExistingFile bool, dlOptions *DlOptions) error {
 	queue <- struct{}{}
 
-	// Send a HEAD request first to get the expected file size from the Content-Length header.
-	// A GET request might work but most of the time
-	// as the Content-Length header may not present due to chunked encoding.
-	headRes, err := reqArgs.RequestHandler(
-		&RequestArgs{
-			Method:      "HEAD",
-			Url:         reqArgs.Url,
-			Timeout:     dlOptions.HeadReqTimeout,
-			Headers:     reqArgs.Headers,
-			Params:      reqArgs.Params,
-			Cookies:     reqArgs.Cookies,
-			UserAgent:   reqArgs.UserAgent,
-			Http3:       reqArgs.Http3,
-			Http2:       reqArgs.Http2,
-			CheckStatus: true,
-			RetryDelay:  reqArgs.RetryDelay,
-			Context:     reqArgs.Context,
-		},
-	)
-	if err != nil {
-		return err
-	}
-	fileReqContentLength := headRes.ContentLength
-	headRes.Body.Close()
-
 	res, err := reqArgs.RequestHandler(reqArgs)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -330,9 +305,10 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		}
 		return err
 	}
-	defer res.Body.Close()
+	defer res.Close()
+	fileReqContentLength := res.Resp.ContentLength
 
-	filePath, err = getFullFilePath(res, filePath)
+	filePath, err = getFullFilePath(res.Resp, filePath)
 	if err != nil {
 		return err
 	}
@@ -392,7 +368,7 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 			DownloadedBytes:  downloadedBytes,
 			ExpectedFileSize: fileReqContentLength,
 		}
-		err = DlToFile(res, dlReqInfo, filePath, dlPartialInfo, dlProgBar)
+		err = DlToFile(res.Resp, dlReqInfo, filePath, dlPartialInfo, dlProgBar)
 	} else {
 		if hasDlProgBar {
 			dlProgBar.UpdateTotalBytes(downloadedBytes)

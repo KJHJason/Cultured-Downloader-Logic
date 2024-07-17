@@ -59,7 +59,7 @@ func (pixiv *PixivMobile) getUgoiraMetadata(cacheKey, illustId, dlFilePath strin
 	}
 
 	var ugoiraJson UgoiraJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &ugoiraJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &ugoiraJson); err != nil {
 		return nil, err
 	}
 
@@ -114,7 +114,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 	}
 
 	var artworkJson ArtworkJson
-	if err := httpfuncs.LoadJsonFromResponse(res, &artworkJson); err != nil {
+	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &artworkJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -219,7 +219,7 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 		}
 
 		var resJson ArtworksJson
-		if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
+		if err := httpfuncs.LoadJsonFromResponse(res.Resp, &resJson); err != nil {
 			errSlice = append(errSlice, err)
 			return nil, nil, errSlice, false
 		}
@@ -395,7 +395,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName string, dlOptions *PixivMobileD
 		}
 
 		var resJson ArtworksJson
-		if err := httpfuncs.LoadJsonFromResponse(res, &resJson); err != nil {
+		if err := httpfuncs.LoadJsonFromResponse(res.Resp, &resJson); err != nil {
 			errSlice = append(errSlice, err)
 			continue
 		}

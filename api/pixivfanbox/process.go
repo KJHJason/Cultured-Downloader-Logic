@@ -77,9 +77,9 @@ func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath 
 	return gdriveLinks
 }
 
-func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFanboxArticlePost(resUrl string, postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	var articleJson FanboxArticleJson
-	if err := httpfuncs.LoadJsonFromBytes(postBody, &articleJson); err != nil {
+	if err := httpfuncs.LoadJsonFromBytes(resUrl, postBody, &articleJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -122,9 +122,9 @@ func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, d
 	return urlsSlice, gdriveLinks, nil
 }
 
-func processFanboxFilePost(postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFanboxFilePost(resUrl string, postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	var filePostJson FanboxFilePostJson
-	if err := httpfuncs.LoadJsonFromBytes(postBody, &filePostJson); err != nil {
+	if err := httpfuncs.LoadJsonFromBytes(resUrl, postBody, &filePostJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -168,9 +168,9 @@ func processFanboxFilePost(postBody json.RawMessage, postFolderPath string, dlOp
 	return urlsSlice, gdriveLinks, nil
 }
 
-func processFanboxImagePost(postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFanboxImagePost(resUrl string, postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	var imagePostJson FanboxImagePostJson
-	if err := httpfuncs.LoadJsonFromBytes(postBody, &imagePostJson); err != nil {
+	if err := httpfuncs.LoadJsonFromBytes(resUrl, postBody, &imagePostJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -255,20 +255,22 @@ func processFanboxPostJson(res *http.Response, dlOptions *PixivFanboxDlOptions) 
 		return urlsSlice, nil, nil
 	}
 
+	resUrl := res.Request.URL.String()
+
 	var err error
 	var newUrlsSlice []*httpfuncs.ToDownload
 	var gdriveLinks []*httpfuncs.ToDownload
 	switch postType {
 	case "file":
-		newUrlsSlice, gdriveLinks, err = processFanboxFilePost(postBody, postFolderPath, dlOptions)
+		newUrlsSlice, gdriveLinks, err = processFanboxFilePost(resUrl, postBody, postFolderPath, dlOptions)
 	case "image":
-		newUrlsSlice, gdriveLinks, err = processFanboxImagePost(postBody, postFolderPath, dlOptions)
+		newUrlsSlice, gdriveLinks, err = processFanboxImagePost(resUrl, postBody, postFolderPath, dlOptions)
 	case "article":
-		newUrlsSlice, gdriveLinks, err = processFanboxArticlePost(postBody, postFolderPath, dlOptions)
+		newUrlsSlice, gdriveLinks, err = processFanboxArticlePost(resUrl, postBody, postFolderPath, dlOptions)
 	case "text": // text post
 		// Usually has no content but try to detect for any external download links
 		var textContent FanboxTextPostJson
-		if err = httpfuncs.LoadJsonFromBytes(postBody, &textContent); err == nil {
+		if err = httpfuncs.LoadJsonFromBytes(resUrl, postBody, &textContent); err == nil {
 			gdriveLinks = gdrive.ProcessPostText(
 				textContent.Text,
 				postFolderPath,

@@ -22,6 +22,11 @@ from DrissionPage import (
     errors as drission_errors,
 )
 
+try:
+    import pyvirtualdisplay # type: ignore
+except ImportError:
+    pyvirtualdisplay = None
+
 def __main(
     cookie_path: pathlib.Path | None,
     browser_path: str, 
@@ -85,7 +90,10 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
     logger = _logger.get_logger()
 
     virtual_display: bool = args.virtual_display
-    if not constants.IS_LINUX and virtual_display:
+    if constants.IS_LINUX and pyvirtualdisplay is None:
+        logger.warning("pyvirtualdisplay is not installed, ignoring --virtual-display flag...")
+        virtual_display = False
+    elif not constants.IS_LINUX and virtual_display:
         logger.warning("Virtual display is only supported on linux systems, ignoring --virtual-display flag...")
         virtual_display = False
     elif virtual_display and not utils.check_for_xvfb():
@@ -130,7 +138,6 @@ def main(args: argparse.Namespace = parser.create_arg_parser().parse_args()) -> 
             e.handle_result()
         return
 
-    import pyvirtualdisplay # type: ignore
     try:
         with pyvirtualdisplay.Display(visible=0, backend="xvfb", size=(constants.WINDOW_SIZE_X, constants.WINDOW_SIZE_Y)):
             __main(

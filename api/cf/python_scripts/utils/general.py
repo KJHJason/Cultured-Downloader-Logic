@@ -32,7 +32,7 @@ def check_for_xvfb() -> bool:
     try:
         subprocess.run(["Xvfb", "-help"], check=True)
     except subprocess.CalledProcessError:
-        _logger.get_logger().warning("xvfb-run not found, ignoring --virtual-display flag...")
+        _logger.get_logger().warning("Xvfb not found, ignoring --virtual-display flag...")
         return False
     return True
 
