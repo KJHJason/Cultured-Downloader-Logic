@@ -103,8 +103,8 @@ func Http2FallbackLogic(isUsingHttp3 *bool, failedHttp3Req *int, retryCount *int
 
 // send the request to the target URL and retries if the request was not successful
 func sendRequest(req *http.Request, reqArgs *RequestArgs) (*ResponseWrapper, error) {
-	if reqArgs.CaptchaHandler.InjectCfCookies != nil {
-		for _, cookie := range reqArgs.CaptchaHandler.InjectCfCookies() {
+	if reqArgs.CaptchaHandler.InjectCaptchaCookies != nil {
+		for _, cookie := range reqArgs.CaptchaHandler.InjectCaptchaCookies() {
 			req.AddCookie(cookie)
 		}
 	}

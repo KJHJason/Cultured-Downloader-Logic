@@ -1,9 +1,9 @@
 package metadata
 
 type KemonoPostEmbeddedContent struct {
-	Description string `json:"description"`
-	Subject     string `json:"subject"`
-	Url         string `json:"url"`
+	Description string `json:"description,omitempty"`
+	Subject     string `json:"subject,omitempty"`
+	Url         string `json:"url,omitempty"`
 }
 
 type KemonoPost struct {
@@ -13,5 +13,5 @@ type KemonoPost struct {
 	Service      string                    `json:"service"`
 	Content      string                    `json:"content"`
 	PublishedUTC string                    `json:"published_utc"`
-	EmbedContent KemonoPostEmbeddedContent `json:"embed_content";omitempty`
+	EmbedContent KemonoPostEmbeddedContent `json:"embed_content"`
 }
