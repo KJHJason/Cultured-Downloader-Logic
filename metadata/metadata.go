@@ -12,7 +12,7 @@ import (
 )
 
 type MetadataTypes interface {
-	FantiaPost | FantiaProduct | KemonoPost | PixivFanboxPost
+	FantiaPost | FantiaProduct | KemonoPost | PixivFanboxPost | PixivPost
 }
 
 // Marshal the metadata into a JSON file

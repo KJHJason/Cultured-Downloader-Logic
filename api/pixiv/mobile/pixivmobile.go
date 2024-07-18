@@ -18,6 +18,7 @@ type PixivMobile struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	setMetadata         bool
 	useCacheDb          bool
 	baseDownloadDirPath string
 
@@ -62,6 +63,10 @@ func (pixiv *PixivMobile) SetBaseDlDirPath(dlDirPath string) {
 
 func (pixiv *PixivMobile) SetUseCacheDb(useCacheDb bool) {
 	pixiv.useCacheDb = useCacheDb
+}
+
+func (pixiv *PixivMobile) SetMetadataFlag(flag bool) {
+	pixiv.setMetadata = flag
 }
 
 // This is due to Pixiv's strict rate limiting.

@@ -87,6 +87,7 @@ type IllustJson struct {
 type ArtworkJson struct {
 	Illust *IllustJson `json:"illust"`
 }
+
 type ArtworksJson struct {
 	Illusts []*IllustJson `json:"illusts"`
 	NextUrl *string       `json:"next_url"`

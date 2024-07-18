@@ -11,10 +11,11 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
-	"github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
@@ -101,8 +102,8 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 	var artworkCacheKey string
 	var ugoiraCacheKey string
 	url := getArtworkDetailsApi(artworkId) // API URL
+	webUrl := fmt.Sprintf("https://www.pixiv.net/artworks/%s", artworkId)
 	if dlOptions.UseCacheDb {
-		webUrl := fmt.Sprintf("https://www.pixiv.net/artworks/%s", artworkId)
 		if database.PostCacheExists(webUrl, constants.PIXIV) || database.UgoiraCacheExists(webUrl) {
 			// either the artwork or the ugoira cache exists
 			return nil, nil, nil
@@ -142,6 +143,28 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 		artworkId,
 		artworkName,
 	)
+
+	if dlOptions.SetMetadata {
+		var readableIllustType string
+		switch artworkJsonBody.IllustType {
+		case ILLUST:
+			readableIllustType = "Illustration"
+		case MANGA:
+			readableIllustType = "Manga"
+		case UGOIRA:
+			readableIllustType = "Ugoira"
+		default:
+			readableIllustType = "Unknown"
+		}
+		artworkMetadata := metadata.PixivPost{
+			Url:   webUrl,
+			Title: artworkName,
+			Type:  readableIllustType,
+		}
+		if err := metadata.WriteMetadata(artworkMetadata, artworkPostDir); err != nil {
+			return nil, nil, err
+		}
+	}
 
 	artworkType := artworkJsonBody.IllustType
 	artworkUrlsRes, err := getArtworkUrlsToDlLogic(artworkType, artworkId, reqArgs)

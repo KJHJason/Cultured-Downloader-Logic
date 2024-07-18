@@ -8,6 +8,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
 )
 
 func getUgoiraUrl(artworkId string) string {
@@ -31,6 +32,17 @@ func (pixiv *PixivMobile) processArtworkJson(ugoiraCacheKey string, artworkJson 
 	artworkFolderPath := iofuncs.GetPostFolder(
 		pixiv.baseDownloadDirPath, artistName, artworkId, artworkTitle,
 	)
+
+	if pixiv.setMetadata {
+		postMetadata := metadata.PixivPost{
+			Url:   fmt.Sprintf("https://www.pixiv.net/artworks/%s", artworkId),
+			Title: artworkTitle,
+			Type:  artworkType,
+		}
+		if err := metadata.WriteMetadata(postMetadata, artworkFolderPath); err != nil {
+			return nil, nil, err
+		}
+	}
 
 	if artworkType == "ugoira" {
 		ugoiraInfo, err := pixiv.getUgoiraMetadata(ugoiraCacheKey, artworkId, artworkFolderPath)

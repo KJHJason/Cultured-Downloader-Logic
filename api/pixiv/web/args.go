@@ -21,6 +21,7 @@ type PixivWebDlOptions struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	SetMetadata         bool
 	UseCacheDb          bool
 	BaseDownloadDirPath string
 
