@@ -22,8 +22,8 @@ import (
 )
 
 var (
-	captchaMu  sync.Mutex
-	solvedTime *time.Time
+	captchaMu      sync.Mutex
+	solvedUnixTime int64
 )
 
 type CaptchaOptions interface {
@@ -53,7 +53,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		chromedp.WaitVisible(`//h3[@class='mb-15'][contains(text(), 'ファンティアでクリエイターを応援しよう！')]`, chromedp.BySearch),
 	}
 
-	allocCtx, cancel = context.WithTimeout(allocCtx, constants.FANTIA_CAPTCHA_TIMEOUT*time.Second)
+	allocCtx, cancel = context.WithTimeout(allocCtx, constants.FANTIA_CAPTCHA_TIMEOUT)
 	if err := api.ExecuteChromedpActions(allocCtx, cancel, actions...); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return err
@@ -80,7 +80,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		return fmtErr
 	}
 	notifier.Alert("Successfully solved reCAPTCHA automatically!")
-	solvedTime = time.Now()
+	solvedUnixTime = time.Now().UnixMilli()
 	return nil
 }
 
@@ -88,7 +88,7 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 	captchaMu.Lock()
 	defer captchaMu.Unlock()
 
-	if solvedTime != nil && (time.Since(*solvedTime) < constants.FANTIA_CAPTCHA_TIMEOUT*time.Second) {
+	if solvedUnixTime != 0 && (time.Now().UnixMilli()-solvedUnixTime) < constants.FANTIA_CAPTCHA_CACHE_TIMEOUT {
 		// if the reCAPTCHA was solved within the last few seconds,
 		// then skip solving it to avoid solving it multiple times
 		return nil

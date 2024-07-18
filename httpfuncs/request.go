@@ -103,11 +103,14 @@ func Http2FallbackLogic(isUsingHttp3 *bool, failedHttp3Req *int, retryCount *int
 
 // send the request to the target URL and retries if the request was not successful
 func sendRequest(req *http.Request, reqArgs *RequestArgs) (*ResponseWrapper, error) {
-	reqArgs.EditMu.Lock()
+	if reqArgs.CaptchaHandler.InjectCfCookies != nil {
+		for _, cookie := range reqArgs.CaptchaHandler.InjectCfCookies() {
+			req.AddCookie(cookie)
+		}
+	}
 	AddCookies(reqArgs.Url, reqArgs.Cookies, req)
 	AddHeaders(reqArgs.Headers, reqArgs.UserAgent, req)
 	AddParams(reqArgs.Params, req)
-	reqArgs.EditMu.Unlock()
 
 	var err error
 	var res *http.Response
@@ -124,8 +127,8 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*ResponseWrapper, err
 
 		if err == nil {
 			respWrapper := NewResponseWrapper(res)
-			if reqArgs.CaptchaCheck != nil {
-				if isCaptcha, captchaErr := reqArgs.CaptchaCheck(respWrapper); captchaErr != nil {
+			if reqArgs.CaptchaHandler.Check != nil {
+				if isCaptcha, captchaErr := reqArgs.CaptchaHandler.Check(respWrapper); captchaErr != nil {
 					res.Body.Close()
 					return nil, captchaErr
 				} else if isCaptcha {
@@ -229,21 +232,23 @@ func CheckInternetConnection() error {
 
 // Sends a request with the given data
 func CallRequestWithData(reqArgs *RequestArgs, data map[string]string) (*ResponseWrapper, error) {
-	reqArgs.EditMu.Lock()
 	err := reqArgs.ValidateArgs()
 	if err != nil {
-		reqArgs.EditMu.Unlock()
 		return nil, err
 	}
 
 	form := url.Values{}
-	for key, value := range data {
-		form.Add(key, value)
-	}
 	if len(data) > 0 {
-		reqArgs.Headers["Content-Type"] = "application/x-www-form-urlencoded"
+		reqArgs.EditMu.Lock()
+		for key, value := range data {
+			form.Add(key, value)
+		}
+		const contentType = "application/x-www-form-urlencoded"
+		if val, ok := reqArgs.Headers["Content-Type"]; !ok || val != contentType {
+			reqArgs.Headers["Content-Type"] = contentType
+		}
+		reqArgs.EditMu.Unlock()
 	}
-	reqArgs.EditMu.Unlock()
 
 	req, err := http.NewRequestWithContext(
 		reqArgs.Context,

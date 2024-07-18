@@ -42,7 +42,8 @@ const (
 	FANTIA_MAX_CONCURRENCY          = 5
 	FANTIA_POST_API_URL             = "https://fantia.jp/api/v1/posts/"
 	FANTIA_CAPTCHA_BTN_SELECTOR     = `//input[@name='commit']`
-	FANTIA_CAPTCHA_TIMEOUT          = 45
+	FANTIA_CAPTCHA_TIMEOUT          = 35 * time.Second
+	FANTIA_CAPTCHA_CACHE_TIMEOUT    = int64(45 * time.Second / time.Millisecond)
 	FANTIA_POST_BLOG_DIR_NAME       = "blog_contents"
 	FANTIA_PRODUCT_DIR_NAME         = "products"
 	FANTIA_PRODUCT_PREVIEW_DIR_NAME = "previews"
@@ -78,13 +79,14 @@ const (
 	PIXIV_MOBILE_ARTIST_POSTS_URL  = PIXIV_MOBILE_BASE_URL + "/v1/user/illusts"
 	PIXIV_MOBILE_ILLUST_SEARCH_URL = PIXIV_MOBILE_BASE_URL + "/v1/search/illust"
 
-	PIXIV_FANBOX                      = "fanbox"
-	PIXIV_FANBOX_TITLE                = "Pixiv Fanbox"
-	PIXIV_FANBOX_CREATOR_ID_REGEX_STR = `[\w&.-]+`
-	PIXIV_FANBOX_URL                  = "https://www.fanbox.cc"
-	PIXIV_FANBOX_API_URL              = "https://api.fanbox.cc"
-	PIXIV_FANBOX_RANGE_SUPPORTED      = false
-	PIXIV_FANBOX_MAX_CONCURRENCY      = 2 // Pixiv Fanbox throttles the download speed
+	PIXIV_FANBOX                       = "fanbox"
+	PIXIV_FANBOX_TITLE                 = "Pixiv Fanbox"
+	PIXIV_FANBOX_CREATOR_ID_REGEX_STR  = `[\w&.-]+`
+	PIXIV_FANBOX_CAPTCHA_CACHE_TIMEOUT = int64(29 * time.Minute / time.Millisecond) // cf_bm cookie expires in 30 minutes
+	PIXIV_FANBOX_URL                   = "https://www.fanbox.cc"
+	PIXIV_FANBOX_API_URL               = "https://api.fanbox.cc"
+	PIXIV_FANBOX_RANGE_SUPPORTED       = false
+	PIXIV_FANBOX_MAX_CONCURRENCY       = 2 // Pixiv Fanbox throttles the download speed
 
 	KEMONO                       = "kemono"
 	KEMONO_TITLE                 = "Kemono"

@@ -38,6 +38,11 @@ func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOption
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			Context:   dlOptions.ctx,
+			CaptchaHandler: httpfuncs.CaptchaHandler{
+				Check:           CaptchaChecker,
+				Handler:         NewCaptchaHandler(dlOptions),
+				InjectCfCookies: GetCachedCfCookies,
+			},
 		},
 	)
 	if err != nil {
@@ -200,6 +205,11 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			Context:   dlOptions.GetContext(),
+			CaptchaHandler: httpfuncs.CaptchaHandler{
+				Check:           CaptchaChecker,
+				Handler:         NewCaptchaHandler(dlOptions),
+				InjectCfCookies: GetCachedCfCookies,
+			},
 		},
 	)
 	if err != nil || res.Resp.StatusCode != 200 {
@@ -250,6 +260,11 @@ func getFanboxPostsLogic(reqUrl string, headers map[string]string, dlOptions *Pi
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			Context:   dlOptions.GetContext(),
+			CaptchaHandler: httpfuncs.CaptchaHandler{
+				Check:           CaptchaChecker,
+				Handler:         NewCaptchaHandler(dlOptions),
+				InjectCfCookies: GetCachedCfCookies,
+			},
 		},
 	)
 	if err != nil || res.Resp.StatusCode != 200 {

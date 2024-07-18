@@ -19,15 +19,18 @@ func getFantiaProductPaidContent(purchaseRelativeUrl, productId string, dlOption
 	purchaseUrl := constants.FANTIA_URL + purchaseRelativeUrl // https://fantia.jp/mypage/users/purchases/123456
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:         "GET",
-			Url:            purchaseUrl,
-			Cookies:        dlOptions.Base.SessionCookies,
-			Http2:          !useHttp3,
-			Http3:          useHttp3,
-			UserAgent:      dlOptions.Base.Configs.UserAgent,
-			Context:        dlOptions.GetContext(),
-			CaptchaCheck:   CaptchaChecker,
-			CaptchaHandler: newCaptchaHandler(dlOptions),
+			Method:    "GET",
+			Url:       purchaseUrl,
+			Cookies:   dlOptions.Base.SessionCookies,
+			Http2:     !useHttp3,
+			Http3:     useHttp3,
+			UserAgent: dlOptions.Base.Configs.UserAgent,
+			Context:   dlOptions.GetContext(),
+			CaptchaHandler: httpfuncs.CaptchaHandler{
+				Check:           CaptchaChecker,
+				Handler:         newCaptchaHandler(dlOptions),
+				InjectCfCookies: nil,
+			},
 		},
 	)
 	if err != nil {
@@ -58,15 +61,18 @@ func getProduct(productId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDo
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:         "GET",
-			Url:            productUrl,
-			Cookies:        dlOptions.Base.SessionCookies,
-			Http2:          !useHttp3,
-			Http3:          useHttp3,
-			UserAgent:      dlOptions.Base.Configs.UserAgent,
-			Context:        dlOptions.GetContext(),
-			CaptchaCheck:   CaptchaChecker,
-			CaptchaHandler: newCaptchaHandler(dlOptions),
+			Method:    "GET",
+			Url:       productUrl,
+			Cookies:   dlOptions.Base.SessionCookies,
+			Http2:     !useHttp3,
+			Http3:     useHttp3,
+			UserAgent: dlOptions.Base.Configs.UserAgent,
+			Context:   dlOptions.GetContext(),
+			CaptchaHandler: httpfuncs.CaptchaHandler{
+				Check:           CaptchaChecker,
+				Handler:         newCaptchaHandler(dlOptions),
+				InjectCfCookies: nil,
+			},
 		},
 	)
 	if err != nil {

@@ -16,6 +16,11 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
+func CheckIsArm() bool {
+	return runtime.GOARCH == "arm" || runtime.GOARCH == "arm64" ||
+		runtime.GOARCH == "arm64be" || runtime.GOARCH == "armbe"
+}
+
 // Convert the page number to the offset as one page might have x posts.
 //
 // Usually for paginated results like Pixiv's mobile API (60 per page), checkPixivMax should be set to true.

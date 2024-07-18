@@ -55,16 +55,19 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, true)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:         "GET",
-			Url:            postApiUrl,
-			Cookies:        dlOptions.Base.SessionCookies,
-			Headers:        header,
-			Http2:          !useHttp3,
-			Http3:          useHttp3,
-			UserAgent:      dlOptions.Base.Configs.UserAgent,
-			Context:        dlOptions.GetContext(),
-			CaptchaCheck:   CaptchaChecker,
-			CaptchaHandler: newCaptchaHandler(dlOptions),
+			Method:    "GET",
+			Url:       postApiUrl,
+			Cookies:   dlOptions.Base.SessionCookies,
+			Headers:   header,
+			Http2:     !useHttp3,
+			Http3:     useHttp3,
+			UserAgent: dlOptions.Base.Configs.UserAgent,
+			Context:   dlOptions.GetContext(),
+			CaptchaHandler: httpfuncs.CaptchaHandler{
+				Check:           CaptchaChecker,
+				Handler:         newCaptchaHandler(dlOptions),
+				InjectCfCookies: nil,
+			},
 		},
 	)
 	if err != nil || res.Resp.StatusCode != 200 {

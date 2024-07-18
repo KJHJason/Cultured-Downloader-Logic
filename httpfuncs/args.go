@@ -43,10 +43,7 @@ type RequestArgs struct {
 	// RequestHandler is the main function that will be called to make the request.
 	RequestHandler RequestHandler
 
-	CaptchaCheck   func(*ResponseWrapper) (bool, error)
-	CaptchaHandler interface {
-		Call(*http.Request) error
-	}
+	CaptchaHandler CaptchaHandler
 }
 
 func (args *RequestArgs) validateHttp3Arg() error {
@@ -115,6 +112,9 @@ func (args *RequestArgs) getDefaultArgs() {
 //
 // Will panic if the arguments are invalid as this is a developer error
 func (args *RequestArgs) ValidateArgs() error {
+	args.EditMu.Lock()
+	defer args.EditMu.Unlock()
+
 	args.getDefaultArgs()
 	err := args.validateHttp3Arg()
 	if err != nil {

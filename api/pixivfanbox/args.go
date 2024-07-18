@@ -68,6 +68,8 @@ type PixivFanboxDlOptions struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	Base   *api.BaseDl
+
+	CfCookies []*http.Cookie
 }
 
 func (pf *PixivFanboxDlOptions) GetContext() context.Context {

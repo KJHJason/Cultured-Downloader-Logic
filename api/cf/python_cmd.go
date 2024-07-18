@@ -12,7 +12,6 @@ import (
 
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
@@ -25,13 +24,13 @@ func getPyVenvBinDirName() string {
 	}
 }
 
-func pipInstallRequirements(reqTxtFilePath string) {
+func pipInstallRequirements(reqTxtFilePath string) error {
 	venvPath := getVenvDirPath()
 	if iofuncs.PathExists(venvPath) {
 		// delete venv if it exists
 		err := os.RemoveAll(venvPath)
 		if err != nil {
-			panicHandler(err)
+			return err
 		}
 	}
 
@@ -43,7 +42,7 @@ func pipInstallRequirements(reqTxtFilePath string) {
 
 	err := cmd.Run()
 	if err != nil {
-		panicHandler(err)
+		return err
 	}
 
 	installCtx, installCancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -54,8 +53,9 @@ func pipInstallRequirements(reqTxtFilePath string) {
 
 	err = cmd.Run()
 	if err != nil {
-		panicHandler(err)
+		return err
 	}
+	return nil
 }
 
 func TestScript() error {
@@ -65,20 +65,11 @@ func TestScript() error {
 		return cdlerrors.ErrVenvDoesNotExist
 	}
 
-	chromePath, err := utils.GetChromeExecPath()
-	if err != nil {
-		// chrome exec path check should have been done
-		// at the start of the program. Hence, the panic here.
-		panic(err)
-	}
-
+	cmdArgs := []string{cfPyPath}
+	cmdArgs = append(cmdArgs, getTestArgs()...)
 	cmd := exec.Command(
 		filepath.Join(venvPath, getPyVenvBinDirName(), "python"),
-		cfPyPath,
-		"--test-connection",
-		"--headless=true",
-		"--browser-path", chromePath,
-		"--log-path", logger.CdlCfLogFilePath,
+		cmdArgs...,
 	)
 	utils.PrepareCmdForBgTask(cmd)
 	if err := cmd.Run(); err != nil {

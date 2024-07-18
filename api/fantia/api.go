@@ -94,17 +94,20 @@ func getFanclubContent(fanclubId, pageNum string, dlOptions *FantiaDlOptions, co
 		// the actual number of pages, the response will still be 200 OK.
 		res, err := httpfuncs.CallRequest(
 			&httpfuncs.RequestArgs{
-				Method:         "GET",
-				Url:            url,
-				Cookies:        dlOptions.Base.SessionCookies,
-				Params:         params,
-				Http2:          !useHttp3,
-				Http3:          useHttp3,
-				CheckStatus:    true,
-				UserAgent:      dlOptions.Base.Configs.UserAgent,
-				Context:        dlOptions.GetContext(),
-				CaptchaCheck:   CaptchaChecker,
-				CaptchaHandler: newCaptchaHandler(dlOptions),
+				Method:      "GET",
+				Url:         url,
+				Cookies:     dlOptions.Base.SessionCookies,
+				Params:      params,
+				Http2:       !useHttp3,
+				Http3:       useHttp3,
+				CheckStatus: true,
+				UserAgent:   dlOptions.Base.Configs.UserAgent,
+				Context:     dlOptions.GetContext(),
+				CaptchaHandler: httpfuncs.CaptchaHandler{
+					Check:           CaptchaChecker,
+					Handler:         newCaptchaHandler(dlOptions),
+					InjectCfCookies: nil,
+				},
 			},
 		)
 		if err != nil {

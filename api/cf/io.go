@@ -12,10 +12,10 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 )
 
-func removeOldCfDir() {
+func removeOldCfDir() error {
 	entries, err := os.ReadDir(iofuncs.APP_PATH)
 	if err != nil {
-		panicHandler(err)
+		return err
 	}
 
 	for _, entry := range entries {
@@ -27,6 +27,7 @@ func removeOldCfDir() {
 			os.RemoveAll(filepath.Join(iofuncs.APP_PATH, entryName))
 		}
 	}
+	return nil
 }
 
 type FileInfo struct {
@@ -66,25 +67,28 @@ func readFsDir(fs embed.FS, dirName string) ([]*FileInfo, error) {
 	return files, nil
 }
 
-func checkAndWriteFile(filePath string, embeddedData []byte) {
+func checkAndWriteFile(filePath string, embeddedData []byte) error {
 	if iofuncs.PathExists(filePath) {
 		localData, err := os.ReadFile(filePath)
 		if err != nil {
-			panicHandler(err)
+			return err
 		}
 
 		if bytes.Equal(embeddedData, localData) {
-			return
+			return nil
 		}
 	}
 
 	os.MkdirAll(filepath.Dir(filePath), constants.DEFAULT_PERMS)
 	err := os.WriteFile(filePath, embeddedData, constants.DEFAULT_PERMS)
 	if err != nil {
-		panicHandler(err)
+		return err
 	}
 
 	if filepath.Base(filePath) == "requirements.txt" {
-		pipInstallRequirements(filePath)
+		if err := pipInstallRequirements(filePath); err != nil {
+			return err
+		}
 	}
+	return nil
 }

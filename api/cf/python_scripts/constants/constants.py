@@ -25,6 +25,7 @@ DEFAULT_TARGET_URL = "https://nopecha.com/demo/cloudflare"
 CF_WRAPPER_XPATH = ".cf-turnstile-wrapper"
 LOGGER_NAME = "cf_bypass"
 
-EXTENSIONS_DIR = "./extensions"
-NAVIGATOR_EXT_DIR = EXTENSIONS_DIR + "/Navigator"
-NAVIGATOR_JS_PATH = NAVIGATOR_EXT_DIR + "/navigator.js"
+EXTENSIONS_DIR = os.path.join(".", "extensions")
+POINTER_EXT_DIR = os.path.join(EXTENSIONS_DIR, "PointerEvent")
+NAVIGATOR_EXT_DIR = os.path.join(EXTENSIONS_DIR, "Navigator")
+NAVIGATOR_JS_PATH = os.path.join(NAVIGATOR_EXT_DIR, "navigator.js")

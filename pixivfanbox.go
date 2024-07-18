@@ -13,6 +13,18 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 		return nil
 	}
 
+	// add cf cookies into all requests
+	ch := pixivfanbox.NewCaptchaHandler(pixivFanboxDlOptions)
+	if cfCookies, err := ch.GetCfCookies(); err != nil {
+		return []error{err}
+	} else {
+		pixivFanboxDlOptions.CfCookies = cfCookies
+	}
+	httpCaptchaHandler := httpfuncs.CaptchaHandler{
+		Check:   pixivfanbox.CaptchaChecker,
+		Handler: ch,
+	}
+
 	var errSlice []error
 	if len(pixivFanboxDl.CreatorIds) > 0 {
 		if err := pixivFanboxDl.GetCreatorsPosts(pixivFanboxDlOptions); len(err) > 0 {
@@ -33,6 +45,9 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 
 	var downloadedPosts bool
 	if len(urlsToDownload) > 0 && pixivFanboxDlOptions.CtxIsActive() {
+		cookies := pixivFanboxDlOptions.Base.SessionCookies
+		cookies = append(cookies, pixivFanboxDlOptions.CfCookies...)
+
 		downloadedPosts = true
 		cancelled, err := httpfuncs.DownloadUrls(
 			urlsToDownload,
@@ -40,13 +55,14 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 				Context:         pixivFanboxDlOptions.GetContext(),
 				MaxConcurrency:  constants.PIXIV_FANBOX_MAX_CONCURRENCY,
 				Headers:         pixivfanbox.GetPixivFanboxHeaders(),
-				Cookies:         pixivFanboxDlOptions.Base.SessionCookies,
+				Cookies:         cookies,
 				UseHttp3:        false,
 				HeadReqTimeout:  constants.DEFAULT_HEAD_REQ_TIMEOUT,
 				SupportRange:    constants.PIXIV_FANBOX_RANGE_SUPPORTED,
 				SetMetadata:     pixivFanboxDlOptions.Base.SetMetadata,
 				Filters:         pixivFanboxDlOptions.Base.Filters,
 				ProgressBarInfo: pixivFanboxDlOptions.Base.ProgressBarInfo,
+				CaptchaHandler:  httpCaptchaHandler,
 			},
 			pixivFanboxDlOptions.Base.Configs,
 		)

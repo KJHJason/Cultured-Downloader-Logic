@@ -1,6 +1,7 @@
-package utils
+package startup
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,7 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/cf"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 var UseDockerForCf bool
@@ -23,11 +26,6 @@ func init() {
 
 	useDockerArg := os.Getenv(dockerCfEnvKey)
 	UseDockerForCf = useDockerArg == "1" || useDockerArg == "true"
-}
-
-func CheckIsArm() bool {
-	return runtime.GOARCH == "arm" || runtime.GOARCH == "arm64" ||
-		runtime.GOARCH == "arm64be" || runtime.GOARCH == "armbe"
 }
 
 func isPythonVersionAtLeast(output string, major int, minor int, patch int) (bool, error) {
@@ -67,12 +65,33 @@ func isPythonVersionAtLeast(output string, major int, minor int, patch int) (boo
 
 func checkPythonVersion(major int, minor int, patch int) (bool, error) {
 	cmd := exec.Command("python", "--version")
-	PrepareCmdForBgTask(cmd)
+	utils.PrepareCmdForBgTask(cmd)
 	output, err := cmd.Output()
 	if err != nil {
 		return false, err
 	}
 	return isPythonVersionAtLeast(string(output), major, minor, patch)
+}
+
+func checkPythonScripts(panicHandler func(msg string)) {
+	if err := cf.InitPyFiles(); err != nil {
+		panicHandler(
+			fmt.Sprintf(
+				"error %d: failed to initialise Python files -> %v",
+				cdlerrors.STARTUP_ERROR,
+				err,
+			),
+		)
+	}
+	if err := cf.TestScript(); err != nil {
+		panicHandler(
+			fmt.Sprintf(
+				"error %d: failed to test Python script -> %v",
+				cdlerrors.STARTUP_ERROR,
+				err,
+			),
+		)
+	}
 }
 
 func checkPythonRequirements(panicHandler func(msg string)) {
@@ -132,11 +151,11 @@ func checkXvfbExec(dockerEnvKey string, panicHandler func(msg string)) {
 
 func checkDockerDaemonIsRunning() bool {
 	cmd := exec.Command("docker", "version")
-	PrepareCmdForBgTask(cmd)
+	utils.PrepareCmdForBgTask(cmd)
 	return cmd.Run() == nil
 }
 
-func checkDockerRequirements(panicHandler func(msg string)) {
+func checkDockerRequirements(ctx context.Context, panicHandler func(msg string)) {
 	if _, err := exec.LookPath("docker"); err != nil {
 		panicHandler(
 			fmt.Sprintf(
@@ -153,10 +172,20 @@ func checkDockerRequirements(panicHandler func(msg string)) {
 			),
 		)
 	}
+
+	if err := cf.PullCfDockerImage(ctx); err != nil {
+		panicHandler(
+			fmt.Sprintf(
+				"error %d: failed to pull Docker image -> %v",
+				cdlerrors.STARTUP_ERROR,
+				err,
+			),
+		)
+	}
 }
 
-func CheckPrerequisites(panicHandler func(msg string)) {
-	if _, err := GetChromeExecPath(); err != nil {
+func CheckPrerequisites(ctx context.Context, panicHandler func(msg string)) {
+	if _, err := utils.GetChromeExecPath(); err != nil {
 		panicHandler(
 			fmt.Sprintf(
 				"error %d: Google Chrome executable not found, please install Google Chrome or set the CHROME_EXECUTABLE environment variable",
@@ -168,7 +197,8 @@ func CheckPrerequisites(panicHandler func(msg string)) {
 	if !UseDockerForCf {
 		checkXvfbExec(dockerCfEnvKey, panicHandler)
 		checkPythonRequirements(panicHandler)
+		checkPythonScripts(panicHandler)
 	} else {
-		checkDockerRequirements(panicHandler)
+		checkDockerRequirements(ctx, panicHandler)
 	}
 }

@@ -72,6 +72,18 @@ type ToDownload struct {
 	FilePath string
 }
 
+type CaptchaHandler struct {
+	Check   func(*ResponseWrapper) (bool, error)
+	Handler interface {
+		Call(*http.Request) error
+	}
+	InjectCfCookies func() []*http.Cookie
+}
+
+func (ch CaptchaHandler) Call(req *http.Request) error {
+	return ch.Handler.Call(req)
+}
+
 type DlOptions struct {
 	// Parent context for the download process
 	Context context.Context
@@ -104,6 +116,8 @@ type DlOptions struct {
 	Filters *filters.Filters
 
 	ProgressBarInfo *progress.ProgressBarInfo
+
+	CaptchaHandler CaptchaHandler
 }
 
 type GithubApiRes struct {

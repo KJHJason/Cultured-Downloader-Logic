@@ -142,15 +142,18 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:         "GET",
-			Url:            "https://fantia.jp/",
-			Cookies:        f.Base.SessionCookies,
-			Http2:          !useHttp3,
-			Http3:          useHttp3,
-			CheckStatus:    true,
-			UserAgent:      userAgent,
-			CaptchaCheck:   CaptchaChecker,
-			CaptchaHandler: newCaptchaHandler(f),
+			Method:      "GET",
+			Url:         "https://fantia.jp/",
+			Cookies:     f.Base.SessionCookies,
+			Http2:       !useHttp3,
+			Http3:       useHttp3,
+			CheckStatus: true,
+			UserAgent:   userAgent,
+			CaptchaHandler: httpfuncs.CaptchaHandler{
+				Check:           CaptchaChecker,
+				Handler:         newCaptchaHandler(f),
+				InjectCfCookies: nil,
+			},
 		},
 	)
 	if err != nil {

@@ -32,17 +32,54 @@ func createCfContainer(ctx context.Context, cli *client.Client, createConfig *ut
 	}
 }
 
-func pullAndCreateCfDockerImage(ctx context.Context, cli *client.Client, createConfig *utils.ContainerConfigs) (string, error) {
+func pullCfDockerImage(ctx context.Context, cli *client.Client) error {
 	if ok, err := utils.HasImage(ctx, cli, IMAGE_NAME); ok {
-		return createCfContainer(ctx, cli, createConfig)
+		return nil
 	} else if err != nil {
-		return "", err
+		return err
 	}
 
-	if err := utils.PullImage(ctx, cli, IMAGE_NAME); err != nil {
-		return "", err
+	return utils.PullImage(ctx, cli, IMAGE_NAME)
+}
+
+func getLogPathMount() (mount.Mount, error) {
+	var logMount mount.Mount
+
+	cdlCfLogFilePath := logger.CdlCfLogFilePath
+	if !iofuncs.PathExists(cdlCfLogFilePath) {
+		// create the log file so that docker doesn't bind it as a directory
+		if f, err := os.OpenFile(cdlCfLogFilePath, os.O_RDONLY|os.O_CREATE, constants.DEFAULT_PERMS); err != nil {
+			return logMount, fmt.Errorf("failed to create log file: %w", err)
+		} else {
+			f.Close()
+		}
 	}
-	return createCfContainer(ctx, cli, createConfig)
+	cdlCfLogUnixFilePath := cdlCfLogFilePath
+	if runtime.GOOS == "windows" {
+		cdlCfLogUnixFilePath = filepath.ToSlash(cdlCfLogUnixFilePath)
+	}
+
+	// using path instead of path/filepath to
+	// avoid windows path issues on docker (Linux)
+	dockerLogFilePath := path.Join("/app", utils.GenerateRandomString(12), path.Base(cdlCfLogUnixFilePath))
+	logMount = mount.Mount{
+		Type:   mount.TypeBind,
+		Source: cdlCfLogUnixFilePath,
+		Target: dockerLogFilePath,
+	}
+	return logMount, nil
+}
+
+func PullCfDockerImage(ctx context.Context) error {
+	cli, err := utils.GetDefaultClient()
+	if err != nil {
+		return err
+	}
+
+	if err := pullCfDockerImage(ctx, cli); err != nil {
+		return err
+	}
+	return nil
 }
 
 func CallDockerImage(ctx context.Context, args CfArgs) (Cookies, error) {
@@ -54,20 +91,6 @@ func CallDockerImage(ctx context.Context, args CfArgs) (Cookies, error) {
 	cdlCfTempDir, err := os.MkdirTemp("", "cdl-cf-")
 	if err != nil {
 		return nil, err
-	}
-
-	cdlCfLogFilePath := logger.CdlCfLogFilePath
-	if !iofuncs.PathExists(cdlCfLogFilePath) {
-		// create the log file so that docker doesn't bind it as a directory
-		if f, err := os.OpenFile(cdlCfLogFilePath, os.O_RDONLY|os.O_CREATE, constants.DEFAULT_PERMS); err != nil {
-			return nil, fmt.Errorf("failed to create log file: %w", err)
-		} else {
-			f.Close()
-		}
-	}
-	cdlCfLogUnixFilePath := cdlCfLogFilePath
-	if runtime.GOOS == "windows" {
-		cdlCfLogUnixFilePath = filepath.ToSlash(cdlCfLogUnixFilePath)
 	}
 
 	const cookieFilename = "cookie.json"
@@ -85,12 +108,20 @@ func CallDockerImage(ctx context.Context, args CfArgs) (Cookies, error) {
 	}
 	defer os.RemoveAll(cdlCfTempDir)
 
+	dockerLogFileMount, err := getLogPathMount()
+	if err != nil {
+		return nil, err
+	}
+	dockerLogFilePath := dockerLogFileMount.Target
+
 	// using path instead of path/filepath to
 	// avoid windows path issues on docker (Linux)
-	dockerDir := path.Join("/app", utils.GenerateRandomString(12))
-
-	dockerLogFilePath := path.Join(dockerDir, "logs", path.Base(cdlCfLogUnixFilePath))
-	dockerCookieFilePath := path.Join(dockerDir, "cookies", cookieFilename)
+	dockerCookieFilePath := path.Join("/app", utils.GenerateRandomString(12), cookieFilename)
+	dockerCookieFileMount := mount.Mount{
+		Type:   mount.TypeBind,
+		Source: cookieUnixFilePath,
+		Target: dockerCookieFilePath,
+	}
 
 	args.BrowserPath = ""
 	args.Headless = false
@@ -112,23 +143,19 @@ func CallDockerImage(ctx context.Context, args CfArgs) (Cookies, error) {
 		},
 		HostConfig: &container.HostConfig{
 			Mounts: []mount.Mount{
-				{
-					Type:   mount.TypeBind,
-					Source: cookieUnixFilePath,
-					Target: dockerCookieFilePath,
-				},
-				{
-					Type:   mount.TypeBind,
-					Source: cdlCfLogUnixFilePath,
-					Target: dockerLogFilePath,
-				},
+				dockerLogFileMount,
+				dockerCookieFileMount,
 			},
 		},
 		NetworkingConfig: &network.NetworkingConfig{},
 	}
 
+	if err := pullCfDockerImage(ctx, cli); err != nil {
+		return nil, err
+	}
+
 	var containerId string
-	if containerId, err = pullAndCreateCfDockerImage(ctx, cli, &createConfig); err != nil {
+	if containerId, err = createCfContainer(ctx, cli, &createConfig); err != nil {
 		return nil, err
 	}
 

@@ -198,6 +198,7 @@ def get_chromium_page(
     for arg in args:
         options.set_argument(arg)
 
+    options.add_extension(constants.POINTER_EXT_DIR)
     if os.getenv("KJHJASON_CF_ADD_NAV_EXT") == "1" or os_name != constants.PLATFORM_NAME.lower():
         __create_navigator_js_with_os_name(os_name)
         options.add_extension(constants.NAVIGATOR_EXT_DIR)

@@ -20,13 +20,13 @@ import (
 // go test -v -run ^TestInitPyFiles$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
 func TestInitPyFiles(t *testing.T) {
 	t.Log("Initialising Python files")
-	InitFiles()
+	InitPyFiles()
 }
 
 // go test -v -run ^TestPyScript$ github.com/KJHJason/Cultured-Downloader-Logic/api/cf
 func TestPyScript(t *testing.T) {
 	t.Log("Initialising Python files")
-	InitFiles()
+	InitPyFiles()
 	website := "https://nopecha.com/demo/cloudflare"
 
 	t.Log("Calling Cloudflare solver script...")
