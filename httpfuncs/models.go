@@ -77,7 +77,7 @@ type CaptchaHandler struct {
 	Handler interface {
 		Call(*http.Request) error
 	}
-	InjectCfCookies func() []*http.Cookie
+	InjectCaptchaCookies func() []*http.Cookie
 }
 
 func (ch CaptchaHandler) Call(req *http.Request) error {

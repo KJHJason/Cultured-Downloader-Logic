@@ -18,6 +18,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -139,11 +140,12 @@ func processFantiaPost(res *httpfuncs.ResponseWrapper, dlOptions *FantiaDlOption
 	if err != nil {
 		return nil, nil, err
 	}
+	resUrl := res.Url()
 
 	// processes a fantia post
 	// returns a map containing the post id and the url to download the file from
 	var postJson FantiaPost
-	if err := httpfuncs.LoadJsonFromBytes(res.Url(), respBody, &postJson); err != nil {
+	if err := httpfuncs.LoadJsonFromBytes(resUrl, respBody, &postJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -179,6 +181,23 @@ func processFantiaPost(res *httpfuncs.ResponseWrapper, dlOptions *FantiaDlOption
 	postContent := post.PostContents
 	if postContent == nil {
 		return urlsSlice, gdriveLinks, nil
+	}
+
+	if dlOptions.Base.SetMetadata {
+		comments := make([]string, 0, len(postContent))
+		for _, content := range postContent {
+			comments = append(comments, content.Comment)
+		}
+		postMetadata := metadata.FantiaPost{
+			Url:                  resUrl,
+			PostedAt:             postDate,
+			Title:                postTitle,
+			PostComment:          post.Comment,
+			EmbeddedPostComments: comments,
+		}
+		if err := metadata.WriteMetadata(postMetadata, postFolderPath); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	contentIds := &postContentId{
@@ -254,6 +273,7 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 
 func getAndProcessProductPaidContent(purchaseRelativeUrl, productId string, dlOptions *FantiaDlOptions) ([]string, error) {
 	respWrapper, err := getFantiaProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
+	//lint:ignore SA5001 Ignore the error check from closing the response body
 	defer respWrapper.Close()
 	if err != nil {
 		return nil, err
@@ -343,7 +363,7 @@ func getProductPaidContent(productId string, doc *goquery.Document, dlOptions *F
 	return getAndProcessProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
 }
 
-func getProductDetails(productId string, doc *goquery.Document) (productName string, thumbnailUrl string, previewContents []string) {
+func getProductDetails(productId string, doc *goquery.Document, productInfo *ProductInfo) (productName string, thumbnailUrl string, previewContents []string) {
 	jsonContent := doc.Find("head script[type='application/ld+json']").Text()
 	if jsonContent == "" {
 		logger.LogError(
@@ -358,7 +378,7 @@ func getProductDetails(productId string, doc *goquery.Document) (productName str
 	}
 
 	// get the product details from the JSON content
-	var productInfo ProductInfo
+	var productInfoSlice ProductInfoSlice
 	if err := json.Unmarshal([]byte(jsonContent), &productInfo); err != nil {
 		logger.LogError(
 			//lint:ignore ST1005 Since the json content is long, it's better to have it on a new line for readability
@@ -374,7 +394,7 @@ func getProductDetails(productId string, doc *goquery.Document) (productName str
 		return
 	}
 
-	if len(productInfo) == 0 {
+	if len(productInfoSlice) == 0 {
 		logger.LogError(
 			fmt.Errorf(
 				"fantia error %d: although unmarshalled successfully, there is no element in the product info slice from product id %q",
@@ -386,7 +406,8 @@ func getProductDetails(productId string, doc *goquery.Document) (productName str
 		return
 	}
 
-	product := productInfo[0]
+	product := productInfoSlice[0]
+	productInfo = &product
 	productName = product.Name
 
 	// alternatively, we can use
@@ -430,12 +451,13 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 	wg.Add(2)
 
 	var fanclubName string
+	var productInfo ProductInfo
 	var previewContentUrls []string
 	var thumbnailUrl, productName string
 	go func() {
 		defer wg.Done()
 		fanclubName = getFanclubNameFromProductPage(productId, doc)
-		productName, thumbnailUrl, previewContentUrls = getProductDetails(productId, doc)
+		productName, thumbnailUrl, previewContentUrls = getProductDetails(productId, doc, &productInfo)
 	}()
 
 	// Check if the user has purchased the product so that we can get and download the paid content as well.
@@ -466,6 +488,22 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 		constants.FANTIA_PRODUCT_DIR_NAME,
 		filepath.Base(dirPath), // go back to the original directory
 	)
+
+	if dlOptions.Base.SetMetadata {
+		productMetadata := metadata.FantiaProduct{
+			Url:         constants.FANTIA_PRODUCT_URL + productId,
+			Name:        productName,
+			Description: productInfo.Description,
+			Images:      productInfo.Image,
+			Pricing: metadata.FantiaProductPricing{
+				Price:    productInfo.Offers.Price,
+				Currency: productInfo.Offers.PriceCurrency,
+			},
+		}
+		if err := metadata.WriteMetadata(productMetadata, dirPath); err != nil {
+			return nil, err
+		}
+	}
 
 	if thumbnailUrl != "" {
 		toDownload = append(toDownload, &httpfuncs.ToDownload{

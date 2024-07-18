@@ -50,7 +50,7 @@ type FantiaPost struct {
 
 // found in the head HTML tag.
 // Although it's a slice, it should only contains one element.
-type ProductInfo []struct {
+type ProductInfo struct {
 	Type        string   `json:"@type"`
 	Context     string   `json:"@context"`
 	Name        string   `json:"name"`
@@ -68,3 +68,5 @@ type ProductInfo []struct {
 		Availability  string `json:"availability"`
 	} `json:"offers"`
 }
+
+type ProductInfoSlice []ProductInfo

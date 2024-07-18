@@ -27,9 +27,9 @@ func getFantiaProductPaidContent(purchaseRelativeUrl, productId string, dlOption
 			UserAgent: dlOptions.Base.Configs.UserAgent,
 			Context:   dlOptions.GetContext(),
 			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:           CaptchaChecker,
-				Handler:         newCaptchaHandler(dlOptions),
-				InjectCfCookies: nil,
+				Check:                CaptchaChecker,
+				Handler:              newCaptchaHandler(dlOptions),
+				InjectCaptchaCookies: nil,
 			},
 		},
 	)
@@ -50,7 +50,7 @@ func getFantiaProductPaidContent(purchaseRelativeUrl, productId string, dlOption
 
 func getProduct(productId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, error) {
 	var cacheKey string
-	productUrl := fmt.Sprintf("%s/products/%s", constants.FANTIA_URL, productId)
+	productUrl := constants.FANTIA_PRODUCT_URL + productId
 	if dlOptions.Base.UseCacheDb {
 		if database.PostCacheExists(productUrl, constants.FANTIA) {
 			return nil, nil
@@ -69,9 +69,9 @@ func getProduct(productId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDo
 			UserAgent: dlOptions.Base.Configs.UserAgent,
 			Context:   dlOptions.GetContext(),
 			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:           CaptchaChecker,
-				Handler:         newCaptchaHandler(dlOptions),
-				InjectCfCookies: nil,
+				Check:                CaptchaChecker,
+				Handler:              newCaptchaHandler(dlOptions),
+				InjectCaptchaCookies: nil,
 			},
 		},
 	)

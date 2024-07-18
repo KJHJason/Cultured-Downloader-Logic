@@ -14,6 +14,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
@@ -236,6 +237,21 @@ func processFanboxPostJson(res *http.Response, dlOptions *PixivFanboxDlOptions) 
 		postId,
 		postTitle,
 	)
+
+	if dlOptions.Base.SetMetadata {
+		postMetadata := metadata.PixivFanboxPost{
+			PostUrl:            res.Request.URL.String(),
+			Title:              postJson.Title,
+			PublishedAt:        postJson.PublishedDatetime,
+			HasAdultContent:    postJson.HasAdultContent,
+			RestrictedFromUser: postJson.IsRestricted,
+			PostType:           postJson.Type,
+			PlanFee:            postJson.FeeRequired,
+		}
+		if err := metadata.WriteMetadata(postMetadata, postFolderPath); err != nil {
+			return nil, nil, err
+		}
+	}
 
 	var urlsSlice []*httpfuncs.ToDownload
 	thumbnail := postJson.CoverImageURL

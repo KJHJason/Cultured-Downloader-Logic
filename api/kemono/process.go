@@ -14,6 +14,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
@@ -94,6 +95,31 @@ func processJson(resJson *MainKemonoJson, dlOptions *KemonoDlOptions) ([]*httpfu
 		resJson.Id,
 		resJson.Title,
 	)
+
+	if dlOptions.Base.SetMetadata {
+		postMetadata := metadata.KemonoPost{
+			PostId: resJson.Id,
+			Url: fmt.Sprintf(
+				"%s/%s/user/%s/post/%s",
+				constants.KEMONO_URL,
+				resJson.Service,
+				resJson.User,
+				resJson.Id,
+			),
+			Title:        resJson.Title,
+			Service:      resJson.Service,
+			Content:      resJson.Content,
+			PublishedUTC: resJson.Published,
+			EmbedContent: metadata.KemonoPostEmbeddedContent{
+				Description: resJson.Embed.Description,
+				Subject:     resJson.Embed.Subject,
+				Url:         resJson.Embed.Url,
+			},
+		}
+		if err := metadata.WriteMetadata(postMetadata, postFolderPath); err != nil {
+			return nil, nil
+		}
+	}
 
 	var gdriveLinks []*httpfuncs.ToDownload
 	var toDownload []*httpfuncs.ToDownload

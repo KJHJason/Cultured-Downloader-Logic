@@ -75,7 +75,7 @@ func getHeaders(website, userAgent string) map[string]string {
 
 // Verifies the given cookie by making a request to the website
 // and returns true if the cookie is valid
-func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) {
+func VerifyCookie(cookie *http.Cookie, website, userAgent string, captchaHandler httpfuncs.CaptchaHandler) (bool, error) {
 	timeout := constants.DEFAULT_HEAD_REQ_TIMEOUT
 
 	// sends a request to the website to verify the cookie
@@ -109,14 +109,15 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string) (bool, error) 
 	cookies := []*http.Cookie{cookie}
 	resp, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:      "HEAD",
-			Url:         websiteUrl,
-			Cookies:     cookies,
-			CheckStatus: true,
-			Http3:       useHttp3,
-			Http2:       !useHttp3,
-			Headers:     getHeaders(website, userAgent),
-			Timeout:     timeout,
+			Method:         "HEAD",
+			Url:            websiteUrl,
+			Cookies:        cookies,
+			CheckStatus:    true,
+			Http3:          useHttp3,
+			Http2:          !useHttp3,
+			Headers:        getHeaders(website, userAgent),
+			Timeout:        timeout,
+			CaptchaHandler: captchaHandler,
 		},
 	)
 	if err != nil {
@@ -153,9 +154,9 @@ func processCookieVerification(website string, err error) error {
 // If the cookie is valid, the cookie will be returned
 //
 // However, if the cookie is invalid, an error message will be printed out and the program will shutdown
-func VerifyAndGetCookie(website, cookieValue, userAgent string) (*http.Cookie, error) {
+func VerifyAndGetCookie(website, cookieValue, userAgent string, captchaHandler httpfuncs.CaptchaHandler) (*http.Cookie, error) {
 	cookie := GetCookie(cookieValue, website)
-	cookieIsValid, err := VerifyCookie(cookie, website, userAgent)
+	cookieIsValid, err := VerifyCookie(cookie, website, userAgent, captchaHandler)
 	processCookieVerification(website, err)
 
 	if !cookieIsValid {
@@ -168,14 +169,14 @@ func VerifyAndGetCookie(website, cookieValue, userAgent string) (*http.Cookie, e
 	return cookie, nil
 }
 
-func VerifyCookies(website, userAgent string, cookies []*http.Cookie) error {
+func VerifyCookies(website, userAgent string, cookies []*http.Cookie, captchaHandler httpfuncs.CaptchaHandler) error {
 	baseCookie := GetCookie("placeholder-value", website)
 	for _, cookie := range cookies {
 		if cookie.Name != baseCookie.Name {
 			continue
 		}
 
-		cookieIsValid, err := VerifyCookie(cookie, website, userAgent)
+		cookieIsValid, err := VerifyCookie(cookie, website, userAgent, captchaHandler)
 		processCookieVerification(website, err)
 		if !cookieIsValid {
 			return fmt.Errorf(

@@ -25,7 +25,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
-	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 )
@@ -66,7 +65,6 @@ type skipDlArgs struct {
 	contentLength  int64
 	forceOverwrite bool
 	supportRange   bool
-	setMetadata    bool
 }
 
 // check if the file size matches the content length
@@ -77,22 +75,6 @@ func checkIfCanSkipDl(skipDlArgsVal skipDlArgs) bool {
 	}
 	if skipDlArgsVal.fileSize == -1 {
 		return false // file does not exist
-	}
-
-	if skipDlArgsVal.setMetadata && skipDlArgsVal.fileSize > skipDlArgsVal.contentLength {
-		fileSizeWithoutMetadata, err := metadata.GetFileSizeWithoutExifData(skipDlArgsVal.ctx, skipDlArgsVal.filePath)
-		if err != nil {
-			logger.LogError(
-				fmt.Errorf(
-					"error %d: failed to get file size without metadata, more info => %w",
-					cdlerrors.UNEXPECTED_ERROR,
-					err,
-				),
-				logger.ERROR,
-			)
-			return false
-		}
-		skipDlArgsVal.fileSize = fileSizeWithoutMetadata
 	}
 
 	if skipDlArgsVal.fileSize == skipDlArgsVal.contentLength {
@@ -355,7 +337,6 @@ func downloadUrl(filePath string, queue chan struct{}, reqArgs *RequestArgs, ove
 		contentLength:  fileReqContentLength,
 		forceOverwrite: overwriteExistingFile,
 		supportRange:   dlOptions.SupportRange,
-		setMetadata:    dlOptions.SetMetadata,
 	}
 	if !checkIfCanSkipDl(skipDlArgsVal) {
 		dlReqInfo := &DlRequestInfo{

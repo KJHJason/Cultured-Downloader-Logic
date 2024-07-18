@@ -150,9 +150,9 @@ func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
 			CheckStatus: true,
 			UserAgent:   userAgent,
 			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:           CaptchaChecker,
-				Handler:         newCaptchaHandler(f),
-				InjectCfCookies: nil,
+				Check:                CaptchaChecker,
+				Handler:              newCaptchaHandler(f),
+				InjectCaptchaCookies: nil,
 			},
 		},
 	)
@@ -251,12 +251,12 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	if len(f.Base.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.FANTIA, userAgent, f.Base.SessionCookies); err != nil {
+		if err := api.VerifyCookies(constants.FANTIA, userAgent, f.Base.SessionCookies, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		}
 		f.Base.SessionCookieId = ""
 	} else if f.Base.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.FANTIA, f.Base.SessionCookieId, userAgent); err != nil {
+		if cookie, err := api.VerifyAndGetCookie(constants.FANTIA, f.Base.SessionCookieId, userAgent, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		} else {
 			f.Base.SessionCookies = []*http.Cookie{cookie}

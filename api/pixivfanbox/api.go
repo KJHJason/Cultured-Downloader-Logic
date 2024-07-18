@@ -39,9 +39,9 @@ func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOption
 			Http3:     useHttp3,
 			Context:   dlOptions.ctx,
 			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:           CaptchaChecker,
-				Handler:         NewCaptchaHandler(dlOptions),
-				InjectCfCookies: GetCachedCfCookies,
+				Check:                CaptchaChecker,
+				Handler:              NewCaptchaHandler(dlOptions),
+				InjectCaptchaCookies: GetCachedCfCookies,
 			},
 		},
 	)
@@ -206,9 +206,9 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 			Http3:     useHttp3,
 			Context:   dlOptions.GetContext(),
 			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:           CaptchaChecker,
-				Handler:         NewCaptchaHandler(dlOptions),
-				InjectCfCookies: GetCachedCfCookies,
+				Check:                CaptchaChecker,
+				Handler:              NewCaptchaHandler(dlOptions),
+				InjectCaptchaCookies: GetCachedCfCookies,
 			},
 		},
 	)
@@ -261,9 +261,9 @@ func getFanboxPostsLogic(reqUrl string, headers map[string]string, dlOptions *Pi
 			Http3:     useHttp3,
 			Context:   dlOptions.GetContext(),
 			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:           CaptchaChecker,
-				Handler:         NewCaptchaHandler(dlOptions),
-				InjectCfCookies: GetCachedCfCookies,
+				Check:                CaptchaChecker,
+				Handler:              NewCaptchaHandler(dlOptions),
+				InjectCaptchaCookies: GetCachedCfCookies,
 			},
 		},
 	)

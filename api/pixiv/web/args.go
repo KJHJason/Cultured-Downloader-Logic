@@ -10,6 +10,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
@@ -79,12 +80,12 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	if len(p.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.PIXIV, userAgent, p.SessionCookies); err != nil {
+		if err := api.VerifyCookies(constants.PIXIV, userAgent, p.SessionCookies, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		}
 		p.SessionCookieId = ""
 	} else if p.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV, p.SessionCookieId, userAgent); err != nil {
+		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV, p.SessionCookieId, userAgent, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		} else {
 			p.SessionCookies = []*http.Cookie{cookie}

@@ -1,6 +1,7 @@
 package pixivfanbox
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -78,12 +79,12 @@ func addCacheCookiesToReq(req *http.Request) {
 	}
 }
 
-func (ch CaptchaHandler) callMainLogicUnsafe() error {
+func callMainLogicUnsafe(ctx context.Context) error {
 	var err error
 	var cfCookies cf.Cookies
 	cfArgs := cf.NewCfArgs(constants.PIXIV_FANBOX_URL)
 	if startup.UseDockerForCf {
-		cfCookies, err = cf.CallDockerImage(ch.dlOptions.GetContext(), cfArgs)
+		cfCookies, err = cf.CallDockerImage(ctx, cfArgs)
 		if err != nil {
 			return err
 		}
@@ -99,6 +100,22 @@ func (ch CaptchaHandler) callMainLogicUnsafe() error {
 	return nil
 }
 
+func (ch CaptchaHandler) Alert(msg string) {
+	notifier := ch.dlOptions.Base.Notifier
+	if notifier != nil {
+		ch.dlOptions.Base.Notifier.Alert(msg)
+	}
+}
+
+func (ch CaptchaHandler) callLogic() error {
+	ch.Alert("CF Captcha detected, solving it automatically...")
+	if err := callMainLogicUnsafe(ch.dlOptions.GetContext()); err != nil {
+		ch.Alert("Failed to solve CF Captcha automatically...")
+		return err
+	}
+	return nil
+}
+
 func (ch CaptchaHandler) Call(req *http.Request) error {
 	cfCacheMu.Lock()
 	defer cfCacheMu.Unlock()
@@ -108,7 +125,7 @@ func (ch CaptchaHandler) Call(req *http.Request) error {
 		return nil
 	}
 
-	if err := ch.callMainLogicUnsafe(); err != nil {
+	if err := ch.callLogic(); err != nil {
 		return err
 	}
 	addCacheCookiesToReq(req)
@@ -123,7 +140,7 @@ func (ch CaptchaHandler) GetCfCookies() ([]*http.Cookie, error) {
 		return cfCookies, nil
 	}
 
-	if err := ch.callMainLogicUnsafe(); err != nil {
+	if err := ch.callLogic(); err != nil {
 		return nil, err
 	}
 	return getFilteredCachedCookiesUnsafe(), nil

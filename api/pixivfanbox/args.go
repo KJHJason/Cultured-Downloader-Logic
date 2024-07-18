@@ -8,6 +8,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
@@ -135,13 +136,18 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 		pf.Base.DownloadDirPath = dlDirPath
 	}
 
+	captchaHandler := httpfuncs.CaptchaHandler{
+		Check:                CaptchaChecker,
+		Handler:              NewCaptchaHandler(pf),
+		InjectCaptchaCookies: nil,
+	}
 	if len(pf.Base.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.PIXIV_FANBOX, userAgent, pf.Base.SessionCookies); err != nil {
+		if err := api.VerifyCookies(constants.PIXIV_FANBOX, userAgent, pf.Base.SessionCookies, captchaHandler); err != nil {
 			return err
 		}
 		pf.Base.SessionCookieId = ""
 	} else if pf.Base.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV_FANBOX, pf.Base.SessionCookieId, userAgent); err != nil {
+		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV_FANBOX, pf.Base.SessionCookieId, userAgent, captchaHandler); err != nil {
 			return err
 		} else {
 			pf.Base.SessionCookies = []*http.Cookie{cookie}

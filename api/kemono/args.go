@@ -8,6 +8,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
@@ -197,12 +198,12 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	if len(k.Base.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.KEMONO, userAgent, k.Base.SessionCookies); err != nil {
+		if err := api.VerifyCookies(constants.KEMONO, userAgent, k.Base.SessionCookies, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		}
 		k.Base.SessionCookieId = ""
 	} else if k.Base.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.KEMONO, k.Base.SessionCookieId, userAgent); err != nil {
+		if cookie, err := api.VerifyAndGetCookie(constants.KEMONO, k.Base.SessionCookieId, userAgent, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		} else {
 			k.Base.SessionCookies = []*http.Cookie{cookie}

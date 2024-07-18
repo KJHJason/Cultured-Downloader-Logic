@@ -22,8 +22,6 @@ const (
 	JP                     = "ja"
 	FFMPEG_MAX_CONCURRENCY = 2
 
-	ERR_RECAPTCHA_STR = "recaptcha detected for the current session"
-
 	PAGE_NUM_REGEX_STR            = `[1-9]\d*(?:-[1-9]\d*)?`
 	PAGE_NUM_IDX_NAME             = "pageNum"
 	PAGE_NUM_WITH_INPUT_REGEX_STR = `(?:;(?P<pageNum>[1-9]\d*(?:-[1-9]\d*)?))?`
@@ -40,6 +38,7 @@ const (
 	FANTIA_RECAPTCHA_URL            = "https://fantia.jp/recaptcha"
 	FANTIA_RANGE_SUPPORTED          = true
 	FANTIA_MAX_CONCURRENCY          = 5
+	FANTIA_PRODUCT_URL              = "https://fantia.jp/products/"
 	FANTIA_POST_API_URL             = "https://fantia.jp/api/v1/posts/"
 	FANTIA_CAPTCHA_BTN_SELECTOR     = `//input[@name='commit']`
 	FANTIA_CAPTCHA_TIMEOUT          = 35 * time.Second
