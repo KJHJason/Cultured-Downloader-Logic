@@ -11,7 +11,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
@@ -34,7 +33,7 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 	if tagNameLen > 0 && pixivDlOptions.CtxIsActive() {
 		// loop through each tag and page number
 		baseMsg := "Searching for artworks based on tag names on Pixiv [%d/" + fmt.Sprintf("%d]...", tagNameLen)
-		prog := pixivDlOptions.MainProgBar
+		prog := pixivDlOptions.Base.MainProgBar()
 		prog.UpdateBaseMsg(baseMsg)
 		prog.UpdateSuccessMsg(
 			fmt.Sprintf(
@@ -110,60 +109,53 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 				Context:        pixivDlOptions.GetContext(),
 				MaxConcurrency: constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
 				Headers:        pixivcommon.GetPixivRequestHeaders(),
-				Cookies:        pixivDlOptions.SessionCookies,
+				Cookies:        pixivDlOptions.Base.SessionCookies,
 				UseHttp3:       false,
 				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
 				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
 				// SetMetadata:    pixivDlOptions.Base.SetMetadata,
 				// Filters:        pixivDlOptions.Base.Filters,
-				ProgressBarInfo: &progress.ProgressBarInfo{
-					MainProgressBar:      pixivDlOptions.MainProgBar,
-					DownloadProgressBars: pixivDlOptions.DownloadProgressBars,
-				},
+				ProgressBarInfo: pixivDlOptions.Base.ProgressBarInfo,
 			},
-			pixivDlOptions.Configs,
+			pixivDlOptions.Base.Configs,
 		)
 	}
 	if len(ugoiraToDl) > 0 && pixivDlOptions.CtxIsActive() {
 		ugoiraArgs := &ugoira.UgoiraArgs{
 			UseMobileApi: false,
 			ToDownload:   ugoiraToDl,
-			Cookies:      pixivDlOptions.SessionCookies,
-			MainProgBar:  pixivDlOptions.MainProgBar,
+			Cookies:      pixivDlOptions.Base.SessionCookies,
+			MainProgBar:  pixivDlOptions.Base.MainProgBar(),
 		}
 		ugoiraArgs.SetContext(pixivDlOptions.GetContext())
 		err := ugoira.DownloadMultipleUgoira(
 			ugoiraArgs,
 			pixivUgoiraOptions,
-			pixivDlOptions.Configs,
+			pixivDlOptions.Base.Configs,
 			httpfuncs.CallRequest,
 			false,
-			&progress.ProgressBarInfo{
-				MainProgressBar:      pixivDlOptions.MainProgBar,
-				DownloadProgressBars: pixivDlOptions.DownloadProgressBars,
-			},
+			pixivDlOptions.Base.ProgressBarInfo,
 		)
 		if len(err) > 0 {
 			errSlice = append(errSlice, err...)
 		}
 	}
 
-	alertUser(artworksToDl, ugoiraToDl, pixivDlOptions.Notifier)
+	alertUser(artworksToDl, ugoiraToDl, pixivDlOptions.Base.Notifier)
 	return errSlice
 }
 
 // Start the download process for Pixiv
-func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmobile.PixivMobileDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions) []error {
-	defer pixivDlOptions.CancelCtx()
+func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivMobile *pixivmobile.PixivMobile, pixivUgoiraOptions *ugoira.UgoiraOptions) []error {
+	defer pixivMobile.CancelCtx()
 	var errSlice []error
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
 
 	if len(pixivDl.ArtistIds) > 0 {
-		artworkSlice, ugoiraSlice, err := pixivDlOptions.MobileClient.GetMultipleArtistsPosts(
+		artworkSlice, ugoiraSlice, err := pixivMobile.GetMultipleArtistsPosts(
 			pixivDl.ArtistIds,
 			pixivDl.ArtistPageNums,
-			pixivDlOptions.ArtworkType,
 		)
 		if len(err) > 0 {
 			errSlice = append(errSlice, err...)
@@ -173,8 +165,8 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 		}
 	}
 
-	if len(pixivDl.ArtworkIds) > 0 && pixivDlOptions.CtxIsActive() {
-		artworkSlice, ugoiraSlice, err := pixivDlOptions.MobileClient.GetMultipleArtworkDetails(pixivDl.ArtworkIds)
+	if len(pixivDl.ArtworkIds) > 0 && pixivMobile.CtxIsActive() {
+		artworkSlice, ugoiraSlice, err := pixivMobile.GetMultipleArtworkDetails(pixivDl.ArtworkIds)
 		if len(err) > 0 {
 			errSlice = append(errSlice, err...)
 		} else {
@@ -184,10 +176,10 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 	}
 
 	tagNamesLen := len(pixivDl.TagNames)
-	if tagNamesLen > 0 && pixivDlOptions.CtxIsActive() {
+	if tagNamesLen > 0 && pixivMobile.CtxIsActive() {
 		// loop through each tag and page number
 		baseMsg := "Searching for artworks based on tag names on Pixiv [%d/" + fmt.Sprintf("%d]...", tagNamesLen)
-		prog := pixivDlOptions.MainProgBar
+		prog := pixivMobile.Base.MainProgBar()
 		prog.UpdateBaseMsg(baseMsg)
 		prog.UpdateSuccessMsg(
 			fmt.Sprintf(
@@ -208,10 +200,9 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 		for idx, tagName := range pixivDl.TagNames {
 			var artworksSlice []*httpfuncs.ToDownload
 			var ugoiraSlice []*ugoira.Ugoira
-			artworksSlice, ugoiraSlice, err, hasCancelled := pixivDlOptions.MobileClient.TagSearch(
+			artworksSlice, ugoiraSlice, err, hasCancelled := pixivMobile.TagSearch(
 				tagName,
 				pixivDl.TagNamesPageNums[idx],
-				pixivDlOptions,
 			)
 
 			if len(err) > 0 {
@@ -232,11 +223,11 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 		prog.SnapshotTask()
 	}
 
-	if len(artworksToDl) > 0 && pixivDlOptions.CtxIsActive() {
+	if len(artworksToDl) > 0 && pixivMobile.CtxIsActive() {
 		cancelled, err := httpfuncs.DownloadUrlsWithHandler(
 			artworksToDl,
 			&httpfuncs.DlOptions{
-				Context:        pixivDlOptions.GetContext(),
+				Context:        pixivMobile.GetContext(),
 				MaxConcurrency: constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
 				Headers:        pixivcommon.GetPixivRequestHeaders(),
 				UseHttp3:       false,
@@ -244,13 +235,10 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
 				// SetMetadata:    pixivDlOptions.Base.SetMetadata,
 				// Filters:        pixivDlOptions.Base.Filters,
-				ProgressBarInfo: &progress.ProgressBarInfo{
-					MainProgressBar:      pixivDlOptions.MainProgBar,
-					DownloadProgressBars: pixivDlOptions.DownloadProgressBars,
-				},
+				ProgressBarInfo: pixivMobile.Base.ProgressBarInfo,
 			},
-			pixivDlOptions.Configs,
-			pixivDlOptions.MobileClient.SendRequest,
+			pixivMobile.Base.Configs,
+			pixivMobile.SendRequest,
 		)
 		if len(err) > 0 {
 			errSlice = append(errSlice, err...)
@@ -259,30 +247,27 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivmob
 			return errSlice
 		}
 	}
-	if len(ugoiraToDl) > 0 && pixivDlOptions.CtxIsActive() {
+	if len(ugoiraToDl) > 0 && pixivMobile.CtxIsActive() {
 		ugoiraArgs := &ugoira.UgoiraArgs{
 			UseMobileApi: true,
 			ToDownload:   ugoiraToDl,
 			Cookies:      nil,
-			MainProgBar:  pixivDlOptions.MainProgBar,
+			MainProgBar:  pixivMobile.Base.MainProgBar(),
 		}
-		ugoiraArgs.SetContext(pixivDlOptions.GetContext())
+		ugoiraArgs.SetContext(pixivMobile.GetContext())
 		err := ugoira.DownloadMultipleUgoira(
 			ugoiraArgs,
 			pixivUgoiraOptions,
-			pixivDlOptions.Configs,
-			pixivDlOptions.MobileClient.SendRequest,
+			pixivMobile.Base.Configs,
+			pixivMobile.SendRequest,
 			false,
-			&progress.ProgressBarInfo{
-				MainProgressBar:      pixivDlOptions.MainProgBar,
-				DownloadProgressBars: pixivDlOptions.DownloadProgressBars,
-			},
+			pixivMobile.Base.ProgressBarInfo,
 		)
 		if len(err) > 0 {
 			errSlice = append(errSlice, err...)
 		}
 	}
 
-	alertUser(artworksToDl, ugoiraToDl, pixivDlOptions.Notifier)
+	alertUser(artworksToDl, ugoiraToDl, pixivMobile.Base.Notifier)
 	return errSlice
 }

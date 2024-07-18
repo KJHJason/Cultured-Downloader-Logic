@@ -103,7 +103,7 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 	var ugoiraCacheKey string
 	url := getArtworkDetailsApi(artworkId) // API URL
 	webUrl := fmt.Sprintf("https://www.pixiv.net/artworks/%s", artworkId)
-	if dlOptions.UseCacheDb {
+	if dlOptions.Base.UseCacheDb {
 		if database.PostCacheExists(webUrl, constants.PIXIV) || database.UgoiraCacheExists(webUrl) {
 			// either the artwork or the ugoira cache exists
 			return nil, nil, nil
@@ -119,9 +119,9 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 	reqArgs := &httpfuncs.RequestArgs{
 		Url:       url,
 		Method:    "GET",
-		Cookies:   dlOptions.SessionCookies,
+		Cookies:   dlOptions.Base.SessionCookies,
 		Headers:   headers,
-		UserAgent: dlOptions.Configs.UserAgent,
+		UserAgent: dlOptions.Base.Configs.UserAgent,
 		Http2:     !useHttp3,
 		Http3:     useHttp3,
 		Context:   dlOptions.GetContext(),
@@ -138,13 +138,13 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 	illustratorName := artworkJsonBody.UserName
 	artworkName := artworkJsonBody.Title
 	artworkPostDir := iofuncs.GetPostFolder(
-		dlOptions.BaseDownloadDirPath,
+		dlOptions.Base.DownloadDirPath,
 		illustratorName,
 		artworkId,
 		artworkName,
 	)
 
-	if dlOptions.SetMetadata {
+	if dlOptions.Base.SetMetadata {
 		var readableIllustType string
 		switch artworkJsonBody.IllustType {
 		case ILLUST:
@@ -199,7 +199,7 @@ func GetMultipleArtworkDetails(artworkIds []string, dlOptions *PixivWebDlOptions
 
 	var progress progress.ProgressBar
 	baseMsg := "Getting and processing artwork details from Pixiv [%d/" + fmt.Sprintf("%d]...", artworkIdsLen)
-	progress = dlOptions.MainProgBar
+	progress = dlOptions.Base.MainProgBar()
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -271,9 +271,9 @@ func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions)
 		&httpfuncs.RequestArgs{
 			Url:       url,
 			Method:    "GET",
-			Cookies:   dlOptions.SessionCookies,
+			Cookies:   dlOptions.Base.SessionCookies,
 			Headers:   headers,
-			UserAgent: dlOptions.Configs.UserAgent,
+			UserAgent: dlOptions.Base.Configs.UserAgent,
 			Http2:     !useHttp3,
 			Http3:     useHttp3,
 			Context:   dlOptions.GetContext(),
@@ -316,7 +316,7 @@ func GetMultipleArtistsPosts(illustratorIds, pageNums []string, dlOptions *Pixiv
 	lastIllustratorIdx := illustratorIdsLen - 1
 
 	baseMsg := "Getting artwork details from artist(s) on Pixiv [%d/" + fmt.Sprintf("%d]...", illustratorIdsLen)
-	progress := dlOptions.MainProgBar
+	progress := dlOptions.Base.MainProgBar()
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -460,11 +460,11 @@ func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]string,
 		&httpfuncs.RequestArgs{
 			Url:         url,
 			Method:      "GET",
-			Cookies:     dlOptions.SessionCookies,
+			Cookies:     dlOptions.Base.SessionCookies,
 			Headers:     headers,
 			Params:      params,
 			CheckStatus: true,
-			UserAgent:   dlOptions.Configs.UserAgent,
+			UserAgent:   dlOptions.Base.Configs.UserAgent,
 			Http2:       !useHttp3,
 			Http3:       useHttp3,
 			Context:     dlOptions.GetContext(),

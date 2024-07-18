@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 type PixivMobile struct {
@@ -18,9 +18,14 @@ type PixivMobile struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	setMetadata         bool
-	useCacheDb          bool
-	baseDownloadDirPath string
+	Base *api.BaseDl
+
+	// Sort order of the results. Can be "date_desc" or "date_asc".
+	SortOrder    string
+	SearchMode   string
+	SearchAiMode int // 0: filter AI works, 1: Display AI works
+	RatingMode   string
+	ArtworkType  string
 
 	// API information and its endpoints
 	refreshToken string
@@ -31,19 +36,36 @@ type PixivMobile struct {
 	// Access token information
 	accessTokenMu  sync.Mutex
 	accessTokenMap OAuthTokenInfo
+}
 
-	// Prog bar
-	MainProgBar progress.ProgressBar
+func (p *PixivMobile) GetContext() context.Context {
+	return p.ctx
+}
+
+func (p *PixivMobile) GetCancel() context.CancelFunc {
+	return p.cancel
+}
+
+func (p *PixivMobile) SetContext(ctx context.Context) {
+	p.ctx, p.cancel = context.WithCancel(ctx)
+}
+
+// CancelCtx releases the resources used and cancels the context of the PixivMobile struct.
+func (p *PixivMobile) CancelCtx() {
+	p.cancel()
+}
+
+func (p *PixivMobile) CtxIsActive() bool {
+	return p.ctx.Err() == nil
 }
 
 // Get a new PixivMobile structure
-func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, cancelFunc context.CancelFunc) (*PixivMobile, error) {
+func NewPixivMobile(refreshToken string, timeout int, ctx context.Context) (*PixivMobile, error) {
 	pixivMobile := &PixivMobile{
-		ctx:          ctx,
-		cancel:       cancelFunc,
 		refreshToken: refreshToken,
 		apiTimeout:   timeout,
 	}
+	pixivMobile.SetContext(ctx)
 	if refreshToken != "" {
 		// refresh the access token and verify it
 		if err := pixivMobile.refreshTokenField(); err != nil {
@@ -51,22 +73,6 @@ func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, cance
 		}
 	}
 	return pixivMobile, nil
-}
-
-func (pixiv *PixivMobile) SetMainProgBar(mainProgBar progress.ProgressBar) {
-	pixiv.MainProgBar = mainProgBar
-}
-
-func (pixiv *PixivMobile) SetBaseDlDirPath(dlDirPath string) {
-	pixiv.baseDownloadDirPath = dlDirPath
-}
-
-func (pixiv *PixivMobile) SetUseCacheDb(useCacheDb bool) {
-	pixiv.useCacheDb = useCacheDb
-}
-
-func (pixiv *PixivMobile) SetMetadataFlag(flag bool) {
-	pixiv.setMetadata = flag
 }
 
 // This is due to Pixiv's strict rate limiting.

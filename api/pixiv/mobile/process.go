@@ -30,10 +30,10 @@ func (pixiv *PixivMobile) processArtworkJson(ugoiraCacheKey string, artworkJson 
 	artworkType := artworkJson.Type
 	artistName := artworkJson.User.Name
 	artworkFolderPath := iofuncs.GetPostFolder(
-		pixiv.baseDownloadDirPath, artistName, artworkId, artworkTitle,
+		pixiv.Base.DownloadDirPath, artistName, artworkId, artworkTitle,
 	)
 
-	if pixiv.setMetadata {
+	if pixiv.Base.SetMetadata {
 		postMetadata := metadata.PixivPost{
 			Url:   fmt.Sprintf("https://www.pixiv.net/artworks/%s", artworkId),
 			Title: artworkTitle,

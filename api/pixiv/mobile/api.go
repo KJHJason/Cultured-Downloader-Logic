@@ -32,7 +32,7 @@ func (pixiv *PixivMobile) getUgoiraMetadata(cacheKey, illustId, dlFilePath strin
 		map[string]string{"Referer": constants.PIXIV_MOBILE_BASE_URL},
 	)
 
-	if pixiv.useCacheDb {
+	if pixiv.Base.UseCacheDb {
 		if database.UgoiraCacheExists(cacheKey) {
 			return nil, nil
 		}
@@ -83,7 +83,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 	var artworkCacheKey string
 	var ugoiraCacheKey string
 	params := map[string]string{"illust_id": artworkId}
-	if pixiv.useCacheDb {
+	if pixiv.Base.UseCacheDb {
 		ugoiraCacheKey = getUgoiraUrl(artworkId)
 		artworkUrl := constants.PIXIV_MOBILE_ARTWORK_URL + "?illust_id=" + artworkId
 		if database.PostCacheExists(artworkUrl, constants.PIXIV) || database.UgoiraCacheExists(ugoiraCacheKey) {
@@ -119,7 +119,7 @@ func (pixiv *PixivMobile) getArtworkDetails(artworkId string) ([]*httpfuncs.ToDo
 	}
 
 	artworkDetails, ugoiraToDl, err := pixiv.processArtworkJson(ugoiraCacheKey, artworkJson.Illust)
-	if pixiv.useCacheDb {
+	if pixiv.Base.UseCacheDb {
 		for _, artwork := range artworkDetails {
 			artwork.CacheKey = artworkCacheKey
 			artwork.CacheFn = database.CachePost
@@ -136,7 +136,7 @@ func (pixiv *PixivMobile) GetMultipleArtworkDetails(artworkIds []string) ([]*htt
 
 	var errSlice []error
 	baseMsg := "Getting and processing artwork details from Pixiv's Mobile API [%d/" + fmt.Sprintf("%d]...", artworkIdsLen)
-	progress := pixiv.MainProgBar
+	progress := pixiv.Base.MainProgBar()
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -245,7 +245,7 @@ func (pixiv *PixivMobile) getArtistPostMainLogic(params map[string]string, userI
 }
 
 // Query Pixiv's API (mobile) to get all the posts JSON(s) of a user ID
-func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, artworkType string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func (pixiv *PixivMobile) getArtistPosts(userId, pageNum string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, nil, []error{err}
@@ -256,9 +256,9 @@ func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, artworkType string) ([
 		"user_id": userId,
 		"filter":  "for_ios",
 		"offset":  strconv.Itoa(minOffset),
-		"type":    artworkType,
+		"type":    pixiv.ArtworkType,
 	}
-	if artworkType == "all" {
+	if pixiv.ArtworkType == "all" {
 		params["type"] = "illust"
 	}
 
@@ -277,7 +277,7 @@ func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, artworkType string) ([
 		return nil, nil, errSlice
 	}
 
-	if params["type"] == "illust" && artworkType == "all" {
+	if params["type"] == "illust" && pixiv.ArtworkType == "all" {
 		// if the user is downloading both
 		// illust and manga, loop again to get the manga
 		params["type"] = "manga"
@@ -298,7 +298,7 @@ func (pixiv *PixivMobile) getArtistPosts(userId, pageNum, artworkType string) ([
 	return artworksToDl, ugoiraSlice, errSlice
 }
 
-func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, artworkType string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	userIdsLen := len(userIds)
 	lastIdx := userIdsLen - 1
 
@@ -306,7 +306,7 @@ func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, ar
 	var ugoiraSlice []*ugoira.Ugoira
 	var artworksToDownload []*httpfuncs.ToDownload
 	baseMsg := "Getting artwork details from artists(s) on Pixiv [%d/" + fmt.Sprintf("%d]...", userIdsLen)
-	progress := pixiv.MainProgBar
+	progress := pixiv.Base.MainProgBar()
 	progress.UpdateBaseMsg(baseMsg)
 	progress.UpdateSuccessMsg(
 		fmt.Sprintf(
@@ -328,7 +328,6 @@ func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, ar
 		artworkDetails, ugoiraInfo, err := pixiv.getArtistPosts(
 			userId,
 			pageNums[idx],
-			artworkType,
 		)
 		if err != nil {
 			if hasCancelled := logger.LogErrors(logger.ERROR, err...); hasCancelled {
@@ -354,17 +353,17 @@ func (pixiv *PixivMobile) GetMultipleArtistsPosts(userIds, pageNums []string, ar
 	return artworksToDownload, ugoiraSlice, errSlice
 }
 
-func (pixiv *PixivMobile) tagSearchLogic(tagName string, dlOptions *PixivMobileDlOptions, offsetArg *offsetArgs) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
+func (pixiv *PixivMobile) tagSearchLogic(tagName string, offsetArg *offsetArgs) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error) {
 	var errSlice []error
 	var ugoiraSlice []*ugoira.Ugoira
 	var artworksToDownload []*httpfuncs.ToDownload
 	params := map[string]string{
 		"word":           tagName,
-		"search_target":  dlOptions.SearchMode,
-		"sort":           dlOptions.SortOrder,
+		"search_target":  pixiv.SearchMode,
+		"sort":           pixiv.SortOrder,
 		"filter":         "for_ios",
 		"offset":         strconv.Itoa(offsetArg.minOffset),
-		"search_ai_type": strconv.Itoa(dlOptions.SearchAiMode),
+		"search_ai_type": strconv.Itoa(pixiv.SearchAiMode),
 	}
 	curOffset := offsetArg.minOffset
 	nextUrl := constants.PIXIV_MOBILE_ILLUST_SEARCH_URL
@@ -420,7 +419,7 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName string, dlOptions *PixivMobileD
 
 // Query Pixiv's API (mobile) to get the JSON of a search query
 // Returns the ToDownload slice, Ugoira slice, boolean indicating if there was an error, and boolean indicating if the context was cancelled
-func (pixiv *PixivMobile) TagSearch(tagName, pageNum string, dlOptions *PixivMobileDlOptions) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
+func (pixiv *PixivMobile) TagSearch(tagName, pageNum string) ([]*httpfuncs.ToDownload, []*ugoira.Ugoira, []error, bool) {
 	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		logger.LogError(err, logger.ERROR)
@@ -430,7 +429,6 @@ func (pixiv *PixivMobile) TagSearch(tagName, pageNum string, dlOptions *PixivMob
 
 	artworksToDl, ugoiraSlice, errSlice := pixiv.tagSearchLogic(
 		tagName,
-		dlOptions,
 		&offsetArgs{
 			minOffset: minOffset,
 			maxOffset: maxOffset,

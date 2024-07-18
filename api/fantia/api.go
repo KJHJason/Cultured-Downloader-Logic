@@ -104,9 +104,9 @@ func getFanclubContent(fanclubId, pageNum string, dlOptions *FantiaDlOptions, co
 				UserAgent:   dlOptions.Base.Configs.UserAgent,
 				Context:     dlOptions.GetContext(),
 				CaptchaHandler: httpfuncs.CaptchaHandler{
-					Check:           CaptchaChecker,
-					Handler:         newCaptchaHandler(dlOptions),
-					InjectCfCookies: nil,
+					Check:                CaptchaChecker,
+					Handler:              newCaptchaHandler(dlOptions),
+					InjectCaptchaCookies: nil,
 				},
 			},
 		)

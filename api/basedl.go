@@ -20,7 +20,7 @@ type BaseDl struct {
 	DlGdrive           bool // Fantia, PixivFanbox, Kemono
 	DetectOtherDlLinks bool // Fantia
 	UseCacheDb         bool
-	SetMetadata        bool // Fantia, PixivFanbox, Kemono
+	SetMetadata        bool // Fantia, PixivFanbox, Kemono, Pixiv
 	DownloadDirPath    string
 
 	PasswordRegex []string
