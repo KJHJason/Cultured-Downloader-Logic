@@ -2,28 +2,15 @@ package language
 
 import (
 	"testing"
-
-	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 )
 
-func TestPrintAllKV(t *testing.T) {
-	defer database.CloseDb()
-
-	InitLangDb(func(msg string) {
-		t.Error(msg)
-	})
-	for _, kv := range database.AppDb.GetAllKeyValue(BUCKET) {
-		t.Log(kv.GetKey(), kv.GetVal())
+func TestPrintAllValues(t *testing.T) {
+	for key, lang := range translations {
+		t.Logf("key: %v, EN: %v, JP: %v", key, lang.En, lang.Jp)
 	}
 }
 
 func TestTranslationLogic(t *testing.T) {
-	defer database.CloseDb()
-
-	InitLangDb(func(msg string) {
-		t.Error(msg)
-	})
-	t.Log(parseKey("home", EN))
 	if val := Translate("home", "", EN); val != "Home" {
 		t.Errorf("got: %v, expected: Home", val)
 	}

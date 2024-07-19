@@ -2,16 +2,19 @@ package language
 
 import (
 	"strings"
-
-	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 )
 
 func Translate(key, fallback, lang string) string {
 	fmtKey := strings.ToLower(key)
 	fmtKey = strings.TrimSpace(fmtKey)
-	fmtKey = parseKey(fmtKey, lang)
-	if val := database.AppDb.GetString(BUCKET, fmtKey); val != "" {
-		return val
+	lang = validateLang(lang)
+	if val, ok := translations[fmtKey]; ok {
+		switch lang {
+		case JP:
+			return val.Jp
+		default:
+			return val.En
+		}
 	}
 
 	if fallback != "" {
