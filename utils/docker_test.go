@@ -15,6 +15,7 @@ func TestPullImage(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	const supportArm = false
 	const containerName = "cdl-cf"
 	const imageName = "kjhjason/" + containerName + ":v0.1.0"
 	ctx := context.Background()
@@ -25,7 +26,7 @@ func TestPullImage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := PullImage(ctx, client, imageName); err != nil {
+	if err := PullImage(ctx, client, imageName, supportArm); err != nil {
 		t.Error(err)
 	}
 
@@ -38,7 +39,7 @@ func TestPullImage(t *testing.T) {
 	}
 
 	var createResp container.CreateResponse
-	if createResp, err = CreateContainer(ctx, client, containerName, &config, false); err != nil {
+	if createResp, err = CreateContainer(ctx, client, containerName, &config, supportArm); err != nil {
 		t.Error(err)
 	}
 	t.Logf("Container ID: %s", createResp.ID)

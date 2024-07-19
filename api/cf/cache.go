@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 )
@@ -18,6 +19,7 @@ type cacheValues struct {
 var (
 	cfCacheMu     sync.RWMutex
 	cachedCookies = make(map[string]*cacheValues)
+	failedKeys    = make(map[string]struct{})
 )
 
 func getFilteredCachedCookiesUnsafe(key string) []*http.Cookie {
@@ -89,10 +91,24 @@ func alert(notifier notify.Notifier, msg string) {
 }
 
 func callMainLogicUnsafe(ctx context.Context, key string, url string, notifier notify.Notifier) error {
-	var err error
-	var cfCookies Cookies
+	if _, ok := failedKeys[key]; ok {
+		return cdlerrors.ErrCaptchaPrevFailed
+	}
+
+	if cookies, err := sendReqAndGetCfCookies(url); err != nil {
+		return err
+	} else if len(cookies) > 0 {
+		cachedCookies[key] = &cacheValues{
+			cookies: cookies,
+			solved:  time.Now(),
+		}
+		return nil
+	}
 
 	alert(notifier, "CF Captcha detected, solving it automatically...")
+
+	var err error
+	var cfCookies Cookies
 	cfCookies, err = CallDockerImage(ctx, url)
 	if err != nil {
 		alert(notifier, "Failed to solve CF Captcha automatically...")

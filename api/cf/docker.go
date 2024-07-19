@@ -40,7 +40,7 @@ func pullCfDockerImage(ctx context.Context, cli *client.Client) error {
 		return err
 	}
 
-	return utils.PullImage(ctx, cli, IMAGE_NAME)
+	return utils.PullImage(ctx, cli, IMAGE_NAME, SUPPORTS_ARM)
 }
 
 func getLogPathMount() (mount.Mount, error) {

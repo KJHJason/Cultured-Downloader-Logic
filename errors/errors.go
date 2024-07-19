@@ -5,9 +5,7 @@ import (
 )
 
 var (
-	ErrSkipLine = errors.New("skip line")
-
-	ErrPyExitCode       = errors.New("python script exited with non-zero exit code")
-	ErrChromeNotFound   = errors.New("could not find google chrome executable/binary path")
-	ErrVenvDoesNotExist = errors.New("venv does not exist")
+	ErrSkipLine          = errors.New("skip line")
+	ErrChromeNotFound    = errors.New("could not find google chrome executable/binary path")
+	ErrCaptchaPrevFailed = errors.New("captcha has failed previously, skipping attempt of trying to bypass captcha again")
 )
