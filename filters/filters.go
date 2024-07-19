@@ -20,6 +20,17 @@ type Filters struct {
 	FileNameFilter *regexp.Regexp
 }
 
+func (f *Filters) Copy() *Filters {
+	return &Filters{
+		MinFileSize:    f.MinFileSize,
+		MaxFileSize:    f.MaxFileSize,
+		FileExt:        append([]string{}, f.FileExt...),
+		StartDate:      f.StartDate,
+		EndDate:        f.EndDate,
+		FileNameFilter: f.FileNameFilter,
+	}
+}
+
 func (f *Filters) ValidateArgs() error {
 	if f.MinFileSize < 0 || f.MaxFileSize < 0 {
 		return errors.New("min and max file size cannot be negative")
@@ -55,6 +66,7 @@ func (f *Filters) IsFileSizeInRange(fileSize int64) bool {
 	return fileSize >= f.MinFileSize && fileSize <= f.MaxFileSize
 }
 
+// Note: fileExt should start with a period/dot
 func (f *Filters) IsFileExtValid(fileExt string) bool {
 	if len(f.FileExt) == 0 {
 		return true

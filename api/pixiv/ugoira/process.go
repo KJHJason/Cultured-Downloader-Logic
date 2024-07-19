@@ -284,6 +284,16 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 		useHttp3 = httpfuncs.IsHttp3Supported(constants.PIXIV, true)
 	}
 
+	// since we're mainly dealing with .zip, we have to add it into the filters if it's not there
+	var filters *filters.Filters
+	const ugoiraFileExt = ".zip"
+	if ugoiraArgs.Filters.IsFileExtValid(ugoiraFileExt) {
+		filters = ugoiraArgs.Filters
+	} else {
+		filters = ugoiraArgs.Filters.Copy()
+		filters.FileExt = append(filters.FileExt, ugoiraFileExt)
+	}
+
 	cancelled, err := httpfuncs.DownloadUrlsWithHandler(
 		urlsToDownload,
 		&httpfuncs.DlOptions{
@@ -294,7 +304,7 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 			Headers:         headers,
 			Cookies:         ugoiraArgs.Cookies,
 			UseHttp3:        useHttp3,
-			Filters:         ugoiraArgs.Filters,
+			Filters:         filters,
 			ProgressBarInfo: progBarInfo,
 			CaptchaHandler:  ugoiraArgs.CaptchaHandler,
 		},
