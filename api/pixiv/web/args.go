@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
@@ -26,6 +27,18 @@ type PixivWebDlOptions struct {
 	SearchAiMode int // 1: filter AI works, 0: Display AI works
 	RatingMode   string
 	ArtworkType  string
+}
+
+func (p *PixivWebDlOptions) GetCaptchaHandler() httpfuncs.CaptchaHandler {
+	return httpfuncs.CaptchaHandler{
+		Check: pixivcommon.CaptchaChecker,
+		Handler: pixivcommon.NewCaptchaHandler(
+			p.ctx,
+			constants.PIXIV_MOBILE_URL,
+			p.Base.Notifier,
+		),
+		InjectCaptchaCookies: pixivcommon.GetCachedCfCookies,
+	}
 }
 
 func (p *PixivWebDlOptions) GetContext() context.Context {
@@ -83,7 +96,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		p.Base.DownloadDirPath = dlDirPath
 	}
 
-	if p.Base.MainProgBar == nil {
+	if p.Base.MainProgBar() == nil {
 		return fmt.Errorf(
 			"pixiv web error %d, main progress bar is nil",
 			cdlerrors.DEV_ERROR,

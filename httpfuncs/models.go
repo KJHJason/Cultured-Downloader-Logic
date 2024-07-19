@@ -80,6 +80,10 @@ type CaptchaHandler struct {
 	InjectCaptchaCookies func() []*http.Cookie
 }
 
+func (ch CaptchaHandler) IsNotConfigured() bool {
+	return ch.Check == nil || ch.Handler == nil
+}
+
 func (ch CaptchaHandler) Call(req *http.Request) error {
 	return ch.Handler.Call(req)
 }
@@ -110,8 +114,6 @@ type DlOptions struct {
 
 	// Whether the server supports Accept-Ranges header value
 	SupportRange bool
-
-	SetMetadata bool
 
 	Filters *filters.Filters
 

@@ -101,6 +101,23 @@ func Http2FallbackLogic(isUsingHttp3 *bool, failedHttp3Req *int, retryCount *int
 	)
 }
 
+func CaptchaHandlerLogic(req *http.Request, res *http.Response, reqArgs *RequestArgs) (*ResponseWrapper, bool, error) {
+	respWrapper := NewResponseWrapper(res)
+	if !reqArgs.CaptchaHandler.IsNotConfigured() {
+		if isCaptcha, captchaErr := reqArgs.CaptchaHandler.Check(respWrapper); captchaErr != nil {
+			res.Body.Close()
+			return nil, false, captchaErr
+		} else if isCaptcha {
+			captchaErr := reqArgs.CaptchaHandler.Call(req)
+			if captchaErr != nil {
+				return nil, false, captchaErr
+			}
+			return nil, false, nil
+		}
+	}
+	return respWrapper, true, nil
+}
+
 // send the request to the target URL and retries if the request was not successful
 func sendRequest(req *http.Request, reqArgs *RequestArgs) (*ResponseWrapper, error) {
 	if reqArgs.CaptchaHandler.InjectCaptchaCookies != nil {
@@ -126,20 +143,13 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*ResponseWrapper, err
 		}
 
 		if err == nil {
-			respWrapper := NewResponseWrapper(res)
-			if reqArgs.CaptchaHandler.Check != nil {
-				if isCaptcha, captchaErr := reqArgs.CaptchaHandler.Check(respWrapper); captchaErr != nil {
-					res.Body.Close()
-					return nil, captchaErr
-				} else if isCaptcha {
-					captchaErr := reqArgs.CaptchaHandler.Call(req)
-					if captchaErr != nil {
-						return nil, captchaErr
-					}
-					continue
-				}
+			respWrapper, ok, captchaErr := CaptchaHandlerLogic(req, res, reqArgs)
+			if captchaErr != nil {
+				return nil, captchaErr
 			}
-
+			if !ok {
+				continue
+			}
 			if res.StatusCode == 200 || !reqArgs.CheckStatus {
 				return respWrapper, nil
 			}

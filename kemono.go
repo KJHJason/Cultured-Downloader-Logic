@@ -73,7 +73,6 @@ func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDl
 					Min: constants.KEMONO_RETRY_MIN_DELAY,
 					Max: constants.KEMONO_RETRY_MAX_DELAY,
 				},
-				SetMetadata:     dlOptions.Base.SetMetadata,
 				Filters:         dlOptions.Base.Filters,
 				ProgressBarInfo: dlOptions.Base.ProgressBarInfo,
 			},

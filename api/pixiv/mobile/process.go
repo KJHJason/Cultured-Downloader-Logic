@@ -25,13 +25,17 @@ func (pixiv *PixivMobile) processArtworkJson(ugoiraCacheKey string, artworkJson 
 		return nil, nil, nil
 	}
 
-	artworkId := strconv.Itoa(artworkJson.Id)
+	artworkId := strconv.Itoa(artworkJson.ID)
 	artworkTitle := artworkJson.Title
 	artworkType := artworkJson.Type
 	artistName := artworkJson.User.Name
 	artworkFolderPath := iofuncs.GetPostFolder(
 		pixiv.Base.DownloadDirPath, artistName, artworkId, artworkTitle,
 	)
+
+	if !pixiv.Base.Filters.IsPostDateValid(artworkJson.CreateDate) {
+		return nil, nil, nil
+	}
 
 	if pixiv.Base.SetMetadata {
 		postMetadata := metadata.PixivPost{
@@ -53,7 +57,7 @@ func (pixiv *PixivMobile) processArtworkJson(ugoiraCacheKey string, artworkJson 
 	}
 
 	var artworksToDownload []*httpfuncs.ToDownload
-	singlePageImageUrl := artworkJson.MetaSinglePage.OriginalImageUrl
+	singlePageImageUrl := artworkJson.MetaSinglePage.OriginalImageURL
 	if singlePageImageUrl != "" {
 		artworksToDownload = append(artworksToDownload, &httpfuncs.ToDownload{
 			Url:      singlePageImageUrl,
@@ -88,7 +92,7 @@ func (pixiv *PixivMobile) processMultipleArtworkJson(resJson *ArtworksJson) ([]*
 	var artworksToDl []*httpfuncs.ToDownload
 	for _, artwork := range artworksMaps {
 		artworks, ugoiraVal, err := pixiv.processArtworkJson(
-			getUgoiraUrlFromInt(artwork.Id), artwork,
+			getUgoiraUrlFromInt(artwork.ID), artwork,
 		)
 		if err != nil {
 			errSlice = append(errSlice, err)

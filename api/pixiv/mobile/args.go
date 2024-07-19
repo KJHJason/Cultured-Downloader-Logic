@@ -18,7 +18,7 @@ func (p *PixivMobile) ValidateArgs() error {
 		p.SetContext(context.Background())
 	}
 
-	if p.Base.MainProgBar == nil {
+	if p.Base.MainProgBar() == nil {
 		return fmt.Errorf(
 			"pixiv mobile error %d: main progress bar is empty",
 			cdlerrors.DEV_ERROR,

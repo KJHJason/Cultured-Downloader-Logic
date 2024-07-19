@@ -68,5 +68,3 @@ type ProductInfo struct {
 		Availability  string `json:"availability"`
 	} `json:"offers"`
 }
-
-type ProductInfoSlice []ProductInfo

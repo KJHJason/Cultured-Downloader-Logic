@@ -29,7 +29,7 @@ type offsetArgs struct {
 func (pixiv *PixivMobile) getUgoiraMetadata(cacheKey, illustId, dlFilePath string) (*ugoira.Ugoira, error) {
 	params := map[string]string{"illust_id": illustId}
 	additionalHeaders := pixiv.getHeaders(
-		map[string]string{"Referer": constants.PIXIV_MOBILE_BASE_URL},
+		map[string]string{"Referer": constants.PIXIV_MOBILE_URL},
 	)
 
 	if pixiv.Base.UseCacheDb {

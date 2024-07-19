@@ -7,11 +7,12 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
+	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
-func processIllustratorPostJson(resJson *IllustratorJson, pageNum string, pixivDlOptions *PixivWebDlOptions) ([]string, error) {
+func processArtistPostsJson(resJson *IllustratorJson, pageNum string, pixivDlOptions *PixivWebDlOptions) ([]string, error) {
 	minPage, maxPage, hasMax, err := utils.GetMinMaxFromStr(pageNum)
 	if err != nil {
 		return nil, err
@@ -22,7 +23,7 @@ func processIllustratorPostJson(resJson *IllustratorJson, pageNum string, pixivD
 	if pixivDlOptions.ArtworkType == "all" || pixivDlOptions.ArtworkType == "illust_and_ugoira" {
 		illusts := resJson.Body.Illusts
 		switch t := illusts.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			curOffset := 0
 			for illustId := range t {
 				curOffset++
@@ -43,7 +44,7 @@ func processIllustratorPostJson(resJson *IllustratorJson, pageNum string, pixivD
 	if pixivDlOptions.ArtworkType == "all" || pixivDlOptions.ArtworkType == "manga" {
 		manga := resJson.Body.Manga
 		switch t := manga.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			curOffset := 0
 			for mangaId := range t {
 				curOffset++
@@ -65,7 +66,7 @@ func processIllustratorPostJson(resJson *IllustratorJson, pageNum string, pixivD
 
 // Process the artwork details JSON and returns a map of urls
 // with its file path or a Ugoira struct (One of them will be null depending on the artworkType)
-func processArtworkJson(ugoiraCacheKey, artworkCacheKey string, res *http.Response, artworkType int64, postDownloadDir string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
+func processArtworkJson(ugoiraCacheKey, artworkCacheKey string, res *http.Response, artworkType int, postDownloadDir string) ([]*httpfuncs.ToDownload, *ugoira.Ugoira, error) {
 	if artworkType == UGOIRA {
 		var ugoiraJson ArtworkUgoiraJson
 		if err := httpfuncs.LoadJsonFromResponse(res, &ugoiraJson); err != nil {
@@ -101,7 +102,7 @@ func processArtworkJson(ugoiraCacheKey, artworkCacheKey string, res *http.Respon
 }
 
 // Process the tag search results JSON and returns a slice of artwork IDs
-func processTagJsonResults(res *http.Response) ([]string, error) {
+func processTagJsonResults(filters *filters.Filters, res *http.Response) ([]string, error) {
 	var pixivTagJson PixivTag
 	if err := httpfuncs.LoadJsonFromResponse(res, &pixivTagJson); err != nil {
 		return nil, err
@@ -109,7 +110,10 @@ func processTagJsonResults(res *http.Response) ([]string, error) {
 
 	artworksSlice := []string{}
 	for _, illust := range pixivTagJson.Body.IllustManga.Data {
-		artworksSlice = append(artworksSlice, illust.Id)
+		if !filters.IsPostDateValid(illust.CreateDate) {
+			continue
+		}
+		artworksSlice = append(artworksSlice, illust.ID)
 	}
 	return artworksSlice, nil
 }

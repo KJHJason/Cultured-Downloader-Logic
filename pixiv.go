@@ -102,30 +102,33 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 		}
 	}
 
+	captchaHandler := pixivDlOptions.GetCaptchaHandler()
 	if len(artworksToDl) > 0 && pixivDlOptions.CtxIsActive() {
 		httpfuncs.DownloadUrls(
 			artworksToDl,
 			&httpfuncs.DlOptions{
-				Context:        pixivDlOptions.GetContext(),
-				MaxConcurrency: constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
-				Headers:        pixivcommon.GetPixivRequestHeaders(),
-				Cookies:        pixivDlOptions.Base.SessionCookies,
-				UseHttp3:       false,
-				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
-				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
-				// SetMetadata:    pixivDlOptions.Base.SetMetadata,
-				// Filters:        pixivDlOptions.Base.Filters,
+				Context:         pixivDlOptions.GetContext(),
+				MaxConcurrency:  constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
+				Headers:         pixivcommon.GetPixivRequestHeaders(),
+				Cookies:         pixivDlOptions.Base.SessionCookies,
+				UseHttp3:        false,
+				HeadReqTimeout:  constants.DEFAULT_HEAD_REQ_TIMEOUT,
+				SupportRange:    constants.PIXIV_RANGE_SUPPORTED,
+				Filters:         pixivDlOptions.Base.Filters,
 				ProgressBarInfo: pixivDlOptions.Base.ProgressBarInfo,
+				CaptchaHandler:  captchaHandler,
 			},
 			pixivDlOptions.Base.Configs,
 		)
 	}
 	if len(ugoiraToDl) > 0 && pixivDlOptions.CtxIsActive() {
 		ugoiraArgs := &ugoira.UgoiraArgs{
-			UseMobileApi: false,
-			ToDownload:   ugoiraToDl,
-			Cookies:      pixivDlOptions.Base.SessionCookies,
-			MainProgBar:  pixivDlOptions.Base.MainProgBar(),
+			UseMobileApi:   false,
+			ToDownload:     ugoiraToDl,
+			Filters:        pixivDlOptions.Base.Filters,
+			CaptchaHandler: captchaHandler,
+			Cookies:        pixivDlOptions.Base.SessionCookies,
+			MainProgBar:    pixivDlOptions.Base.MainProgBar(),
 		}
 		ugoiraArgs.SetContext(pixivDlOptions.GetContext())
 		err := ugoira.DownloadMultipleUgoira(
@@ -133,7 +136,6 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 			pixivUgoiraOptions,
 			pixivDlOptions.Base.Configs,
 			httpfuncs.CallRequest,
-			false,
 			pixivDlOptions.Base.ProgressBarInfo,
 		)
 		if len(err) > 0 {
@@ -223,19 +225,20 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivMobile *pixivmobile
 		prog.SnapshotTask()
 	}
 
+	captchaHandler := pixivMobile.GetCaptchaHandler()
 	if len(artworksToDl) > 0 && pixivMobile.CtxIsActive() {
 		cancelled, err := httpfuncs.DownloadUrlsWithHandler(
 			artworksToDl,
 			&httpfuncs.DlOptions{
-				Context:        pixivMobile.GetContext(),
-				MaxConcurrency: constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
-				Headers:        pixivcommon.GetPixivRequestHeaders(),
-				UseHttp3:       false,
-				HeadReqTimeout: constants.DEFAULT_HEAD_REQ_TIMEOUT,
-				SupportRange:   constants.PIXIV_RANGE_SUPPORTED,
-				// SetMetadata:    pixivDlOptions.Base.SetMetadata,
-				// Filters:        pixivDlOptions.Base.Filters,
+				Context:         pixivMobile.GetContext(),
+				MaxConcurrency:  constants.PIXIV_MAX_DOWNLOAD_CONCURRENCY,
+				Headers:         pixivcommon.GetPixivRequestHeaders(),
+				UseHttp3:        false,
+				HeadReqTimeout:  constants.DEFAULT_HEAD_REQ_TIMEOUT,
+				SupportRange:    constants.PIXIV_RANGE_SUPPORTED,
+				Filters:         pixivMobile.Base.Filters,
 				ProgressBarInfo: pixivMobile.Base.ProgressBarInfo,
+				CaptchaHandler:  captchaHandler,
 			},
 			pixivMobile.Base.Configs,
 			pixivMobile.SendRequest,
@@ -249,10 +252,12 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivMobile *pixivmobile
 	}
 	if len(ugoiraToDl) > 0 && pixivMobile.CtxIsActive() {
 		ugoiraArgs := &ugoira.UgoiraArgs{
-			UseMobileApi: true,
-			ToDownload:   ugoiraToDl,
-			Cookies:      nil,
-			MainProgBar:  pixivMobile.Base.MainProgBar(),
+			UseMobileApi:   true,
+			ToDownload:     ugoiraToDl,
+			Filters:        pixivMobile.Base.Filters,
+			CaptchaHandler: captchaHandler,
+			Cookies:        nil,
+			MainProgBar:    pixivMobile.Base.MainProgBar(),
 		}
 		ugoiraArgs.SetContext(pixivMobile.GetContext())
 		err := ugoira.DownloadMultipleUgoira(
@@ -260,7 +265,6 @@ func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivMobile *pixivmobile
 			pixivUgoiraOptions,
 			pixivMobile.Base.Configs,
 			pixivMobile.SendRequest,
-			false,
 			pixivMobile.Base.ProgressBarInfo,
 		)
 		if len(err) > 0 {

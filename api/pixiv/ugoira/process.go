@@ -18,6 +18,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/extractor"
+	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -230,12 +231,14 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 }
 
 type UgoiraArgs struct {
-	context      context.Context
-	cancel       context.CancelFunc
-	UseMobileApi bool
-	ToDownload   []*Ugoira
-	Cookies      []*http.Cookie
-	MainProgBar  progress.ProgressBar
+	context        context.Context
+	cancel         context.CancelFunc
+	UseMobileApi   bool
+	Filters        *filters.Filters
+	CaptchaHandler httpfuncs.CaptchaHandler
+	ToDownload     []*Ugoira
+	Cookies        []*http.Cookie
+	MainProgBar    progress.ProgressBar
 }
 
 func (u *UgoiraArgs) SetContext(ctx context.Context) {
@@ -243,7 +246,7 @@ func (u *UgoiraArgs) SetContext(ctx context.Context) {
 }
 
 // Downloads multiple Ugoira artworks and converts them based on the output format
-func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config, reqHandler httpfuncs.RequestHandler, setMetadata bool, progBarInfo *progress.ProgressBarInfo) []error {
+func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config, reqHandler httpfuncs.RequestHandler, progBarInfo *progress.ProgressBarInfo) []error {
 	if ugoiraOptions.UseCacheDb {
 		filteredUgoira := make([]*Ugoira, 0, len(ugoiraArgs.ToDownload))
 		for _, ugoira := range ugoiraArgs.ToDownload {
@@ -291,9 +294,9 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 			Headers:         headers,
 			Cookies:         ugoiraArgs.Cookies,
 			UseHttp3:        useHttp3,
-			SetMetadata:     setMetadata,
-			Filters:         nil,
+			Filters:         ugoiraArgs.Filters,
 			ProgressBarInfo: progBarInfo,
+			CaptchaHandler:  ugoiraArgs.CaptchaHandler,
 		},
 		config, // Note: if isMobileApi is true, custom user-agent will be ignored
 		reqHandler,

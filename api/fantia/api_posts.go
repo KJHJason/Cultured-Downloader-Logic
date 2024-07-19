@@ -152,7 +152,6 @@ func DlFantiaPost(count, maxCount int, postId string, dlOptions *FantiaDlOptions
 			UseHttp3:        useHttp3,
 			HeadReqTimeout:  constants.DEFAULT_HEAD_REQ_TIMEOUT,
 			SupportRange:    constants.FANTIA_RANGE_SUPPORTED,
-			SetMetadata:     dlOptions.Base.SetMetadata,
 			Filters:         dlOptions.Base.Filters,
 			ProgressBarInfo: dlOptions.Base.ProgressBarInfo,
 		},

@@ -22,8 +22,8 @@ import (
 )
 
 var (
-	captchaMu      sync.Mutex
-	solvedUnixTime int64
+	captchaMu  sync.Mutex
+	solvedTime time.Time
 )
 
 type CaptchaOptions interface {
@@ -80,7 +80,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		return fmtErr
 	}
 	notifier.Alert("Successfully solved reCAPTCHA automatically!")
-	solvedUnixTime = time.Now().UnixMilli()
+	solvedTime = time.Now()
 	return nil
 }
 
@@ -88,7 +88,7 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 	captchaMu.Lock()
 	defer captchaMu.Unlock()
 
-	if solvedUnixTime != 0 && (time.Now().UnixMilli()-solvedUnixTime) < constants.FANTIA_CAPTCHA_CACHE_TIMEOUT {
+	if !solvedTime.IsZero() && time.Since(solvedTime) < constants.FANTIA_CAPTCHA_CACHE_TIMEOUT {
 		// if the reCAPTCHA was solved within the last few seconds,
 		// then skip solving it to avoid solving it multiple times
 		return nil

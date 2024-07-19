@@ -41,10 +41,10 @@ func (args dockerCfArgs) parseCmdArgs() []string {
 
 func newCfArgs(url, cookieFilePath, logFilePath string) dockerCfArgs {
 	cfArgs := dockerCfArgs{
-		attempts: 4,
-		targetUrl: url,
+		attempts:   4,
+		targetUrl:  url,
 		cookiePath: cookieFilePath,
-		logPath: logFilePath,
+		logPath:    logFilePath,
 	}
 	return cfArgs
 }

@@ -7,7 +7,7 @@ import (
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
-func getDownloadableUrls(artworkType int64, artworkId string) (string, error) {
+func getDownloadableUrls(artworkType int, artworkId string) (string, error) {
 	switch artworkType {
 	case ILLUST, MANGA: // illustration or manga
 		return fmt.Sprintf("%s/illust/%s/pages", constants.PIXIV_API_URL, artworkId), nil

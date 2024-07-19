@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 )
@@ -36,6 +37,18 @@ type PixivMobile struct {
 	// Access token information
 	accessTokenMu  sync.Mutex
 	accessTokenMap OAuthTokenInfo
+}
+
+func (p *PixivMobile) GetCaptchaHandler() httpfuncs.CaptchaHandler {
+	return httpfuncs.CaptchaHandler{
+		Check: pixivcommon.CaptchaChecker,
+		Handler: pixivcommon.NewCaptchaHandler(
+			p.ctx,
+			constants.PIXIV_MOBILE_URL,
+			p.Base.Notifier,
+		),
+		InjectCaptchaCookies: pixivcommon.GetCachedCfCookies,
+	}
 }
 
 func (p *PixivMobile) GetContext() context.Context {
@@ -138,6 +151,10 @@ func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*httpfunc
 	}
 	httpfuncs.AddParams(reqArgs.Params, req)
 
+	if reqArgs.CaptchaHandler.IsNotConfigured() {
+		reqArgs.CaptchaHandler = pixiv.GetCaptchaHandler()
+	}
+
 	var res *http.Response
 	retryCount := 1
 	failedHttp3Req := 0
@@ -153,8 +170,16 @@ func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*httpfunc
 			if refreshed {
 				continue
 			}
+
+			respWrapper, ok, captchaErr := httpfuncs.CaptchaHandlerLogic(req, res, reqArgs)
+			if captchaErr != nil {
+				return nil, captchaErr
+			}
+			if !ok {
+				continue
+			}
 			if res.StatusCode == 200 || !reqArgs.CheckStatus {
-				return httpfuncs.NewResponseWrapper(res), nil
+				return respWrapper, nil
 			}
 			retryCount++
 		} else {

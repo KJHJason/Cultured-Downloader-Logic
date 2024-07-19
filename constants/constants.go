@@ -21,6 +21,7 @@ const (
 	EN                     = "en"
 	JP                     = "ja"
 	FFMPEG_MAX_CONCURRENCY = 2
+	CF_BOT_COOKIE_TIMEOUT  = 29 * time.Minute // __cf_bm cookie expires in 30 minutes
 
 	PAGE_NUM_REGEX_STR            = `[1-9]\d*(?:-[1-9]\d*)?`
 	PAGE_NUM_IDX_NAME             = "pageNum"
@@ -42,7 +43,7 @@ const (
 	FANTIA_POST_API_URL             = "https://fantia.jp/api/v1/posts/"
 	FANTIA_CAPTCHA_BTN_SELECTOR     = `//input[@name='commit']`
 	FANTIA_CAPTCHA_TIMEOUT          = 35 * time.Second
-	FANTIA_CAPTCHA_CACHE_TIMEOUT    = int64(45 * time.Second / time.Millisecond)
+	FANTIA_CAPTCHA_CACHE_TIMEOUT    = 45 * time.Second
 	FANTIA_POST_BLOG_DIR_NAME       = "blog_contents"
 	FANTIA_PRODUCT_DIR_NAME         = "products"
 	FANTIA_PRODUCT_PREVIEW_DIR_NAME = "previews"
@@ -65,27 +66,25 @@ const (
 	PIXIV_MAX_CONCURRENCY          = 1 // Not used rn as the Pixiv download is being done sequentially instead of concurrently
 	PIXIV_MAX_DOWNLOAD_CONCURRENCY = 2 // https://i.pixiv.net not using Cloudflare's proxy
 
-	PIXIV_MOBILE_BASE_URL       = PIXIV_MOBILE_URL
 	PIXIV_MOBILE_CLIENT_ID      = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
 	PIXIV_MOBILE_CLIENT_SECRET  = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
 	PIXIV_MOBILE_USER_AGENT     = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)"
 	PIXIV_MOBILE_AUTH_TOKEN_URL = "https://oauth.secure.pixiv.net/auth/token"
-	PIXIV_MOBILE_LOGIN_URL      = PIXIV_MOBILE_BASE_URL + "/web/v1/login"
-	PIXIV_MOBILE_REDIRECT_URL   = PIXIV_MOBILE_BASE_URL + "/web/v1/users/auth/pixiv/callback"
+	PIXIV_MOBILE_LOGIN_URL      = PIXIV_MOBILE_URL + "/web/v1/login"
+	PIXIV_MOBILE_REDIRECT_URL   = PIXIV_MOBILE_URL + "/web/v1/users/auth/pixiv/callback"
 
-	PIXIV_MOBILE_UGOIRA_URL        = PIXIV_MOBILE_BASE_URL + "/v1/ugoira/metadata"
-	PIXIV_MOBILE_ARTWORK_URL       = PIXIV_MOBILE_BASE_URL + "/v1/illust/detail"
-	PIXIV_MOBILE_ARTIST_POSTS_URL  = PIXIV_MOBILE_BASE_URL + "/v1/user/illusts"
-	PIXIV_MOBILE_ILLUST_SEARCH_URL = PIXIV_MOBILE_BASE_URL + "/v1/search/illust"
+	PIXIV_MOBILE_UGOIRA_URL        = PIXIV_MOBILE_URL + "/v1/ugoira/metadata"
+	PIXIV_MOBILE_ARTWORK_URL       = PIXIV_MOBILE_URL + "/v1/illust/detail"
+	PIXIV_MOBILE_ARTIST_POSTS_URL  = PIXIV_MOBILE_URL + "/v1/user/illusts"
+	PIXIV_MOBILE_ILLUST_SEARCH_URL = PIXIV_MOBILE_URL + "/v1/search/illust"
 
-	PIXIV_FANBOX                       = "fanbox"
-	PIXIV_FANBOX_TITLE                 = "Pixiv Fanbox"
-	PIXIV_FANBOX_CREATOR_ID_REGEX_STR  = `[\w&.-]+`
-	PIXIV_FANBOX_CAPTCHA_CACHE_TIMEOUT = int64(29 * time.Minute / time.Millisecond) // cf_bm cookie expires in 30 minutes
-	PIXIV_FANBOX_URL                   = "https://www.fanbox.cc"
-	PIXIV_FANBOX_API_URL               = "https://api.fanbox.cc"
-	PIXIV_FANBOX_RANGE_SUPPORTED       = false
-	PIXIV_FANBOX_MAX_CONCURRENCY       = 2 // Pixiv Fanbox throttles the download speed
+	PIXIV_FANBOX                      = "fanbox"
+	PIXIV_FANBOX_TITLE                = "Pixiv Fanbox"
+	PIXIV_FANBOX_CREATOR_ID_REGEX_STR = `[\w&.-]+`
+	PIXIV_FANBOX_URL                  = "https://www.fanbox.cc"
+	PIXIV_FANBOX_API_URL              = "https://api.fanbox.cc"
+	PIXIV_FANBOX_RANGE_SUPPORTED      = false
+	PIXIV_FANBOX_MAX_CONCURRENCY      = 2 // Pixiv Fanbox throttles the download speed
 
 	KEMONO                       = "kemono"
 	KEMONO_TITLE                 = "Kemono"

@@ -363,6 +363,7 @@ func getProductPaidContent(productId string, doc *goquery.Document, dlOptions *F
 	return getAndProcessProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
 }
 
+//lint:ignore SA4009 This function is meant to modify the productInfo pointer
 func getProductDetails(productId string, doc *goquery.Document, productInfo *ProductInfo) (productName string, thumbnailUrl string, previewContents []string) {
 	jsonContent := doc.Find("head script[type='application/ld+json']").Text()
 	if jsonContent == "" {
@@ -378,8 +379,8 @@ func getProductDetails(productId string, doc *goquery.Document, productInfo *Pro
 	}
 
 	// get the product details from the JSON content
-	var productInfoSlice ProductInfoSlice
-	if err := json.Unmarshal([]byte(jsonContent), &productInfo); err != nil {
+	var productInfoSlice []ProductInfo
+	if err := json.Unmarshal([]byte(jsonContent), &productInfoSlice); err != nil {
 		logger.LogError(
 			//lint:ignore ST1005 Since the json content is long, it's better to have it on a new line for readability
 			fmt.Errorf(

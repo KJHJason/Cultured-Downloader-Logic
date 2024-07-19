@@ -12,6 +12,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -57,7 +58,7 @@ func getArtworkDetailsLogic(artworkId string, reqArgs *httpfuncs.RequestArgs) (*
 	return &artworkDetailsJsonRes, nil
 }
 
-func getArtworkUrlsToDlLogic(artworkType int64, artworkId string, reqArgs *httpfuncs.RequestArgs) (*http.Response, error) {
+func getArtworkUrlsToDlLogic(artworkType int, artworkId string, reqArgs *httpfuncs.RequestArgs) (*http.Response, error) {
 	url, err := getDownloadableUrls(artworkType, artworkId)
 	if err != nil {
 		return nil, err
@@ -117,14 +118,15 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV, true)
 	reqArgs := &httpfuncs.RequestArgs{
-		Url:       url,
-		Method:    "GET",
-		Cookies:   dlOptions.Base.SessionCookies,
-		Headers:   headers,
-		UserAgent: dlOptions.Base.Configs.UserAgent,
-		Http2:     !useHttp3,
-		Http3:     useHttp3,
-		Context:   dlOptions.GetContext(),
+		Url:            url,
+		Method:         "GET",
+		Cookies:        dlOptions.Base.SessionCookies,
+		Headers:        headers,
+		UserAgent:      dlOptions.Base.Configs.UserAgent,
+		Http2:          !useHttp3,
+		Http3:          useHttp3,
+		Context:        dlOptions.GetContext(),
+		CaptchaHandler: dlOptions.GetCaptchaHandler(),
 	}
 	artworkDetailsJsonRes, err := getArtworkDetailsLogic(artworkId, reqArgs)
 	if err != nil {
@@ -135,6 +137,10 @@ func getArtworkDetails(artworkId string, dlOptions *PixivWebDlOptions) ([]*httpf
 	}
 
 	artworkJsonBody := artworkDetailsJsonRes.Body
+	if !dlOptions.Base.Filters.IsPostDateValid(artworkJsonBody.UploadDate) {
+		return nil, nil, nil
+	}
+
 	illustratorName := artworkJsonBody.UserName
 	artworkName := artworkJsonBody.Title
 	artworkPostDir := iofuncs.GetPostFolder(
@@ -269,14 +275,15 @@ func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions)
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV, true)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Url:       url,
-			Method:    "GET",
-			Cookies:   dlOptions.Base.SessionCookies,
-			Headers:   headers,
-			UserAgent: dlOptions.Base.Configs.UserAgent,
-			Http2:     !useHttp3,
-			Http3:     useHttp3,
-			Context:   dlOptions.GetContext(),
+			Url:            url,
+			Method:         "GET",
+			Cookies:        dlOptions.Base.SessionCookies,
+			Headers:        headers,
+			UserAgent:      dlOptions.Base.Configs.UserAgent,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			Context:        dlOptions.GetContext(),
+			CaptchaHandler: dlOptions.GetCaptchaHandler(),
 		},
 	)
 	if err != nil {
@@ -304,7 +311,7 @@ func getArtistPosts(illustratorId, pageNum string, dlOptions *PixivWebDlOptions)
 	if err := httpfuncs.LoadJsonFromResponse(res.Resp, &jsonBody); err != nil {
 		return nil, err
 	}
-	artworkIds, err := processIllustratorPostJson(&jsonBody, pageNum, dlOptions)
+	artworkIds, err := processArtistPostsJson(&jsonBody, pageNum, dlOptions)
 	return artworkIds, err
 }
 
@@ -372,7 +379,7 @@ type pageNumArgs struct {
 	hasMax  bool
 }
 
-func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs *pageNumArgs) ([]string, []error) {
+func tagSearchLogic(filters *filters.Filters, tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs *pageNumArgs) ([]string, []error) {
 	var errSlice []error
 	var artworkIds []string
 	page := 0
@@ -402,7 +409,7 @@ func tagSearchLogic(tagName string, reqArgs *httpfuncs.RequestArgs, pageNumArgs 
 			continue
 		}
 
-		tagArtworkIds, err := processTagJsonResults(res.Resp)
+		tagArtworkIds, err := processTagJsonResults(filters, res.Resp)
 		if err != nil {
 			errSlice = append(errSlice, err)
 			continue
@@ -456,18 +463,20 @@ func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]string,
 	headers := pixivcommon.GetPixivRequestHeaders()
 	headers["Referer"] = fmt.Sprintf("%s/tags/%s/artworks", constants.PIXIV_URL, tagName)
 	artworkIds, errSlice := tagSearchLogic(
+		dlOptions.Base.Filters,
 		tagName,
 		&httpfuncs.RequestArgs{
-			Url:         url,
-			Method:      "GET",
-			Cookies:     dlOptions.Base.SessionCookies,
-			Headers:     headers,
-			Params:      params,
-			CheckStatus: true,
-			UserAgent:   dlOptions.Base.Configs.UserAgent,
-			Http2:       !useHttp3,
-			Http3:       useHttp3,
-			Context:     dlOptions.GetContext(),
+			Url:            url,
+			Method:         "GET",
+			Cookies:        dlOptions.Base.SessionCookies,
+			Headers:        headers,
+			Params:         params,
+			CheckStatus:    true,
+			UserAgent:      dlOptions.Base.Configs.UserAgent,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			Context:        dlOptions.GetContext(),
+			CaptchaHandler: dlOptions.GetCaptchaHandler(),
 		},
 		&pageNumArgs{
 			minPage: minPage,

@@ -1,14 +1,16 @@
-package pixivfanbox
+package pixivcommon
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/cf"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 )
 
 const (
-	cacheKey = "fanbox"
+	cacheKey = "pixiv"
 )
 
 var (
@@ -20,30 +22,36 @@ func GetCachedCfCookies() []*http.Cookie {
 }
 
 type CaptchaHandler struct {
-	dlOptions *PixivFanboxDlOptions
+	url      string
+	ctx      context.Context
+	notifier notify.Notifier
 }
 
-func NewCaptchaHandler(dlOptions *PixivFanboxDlOptions) CaptchaHandler {
-	return CaptchaHandler{dlOptions: dlOptions}
+func NewCaptchaHandler(ctx context.Context, url string, notifier notify.Notifier) CaptchaHandler {
+	return CaptchaHandler{
+		url:      url,
+		ctx:      ctx,
+		notifier: notifier,
+	}
 }
 
 func (ch CaptchaHandler) Call(req *http.Request) error {
 	return cf.Call(
-		ch.dlOptions.GetContext(),
+		ch.ctx,
 		req,
 		cacheKey,
-		constants.PIXIV_FANBOX_URL,
+		ch.url,
 		constants.CF_BOT_COOKIE_TIMEOUT,
-		ch.dlOptions.Base.Notifier,
+		ch.notifier,
 	)
 }
 
 func (ch CaptchaHandler) GetCfCookies() ([]*http.Cookie, error) {
 	return cf.GetCfCookies(
-		ch.dlOptions.GetContext(),
+		ch.ctx,
 		cacheKey,
-		constants.PIXIV_FANBOX_URL,
+		ch.url,
 		constants.CF_BOT_COOKIE_TIMEOUT,
-		ch.dlOptions.Base.Notifier,
+		ch.notifier,
 	)
 }
