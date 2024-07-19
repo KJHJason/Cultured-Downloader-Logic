@@ -29,13 +29,3 @@ json/*
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-
-# python
-__pycache__/
-*.pyc
-venv/
-
-# cf bypasser logs
-api/cf/**/*.log
-api/cf/**/volume/
-api/cf/python_scripts/extensions/Navigator/navigator.js
