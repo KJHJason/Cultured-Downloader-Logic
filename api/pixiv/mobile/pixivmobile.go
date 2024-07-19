@@ -8,9 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/api"
+	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
 type PixivMobile struct {
@@ -18,8 +19,14 @@ type PixivMobile struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	useCacheDb          bool
-	baseDownloadDirPath string
+	Base *api.BaseDl
+
+	// Sort order of the results. Can be "date_desc" or "date_asc".
+	SortOrder    string
+	SearchMode   string
+	SearchAiMode int // 0: filter AI works, 1: Display AI works
+	RatingMode   string
+	ArtworkType  string
 
 	// API information and its endpoints
 	refreshToken string
@@ -30,19 +37,48 @@ type PixivMobile struct {
 	// Access token information
 	accessTokenMu  sync.Mutex
 	accessTokenMap OAuthTokenInfo
+}
 
-	// Prog bar
-	MainProgBar progress.ProgressBar
+func (p *PixivMobile) GetCaptchaHandler() httpfuncs.CaptchaHandler {
+	return httpfuncs.CaptchaHandler{
+		Check: pixivcommon.CaptchaChecker,
+		Handler: pixivcommon.NewCaptchaHandler(
+			p.ctx,
+			constants.PIXIV_MOBILE_URL,
+			p.Base.Notifier,
+		),
+		InjectCaptchaCookies: pixivcommon.GetCachedCfCookies,
+	}
+}
+
+func (p *PixivMobile) GetContext() context.Context {
+	return p.ctx
+}
+
+func (p *PixivMobile) GetCancel() context.CancelFunc {
+	return p.cancel
+}
+
+func (p *PixivMobile) SetContext(ctx context.Context) {
+	p.ctx, p.cancel = context.WithCancel(ctx)
+}
+
+// CancelCtx releases the resources used and cancels the context of the PixivMobile struct.
+func (p *PixivMobile) CancelCtx() {
+	p.cancel()
+}
+
+func (p *PixivMobile) CtxIsActive() bool {
+	return p.ctx.Err() == nil
 }
 
 // Get a new PixivMobile structure
-func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, cancelFunc context.CancelFunc) (*PixivMobile, error) {
+func NewPixivMobile(refreshToken string, timeout int, ctx context.Context) (*PixivMobile, error) {
 	pixivMobile := &PixivMobile{
-		ctx:          ctx,
-		cancel:       cancelFunc,
 		refreshToken: refreshToken,
 		apiTimeout:   timeout,
 	}
+	pixivMobile.SetContext(ctx)
 	if refreshToken != "" {
 		// refresh the access token and verify it
 		if err := pixivMobile.refreshTokenField(); err != nil {
@@ -50,18 +86,6 @@ func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, cance
 		}
 	}
 	return pixivMobile, nil
-}
-
-func (pixiv *PixivMobile) SetMainProgBar(mainProgBar progress.ProgressBar) {
-	pixiv.MainProgBar = mainProgBar
-}
-
-func (pixiv *PixivMobile) SetBaseDlDirPath(dlDirPath string) {
-	pixiv.baseDownloadDirPath = dlDirPath
-}
-
-func (pixiv *PixivMobile) SetUseCacheDb(useCacheDb bool) {
-	pixiv.useCacheDb = useCacheDb
 }
 
 // This is due to Pixiv's strict rate limiting.
@@ -72,7 +96,7 @@ func (pixiv *PixivMobile) SetUseCacheDb(useCacheDb bool) {
 // Additionally, pixiv.net is protected by cloudflare, so
 // to prevent the user's IP reputation from going down, delays are added.
 func (pixiv *PixivMobile) Sleep() {
-	time.Sleep(httpfuncs.GetRandomTime(1.0, 1.5))
+	time.Sleep(httpfuncs.GetRandomTimeIntMs(1000, 1500))
 }
 
 // Get the required headers to communicate with the Pixiv API
@@ -97,7 +121,7 @@ func (pixiv *PixivMobile) getHeaders(additional map[string]string) map[string]st
 // Sends a request to the Pixiv API and refreshes the access token if required
 //
 // Returns the JSON interface and errors if any
-func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*http.Response, error) {
+func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*httpfuncs.ResponseWrapper, error) {
 	if reqArgs.Method == "" {
 		reqArgs.Method = "GET"
 	}
@@ -127,6 +151,10 @@ func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*http.Res
 	}
 	httpfuncs.AddParams(reqArgs.Params, req)
 
+	if reqArgs.CaptchaHandler.IsNotConfigured() {
+		reqArgs.CaptchaHandler = pixiv.GetCaptchaHandler()
+	}
+
 	var res *http.Response
 	retryCount := 1
 	failedHttp3Req := 0
@@ -142,23 +170,29 @@ func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*http.Res
 			if refreshed {
 				continue
 			}
+
+			respWrapper, ok, captchaErr := httpfuncs.CaptchaHandlerLogic(req, res, reqArgs)
+			if captchaErr != nil {
+				return nil, captchaErr
+			}
+			if !ok {
+				continue
+			}
 			if res.StatusCode == 200 || !reqArgs.CheckStatus {
-				return res, nil
+				return respWrapper, nil
 			}
 			retryCount++
-			goto retry
+		} else {
+			httpfuncs.Http2FallbackLogic(
+				&isUsingHttp3,
+				&failedHttp3Req,
+				&retryCount,
+				err,
+				reqArgs,
+				client,
+			)
 		}
 
-		httpfuncs.Http2FallbackLogic(
-			&isUsingHttp3,
-			&failedHttp3Req,
-			&retryCount,
-			err,
-			reqArgs,
-			client,
-		)
-
-	retry:
 		time.Sleep(httpfuncs.GetDefaultRandomDelay())
 	}
 	return nil, fmt.Errorf(

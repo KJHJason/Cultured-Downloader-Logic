@@ -1,6 +1,8 @@
 package pixivmobile
 
 import (
+	"time"
+
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/ugoira"
 )
 
@@ -65,28 +67,60 @@ type UgoiraJson struct {
 }
 
 type IllustJson struct {
-	Id    int    `json:"id"`
+	ID    int    `json:"id"`
 	Title string `json:"title"`
 	Type  string `json:"type"`
-
+	// ImageUrls struct {
+	// 	SquareMedium string `json:"square_medium"`
+	// 	Medium       string `json:"medium"`
+	// 	Large        string `json:"large"`
+	// } `json:"image_urls"`
+	// Caption  string `json:"caption"`
+	// Restrict int    `json:"restrict"`
 	User struct {
+		// ID               int    `json:"id"`
 		Name string `json:"name"`
+		// Account          string `json:"account"`
+		// ProfileImageUrls struct {
+		// 	Medium string `json:"medium"`
+		// } `json:"profile_image_urls"`
+		// IsFollowed bool `json:"is_followed"`
 	} `json:"user"`
-
+	// Tags []struct {
+	// 	Name           string `json:"name"`
+	// 	TranslatedName any    `json:"translated_name"`
+	// } `json:"tags"`
+	// Tools          []any     `json:"tools"`
+	CreateDate time.Time `json:"create_date"`
+	// PageCount      int       `json:"page_count"`
+	// Width          int       `json:"width"`
+	// Height         int       `json:"height"`
+	// SanityLevel    int       `json:"sanity_level"`
+	// XRestrict      int       `json:"x_restrict"`
+	// Series         any       `json:"series"`
 	MetaSinglePage struct {
-		OriginalImageUrl string `json:"original_image_url"`
+		OriginalImageURL string `json:"original_image_url"`
 	} `json:"meta_single_page"`
-
 	MetaPages []struct {
 		ImageUrls struct {
 			Original string `json:"original"`
 		} `json:"image_urls"`
 	} `json:"meta_pages"`
+	// TotalView            int   `json:"total_view"`
+	// TotalBookmarks       int   `json:"total_bookmarks"`
+	// IsBookmarked         bool  `json:"is_bookmarked"`
+	// Visible              bool  `json:"visible"`
+	// IsMuted              bool  `json:"is_muted"`
+	// TotalComments        int   `json:"total_comments"`
+	// IllustAiType         int   `json:"illust_ai_type"`
+	// IllustBookStyle      int   `json:"illust_book_style"`
+	// CommentAccessControl int   `json:"comment_access_control"`
 }
 
 type ArtworkJson struct {
 	Illust *IllustJson `json:"illust"`
 }
+
 type ArtworksJson struct {
 	Illusts []*IllustJson `json:"illusts"`
 	NextUrl *string       `json:"next_url"`

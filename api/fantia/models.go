@@ -23,12 +23,17 @@ type FantiaContent struct {
 	Filename    string `json:"filename"`
 }
 
+type CaptchaResponse struct {
+	Redirect string `json:"redirect"` // if get flagged by the system, it will redirect to this recaptcha url
+}
+
 type FantiaPost struct {
 	Post struct {
-		ID      int    `json:"id"`
-		Comment string `json:"comment"` // the main post content
-		Title   string `json:"title"`
-		Thumb   struct {
+		ID       int    `json:"id"`
+		Comment  string `json:"comment"` // the main post content
+		Title    string `json:"title"`
+		PostedAt string `json:"posted_at"` // Wed, 14 Feb 2024 20:00:00 +0900
+		Thumb    struct {
 			Original string `json:"original"`
 		} `json:"thumb"`
 		Fanclub struct {
@@ -40,12 +45,12 @@ type FantiaPost struct {
 		Status       string          `json:"status"`
 		PostContents []FantiaContent `json:"post_contents"`
 	} `json:"post"`
-	Redirect string `json:"redirect"` // if get flagged by the system, it will redirect to this recaptcha url
+	// Redirect string `json:"redirect"`
 }
 
 // found in the head HTML tag.
 // Although it's a slice, it should only contains one element.
-type ProductInfo []struct {
+type ProductInfo struct {
 	Type        string   `json:"@type"`
 	Context     string   `json:"@context"`
 	Name        string   `json:"name"`

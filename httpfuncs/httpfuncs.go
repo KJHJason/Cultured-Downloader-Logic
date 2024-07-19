@@ -14,19 +14,23 @@ import (
 
 var DEFAULT_USER_AGENT string
 
-func init() {
+func GetUserAgent(os string) string {
 	// https://www.whatismybrowser.com/guides/the-latest-user-agent/chrome
 	var userAgent = map[string]string{
 		"linux":   "X11; Linux x86_64",
 		"darwin":  "Macintosh; Intel Mac OS X 10_15_7",
 		"windows": "Windows NT 10.0; Win64; x64",
 	}
-	userAgentOS, ok := userAgent[runtime.GOOS]
+	userAgentOS, ok := userAgent[os]
 	if !ok { // fallback to Windows
-		DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-	} else {
-		DEFAULT_USER_AGENT = fmt.Sprintf("Mozilla/5.0 (%s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36", userAgentOS)
+		userAgentOS = userAgent["windows"]
 	}
+	return fmt.Sprintf(
+		"Mozilla/5.0 (%s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36", userAgentOS)
+}
+
+func init() {
+	DEFAULT_USER_AGENT = GetUserAgent(runtime.GOOS)
 }
 
 // Returns a boolean value indicating whether the specified site supports HTTP/3

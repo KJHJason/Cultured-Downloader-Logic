@@ -6,12 +6,10 @@ import (
 	"net/http"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
-	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
-	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 type KemonoDl struct {
@@ -86,7 +84,7 @@ func (k *KemonoDl) RemoveDuplicates() {
 }
 
 func (k *KemonoDl) ValidateArgs() error {
-	valid, outlier := api.SliceMatchesRegex(constants.KEMONO_CREATOR_URL_REGEX, k.CreatorUrls, true)
+	valid, outlier := utils.SliceMatchesRegex(constants.KEMONO_CREATOR_URL_REGEX, k.CreatorUrls, true)
 	if !valid {
 		return fmt.Errorf(
 			"kemono error %d: invalid creator URL found for kemono: %s",
@@ -95,7 +93,7 @@ func (k *KemonoDl) ValidateArgs() error {
 		)
 	}
 
-	valid, outlier = api.SliceMatchesRegex(constants.KEMONO_POST_URL_REGEX, k.PostUrls, true)
+	valid, outlier = utils.SliceMatchesRegex(constants.KEMONO_POST_URL_REGEX, k.PostUrls, true)
 	if !valid {
 		return fmt.Errorf(
 			fmt.Sprintf(
@@ -110,7 +108,7 @@ func (k *KemonoDl) ValidateArgs() error {
 		if len(k.CreatorPageNums) == 0 {
 			k.CreatorPageNums = make([]string, len(k.CreatorUrls))
 		} else {
-			err := api.ValidatePageNumInput(
+			err := utils.ValidatePageNumInput(
 				len(k.CreatorUrls),
 				k.CreatorPageNums,
 				[]string{
@@ -137,27 +135,9 @@ func (k *KemonoDl) ValidateArgs() error {
 
 // KemonoDlOptions is the struct that contains the arguments for Kemono download options.
 type KemonoDlOptions struct {
-	ctx                 context.Context
-	cancel              context.CancelFunc
-	DlAttachments       bool
-	DlGdrive            bool
-	UseCacheDb          bool
-	BaseDownloadDirPath string
-
-	Configs *configs.Config
-
-	// GdriveClient is the Google Drive client to be
-	// used in the download process for Pixiv Fanbox posts
-	GdriveClient *gdrive.GDrive
-
-	SessionCookieId string
-	SessionCookies  []*http.Cookie
-
-	Notifier notify.Notifier
-
-	// Progress indicators
-	MainProgBar          progress.ProgressBar
-	DownloadProgressBars *[]*progress.DownloadProgressBar
+	ctx    context.Context
+	cancel context.CancelFunc
+	Base   *api.BaseDl // Note: Base.DlAttachments is not just .psd files but also the post content images.
 }
 
 func (k *KemonoDlOptions) GetContext() context.Context {
@@ -186,47 +166,47 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 		k.SetContext(context.Background())
 	}
 
-	if k.Notifier == nil {
+	if k.Base.Notifier == nil {
 		return fmt.Errorf(
 			"kemono error %d, notifier is nil",
 			cdlerrors.DEV_ERROR,
 		)
 	}
 
-	if k.Configs == nil {
-		return fmt.Errorf(
-			"kemono error %d, configs is nil",
-			cdlerrors.DEV_ERROR,
-		)
-	}
-
-	if k.UseCacheDb && k.Configs.OverwriteFiles {
-		k.UseCacheDb = false
-	}
-
-	if dlDirPath, err := api.ValidateDlDirPath(k.BaseDownloadDirPath, constants.KEMONO_TITLE); err != nil {
-		return err
-	} else {
-		k.BaseDownloadDirPath = dlDirPath
-	}
-
-	if k.MainProgBar == nil {
+	if k.Base.MainProgBar() == nil {
 		return fmt.Errorf(
 			"kemono error %d, main progress bar is nil",
 			cdlerrors.DEV_ERROR,
 		)
 	}
 
-	if len(k.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.KEMONO, userAgent, k.SessionCookies); err != nil {
+	if k.Base.Configs == nil {
+		return fmt.Errorf(
+			"kemono error %d, configs is nil",
+			cdlerrors.DEV_ERROR,
+		)
+	}
+
+	if k.Base.UseCacheDb && k.Base.Configs.OverwriteFiles {
+		k.Base.UseCacheDb = false
+	}
+
+	if dlDirPath, err := utils.ValidateDlDirPath(k.Base.DownloadDirPath, constants.KEMONO_TITLE); err != nil {
+		return err
+	} else {
+		k.Base.DownloadDirPath = dlDirPath
+	}
+
+	if len(k.Base.SessionCookies) > 0 {
+		if err := api.VerifyCookies(constants.KEMONO, userAgent, k.Base.SessionCookies, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		}
-		k.SessionCookieId = ""
-	} else if k.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.KEMONO, k.SessionCookieId, userAgent); err != nil {
+		k.Base.SessionCookieId = ""
+	} else if k.Base.SessionCookieId != "" {
+		if cookie, err := api.VerifyAndGetCookie(constants.KEMONO, k.Base.SessionCookieId, userAgent, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		} else {
-			k.SessionCookies = []*http.Cookie{cookie}
+			k.Base.SessionCookies = []*http.Cookie{cookie}
 		}
 	} else {
 		return fmt.Errorf(
@@ -235,10 +215,10 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 		)
 	}
 
-	if k.DlGdrive && k.GdriveClient == nil {
-		k.DlGdrive = false
-	} else if !k.DlGdrive && k.GdriveClient != nil {
-		k.GdriveClient = nil
+	if k.Base.DlGdrive && k.Base.GdriveClient == nil {
+		k.Base.DlGdrive = false
+	} else if !k.Base.DlGdrive && k.Base.GdriveClient != nil {
+		k.Base.GdriveClient = nil
 	}
 	return nil
 }

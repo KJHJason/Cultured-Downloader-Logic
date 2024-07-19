@@ -8,14 +8,14 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/gdrive"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // Pixiv Fanbox permitted file extensions based on
@@ -39,8 +39,8 @@ func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath 
 		}
 		for _, linkUrlEl := range linkUrlSlice {
 			linkUrl := linkUrlEl.Url
-			api.DetectOtherExtDLLink(linkUrl, postFolderPath)
-			if api.DetectGDriveLinks(linkUrl, postFolderPath, true, dlOptions.Configs.LogUrls) && dlOptions.DlGdrive {
+			utils.DetectOtherExtDLLink(linkUrl, postFolderPath)
+			if utils.DetectGDriveLinks(linkUrl, postFolderPath, true, dlOptions.Base.Configs.LogUrls) && dlOptions.Base.DlGdrive {
 				gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
 					Url:      linkUrl,
 					FilePath: filepath.Join(postFolderPath, constants.GDRIVE_FOLDER),
@@ -50,7 +50,7 @@ func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath 
 		}
 	}
 
-	if api.DetectPasswordInText(combinedText) {
+	if utils.DetectPasswordInText(combinedText) {
 		// Log the entire post text if it contains a password
 		filePath := filepath.Join(postFolderPath, constants.PASSWORD_FILENAME)
 		logFileSize, err := iofuncs.GetFileSize(filePath)
@@ -78,9 +78,9 @@ func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath 
 	return gdriveLinks
 }
 
-func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFanboxArticlePost(resUrl string, postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	var articleJson FanboxArticleJson
-	if err := httpfuncs.LoadJsonFromBytes(postBody, &articleJson); err != nil {
+	if err := httpfuncs.LoadJsonFromBytes(resUrl, postBody, &articleJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -88,7 +88,7 @@ func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, d
 	var gdriveLinks []*httpfuncs.ToDownload
 	// retrieve images and attachments url(s)
 	imageMap := articleJson.ImageMap
-	if imageMap != nil && dlOptions.DlImages {
+	if imageMap != nil && dlOptions.Base.DlImages {
 		for _, imageInfo := range imageMap {
 			urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 				Url:      imageInfo.OriginalUrl,
@@ -98,7 +98,7 @@ func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, d
 	}
 
 	attachmentMap := articleJson.FileMap
-	if attachmentMap != nil && dlOptions.DlAttachments {
+	if attachmentMap != nil && dlOptions.Base.DlAttachments {
 		for _, attachmentInfo := range attachmentMap {
 			attachmentUrl := attachmentInfo.Url
 			filename := attachmentInfo.Name + "." + attachmentInfo.Extension
@@ -123,9 +123,9 @@ func processFanboxArticlePost(postBody json.RawMessage, postFolderPath string, d
 	return urlsSlice, gdriveLinks, nil
 }
 
-func processFanboxFilePost(postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFanboxFilePost(resUrl string, postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	var filePostJson FanboxFilePostJson
-	if err := httpfuncs.LoadJsonFromBytes(postBody, &filePostJson); err != nil {
+	if err := httpfuncs.LoadJsonFromBytes(resUrl, postBody, &filePostJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -134,15 +134,15 @@ func processFanboxFilePost(postBody json.RawMessage, postFolderPath string, dlOp
 	detectedGdriveLinks := gdrive.ProcessPostText(
 		filePostJson.Text,
 		postFolderPath,
-		dlOptions.DlGdrive,
-		dlOptions.Configs.LogUrls,
+		dlOptions.Base.DlGdrive,
+		dlOptions.Base.Configs.LogUrls,
 	)
 	if len(detectedGdriveLinks) > 0 {
 		gdriveLinks = append(gdriveLinks, detectedGdriveLinks...)
 	}
 
 	imageAndAttachmentUrls := filePostJson.Files
-	if !dlOptions.DlImages && !dlOptions.DlAttachments {
+	if !dlOptions.Base.DlImages && !dlOptions.Base.DlAttachments {
 		return nil, nil, nil
 	}
 
@@ -152,14 +152,14 @@ func processFanboxFilePost(postBody json.RawMessage, postFolderPath string, dlOp
 		filename := fileInfo.Name + "." + extension
 
 		var filePath string
-		isImage := api.SliceContains(pixivFanboxAllowedImageExt, extension)
+		isImage := utils.SliceContains(pixivFanboxAllowedImageExt, extension)
 		if isImage {
 			filePath = filepath.Join(postFolderPath, constants.IMAGES_FOLDER, filename)
 		} else {
 			filePath = filepath.Join(postFolderPath, constants.ATTACHMENT_FOLDER, filename)
 		}
 
-		if (isImage && dlOptions.DlImages) || (!isImage && dlOptions.DlAttachments) {
+		if (isImage && dlOptions.Base.DlImages) || (!isImage && dlOptions.Base.DlAttachments) {
 			urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 				Url:      fileUrl,
 				FilePath: filePath,
@@ -169,9 +169,9 @@ func processFanboxFilePost(postBody json.RawMessage, postFolderPath string, dlOp
 	return urlsSlice, gdriveLinks, nil
 }
 
-func processFanboxImagePost(postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFanboxImagePost(resUrl string, postBody json.RawMessage, postFolderPath string, dlOptions *PixivFanboxDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
 	var imagePostJson FanboxImagePostJson
-	if err := httpfuncs.LoadJsonFromBytes(postBody, &imagePostJson); err != nil {
+	if err := httpfuncs.LoadJsonFromBytes(resUrl, postBody, &imagePostJson); err != nil {
 		return nil, nil, err
 	}
 
@@ -180,8 +180,8 @@ func processFanboxImagePost(postBody json.RawMessage, postFolderPath string, dlO
 	detectedGdriveLinks := gdrive.ProcessPostText(
 		imagePostJson.Text,
 		postFolderPath,
-		dlOptions.DlGdrive,
-		dlOptions.Configs.LogUrls,
+		dlOptions.Base.DlGdrive,
+		dlOptions.Base.Configs.LogUrls,
 	)
 	if len(detectedGdriveLinks) > 0 {
 		gdriveLinks = append(gdriveLinks, detectedGdriveLinks...)
@@ -189,7 +189,7 @@ func processFanboxImagePost(postBody json.RawMessage, postFolderPath string, dlO
 
 	// retrieve images and attachments url(s)
 	imageAndAttachmentUrls := imagePostJson.Images
-	if !dlOptions.DlImages && !dlOptions.DlAttachments {
+	if !dlOptions.Base.DlImages && !dlOptions.Base.DlAttachments {
 		return nil, nil, nil
 	}
 
@@ -199,14 +199,14 @@ func processFanboxImagePost(postBody json.RawMessage, postFolderPath string, dlO
 		filename := httpfuncs.GetLastPartOfUrl(fileUrl)
 
 		var filePath string
-		isImage := api.SliceContains(pixivFanboxAllowedImageExt, extension)
+		isImage := utils.SliceContains(pixivFanboxAllowedImageExt, extension)
 		if isImage {
 			filePath = filepath.Join(postFolderPath, constants.IMAGES_FOLDER, filename)
 		} else {
 			filePath = filepath.Join(postFolderPath, constants.ATTACHMENT_FOLDER, filename)
 		}
 
-		if (isImage && dlOptions.DlImages) || (!isImage && dlOptions.DlAttachments) {
+		if (isImage && dlOptions.Base.DlImages) || (!isImage && dlOptions.Base.DlAttachments) {
 			urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 				Url:      fileUrl,
 				FilePath: filePath,
@@ -225,19 +225,37 @@ func processFanboxPostJson(res *http.Response, dlOptions *PixivFanboxDlOptions) 
 	}
 
 	postJson := post.Body
-	postId := postJson.Id
+	if !dlOptions.Base.Filters.IsPostDateValid(postJson.PublishedDatetime) {
+		return nil, nil, nil
+	}
+	postId := postJson.ID
 	postTitle := postJson.Title
-	creatorId := postJson.CreatorId
+	creatorId := postJson.CreatorID
 	postFolderPath := iofuncs.GetPostFolder(
-		dlOptions.BaseDownloadDirPath,
+		dlOptions.Base.DownloadDirPath,
 		creatorId,
 		postId,
 		postTitle,
 	)
 
+	if dlOptions.Base.SetMetadata {
+		postMetadata := metadata.PixivFanboxPost{
+			PostUrl:            res.Request.URL.String(),
+			Title:              postJson.Title,
+			PublishedAt:        postJson.PublishedDatetime,
+			HasAdultContent:    postJson.HasAdultContent,
+			RestrictedFromUser: postJson.IsRestricted,
+			PostType:           postJson.Type,
+			PlanFee:            postJson.FeeRequired,
+		}
+		if err := metadata.WriteMetadata(postMetadata, postFolderPath); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	var urlsSlice []*httpfuncs.ToDownload
-	thumbnail := postJson.CoverImageUrl
-	if dlOptions.DlThumbnails && thumbnail != "" {
+	thumbnail := postJson.CoverImageURL
+	if dlOptions.Base.DlThumbnails && thumbnail != "" {
 		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      thumbnail,
 			FilePath: postFolderPath,
@@ -253,25 +271,27 @@ func processFanboxPostJson(res *http.Response, dlOptions *PixivFanboxDlOptions) 
 		return urlsSlice, nil, nil
 	}
 
+	resUrl := res.Request.URL.String()
+
 	var err error
 	var newUrlsSlice []*httpfuncs.ToDownload
 	var gdriveLinks []*httpfuncs.ToDownload
 	switch postType {
 	case "file":
-		newUrlsSlice, gdriveLinks, err = processFanboxFilePost(postBody, postFolderPath, dlOptions)
+		newUrlsSlice, gdriveLinks, err = processFanboxFilePost(resUrl, postBody, postFolderPath, dlOptions)
 	case "image":
-		newUrlsSlice, gdriveLinks, err = processFanboxImagePost(postBody, postFolderPath, dlOptions)
+		newUrlsSlice, gdriveLinks, err = processFanboxImagePost(resUrl, postBody, postFolderPath, dlOptions)
 	case "article":
-		newUrlsSlice, gdriveLinks, err = processFanboxArticlePost(postBody, postFolderPath, dlOptions)
+		newUrlsSlice, gdriveLinks, err = processFanboxArticlePost(resUrl, postBody, postFolderPath, dlOptions)
 	case "text": // text post
 		// Usually has no content but try to detect for any external download links
 		var textContent FanboxTextPostJson
-		if err = httpfuncs.LoadJsonFromBytes(postBody, &textContent); err == nil {
+		if err = httpfuncs.LoadJsonFromBytes(resUrl, postBody, &textContent); err == nil {
 			gdriveLinks = gdrive.ProcessPostText(
 				textContent.Text,
 				postFolderPath,
-				dlOptions.DlGdrive,
-				dlOptions.Configs.LogUrls,
+				dlOptions.Base.DlGdrive,
+				dlOptions.Base.Configs.LogUrls,
 			)
 		}
 	default: // unknown post type
@@ -289,52 +309,4 @@ func processFanboxPostJson(res *http.Response, dlOptions *PixivFanboxDlOptions) 
 	}
 	urlsSlice = append(urlsSlice, newUrlsSlice...)
 	return urlsSlice, gdriveLinks, nil
-}
-
-func processMultiplePostJson(resChan chan *resChanVal, dlOptions *PixivFanboxDlOptions) (urlsSlice []*httpfuncs.ToDownload, gdriveUrls []*httpfuncs.ToDownload) {
-	var errSlice []error
-	resChanLen := len(resChan)
-	baseMsg := "Processing received JSON(s) from Pixiv Fanbox [%d/" + fmt.Sprintf("%d]...", resChanLen)
-	progress := dlOptions.MainProgBar
-	progress.UpdateBaseMsg(baseMsg)
-	progress.UpdateSuccessMsg(
-		fmt.Sprintf(
-			"Finished processing %d JSON(s) from Pixiv Fanbox!",
-			resChanLen,
-		),
-	)
-	progress.UpdateErrorMsg(
-		fmt.Sprintf(
-			"Something went wrong while processing %d JSON(s) from Pixiv Fanbox.\nPlease refer to the logs for more details.",
-			resChanLen,
-		),
-	)
-	progress.SetToProgressBar()
-	progress.UpdateMax(resChanLen)
-	progress.Start()
-	defer progress.SnapshotTask()
-	for res := range resChan {
-		postUrls, postGdriveLinks, err := processFanboxPostJson(res.response, dlOptions)
-		if err != nil {
-			errSlice = append(errSlice, err)
-		} else {
-			if dlOptions.UseCacheDb && res.cacheKey != "" {
-				for _, url := range postUrls {
-					url.CacheKey = res.cacheKey
-					url.CacheFn = database.CachePost
-				}
-			}
-			urlsSlice = append(urlsSlice, postUrls...)
-			gdriveUrls = append(gdriveUrls, postGdriveLinks...)
-		}
-		progress.Increment()
-	}
-
-	hasErr := false
-	if len(errSlice) > 0 {
-		hasErr = true
-		logger.LogErrors(logger.ERROR, errSlice...)
-	}
-	progress.Stop(hasErr)
-	return urlsSlice, gdriveUrls
 }

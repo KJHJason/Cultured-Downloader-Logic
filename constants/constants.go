@@ -3,14 +3,15 @@ package constants
 import (
 	"fmt"
 	"regexp"
+	"time"
 )
 
 const (
 	DEBUG_MODE             = false // Will save a copy of all JSON response from the API
 	DEFAULT_PERMS          = 0755  // Owner: rwx, Group: rx, Others: rx
 	VERSION                = "1.2.0"
-	MAX_RETRY_DELAY        = 3
-	MIN_RETRY_DELAY        = 1
+	MAX_RETRY_DELAY        = 3000 * time.Millisecond
+	MIN_RETRY_DELAY        = 1000 * time.Millisecond
 	HTTP3_MAX_RETRY        = 2
 	RETRY_COUNTER          = 4
 	GITHUB_API_URL_FORMAT  = "https://api.github.com/repos/%s/releases/latest"
@@ -20,8 +21,7 @@ const (
 	EN                     = "en"
 	JP                     = "ja"
 	FFMPEG_MAX_CONCURRENCY = 2
-
-	ERR_RECAPTCHA_STR = "recaptcha detected for the current session"
+	CF_BOT_COOKIE_TIMEOUT  = 29 * time.Minute // __cf_bm cookie expires in 30 minutes
 
 	PAGE_NUM_REGEX_STR            = `[1-9]\d*(?:-[1-9]\d*)?`
 	PAGE_NUM_IDX_NAME             = "pageNum"
@@ -39,9 +39,11 @@ const (
 	FANTIA_RECAPTCHA_URL            = "https://fantia.jp/recaptcha"
 	FANTIA_RANGE_SUPPORTED          = true
 	FANTIA_MAX_CONCURRENCY          = 5
+	FANTIA_PRODUCT_URL              = "https://fantia.jp/products/"
 	FANTIA_POST_API_URL             = "https://fantia.jp/api/v1/posts/"
 	FANTIA_CAPTCHA_BTN_SELECTOR     = `//input[@name='commit']`
-	FANTIA_CAPTCHA_TIMEOUT          = 45
+	FANTIA_CAPTCHA_TIMEOUT          = 35 * time.Second
+	FANTIA_CAPTCHA_CACHE_TIMEOUT    = 45 * time.Second
 	FANTIA_POST_BLOG_DIR_NAME       = "blog_contents"
 	FANTIA_PRODUCT_DIR_NAME         = "products"
 	FANTIA_PRODUCT_PREVIEW_DIR_NAME = "previews"
@@ -64,18 +66,17 @@ const (
 	PIXIV_MAX_CONCURRENCY          = 1 // Not used rn as the Pixiv download is being done sequentially instead of concurrently
 	PIXIV_MAX_DOWNLOAD_CONCURRENCY = 2 // https://i.pixiv.net not using Cloudflare's proxy
 
-	PIXIV_MOBILE_BASE_URL       = PIXIV_MOBILE_URL
 	PIXIV_MOBILE_CLIENT_ID      = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
 	PIXIV_MOBILE_CLIENT_SECRET  = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
 	PIXIV_MOBILE_USER_AGENT     = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)"
 	PIXIV_MOBILE_AUTH_TOKEN_URL = "https://oauth.secure.pixiv.net/auth/token"
-	PIXIV_MOBILE_LOGIN_URL      = PIXIV_MOBILE_BASE_URL + "/web/v1/login"
-	PIXIV_MOBILE_REDIRECT_URL   = PIXIV_MOBILE_BASE_URL + "/web/v1/users/auth/pixiv/callback"
+	PIXIV_MOBILE_LOGIN_URL      = PIXIV_MOBILE_URL + "/web/v1/login"
+	PIXIV_MOBILE_REDIRECT_URL   = PIXIV_MOBILE_URL + "/web/v1/users/auth/pixiv/callback"
 
-	PIXIV_MOBILE_UGOIRA_URL        = PIXIV_MOBILE_BASE_URL + "/v1/ugoira/metadata"
-	PIXIV_MOBILE_ARTWORK_URL       = PIXIV_MOBILE_BASE_URL + "/v1/illust/detail"
-	PIXIV_MOBILE_ARTIST_POSTS_URL  = PIXIV_MOBILE_BASE_URL + "/v1/user/illusts"
-	PIXIV_MOBILE_ILLUST_SEARCH_URL = PIXIV_MOBILE_BASE_URL + "/v1/search/illust"
+	PIXIV_MOBILE_UGOIRA_URL        = PIXIV_MOBILE_URL + "/v1/ugoira/metadata"
+	PIXIV_MOBILE_ARTWORK_URL       = PIXIV_MOBILE_URL + "/v1/illust/detail"
+	PIXIV_MOBILE_ARTIST_POSTS_URL  = PIXIV_MOBILE_URL + "/v1/user/illusts"
+	PIXIV_MOBILE_ILLUST_SEARCH_URL = PIXIV_MOBILE_URL + "/v1/search/illust"
 
 	PIXIV_FANBOX                      = "fanbox"
 	PIXIV_FANBOX_TITLE                = "Pixiv Fanbox"
@@ -91,13 +92,16 @@ const (
 	KEMONO_URL                   = "https://kemono.su"
 	KEMONO_API_URL               = "https://kemono.su/api/v1"
 	KEMONO_RANGE_SUPPORTED       = true
-	KEMONO_HEAD_REQ_TIMEOUT      = 60 // to avoid the common issue of context deadline exceeded (Client.Timeout exceeded while awaiting headers) as the default 15s is too short
+	KEMONO_HEAD_REQ_TIMEOUT      = 60                           // to avoid the common issue of context deadline exceeded (Client.Timeout exceeded while awaiting headers) as the default 15s is too short
+	KEMONO_RETRY_MIN_DELAY       = 60 * 1000 * time.Millisecond // Kemono limits to 3 attachments downloads per minute
+	KEMONO_RETRY_MAX_DELAY       = KEMONO_RETRY_MIN_DELAY * 2
 	KEMONO_BASE_REGEX_STR        = `https://kemono\.su/(?P<service>patreon|fanbox|gumroad|subscribestar|dlsite|fantia|boosty)/user/(?P<creatorId>[\w-]+)`
 	KEMONO_POST_SUFFIX_REGEX_STR = `/post/(?P<postId>\d+)`
 	KEMONO_SERVICE_GROUP_NAME    = "service"
 	KEMONO_CREATOR_ID_GROUP_NAME = "creatorId"
 	KEMONO_POST_ID_GROUP_NAME    = "postId"
 	KEMONO_MAX_CONCURRENCY       = 1 // Since Kemono server is very slow as of April 2024
+	KEMONO_PUBLISHED_DATE_LAYOUT = "2006-01-02T15:04:05"
 
 	PASSWORD_FILENAME = "detected_passwords.txt"
 	ATTACHMENT_FOLDER = "attachments"
@@ -211,6 +215,7 @@ var (
 	// For Kemono
 	KEMONO_IMG_SRC_TAG_REGEX     = regexp.MustCompile(`(?i)<img[^>]+src=(?:\\)?"(?P<imgSrc>[^">]+)(?:\\)?"[^>]*>`)
 	KEMONO_IMG_SRC_TAG_REGEX_IDX = KEMONO_IMG_SRC_TAG_REGEX.SubexpIndex("imgSrc")
+	KEMONO_DATETIME_OFFSET       = time.FixedZone("UTC+9", 9*60*60)
 
 	// For Kemono input validations
 	KEMONO_POST_URL_REGEX = regexp.MustCompile(

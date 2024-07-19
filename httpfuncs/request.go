@@ -101,13 +101,33 @@ func Http2FallbackLogic(isUsingHttp3 *bool, failedHttp3Req *int, retryCount *int
 	)
 }
 
+func CaptchaHandlerLogic(req *http.Request, res *http.Response, reqArgs *RequestArgs) (*ResponseWrapper, bool, error) {
+	respWrapper := NewResponseWrapper(res)
+	if !reqArgs.CaptchaHandler.IsNotConfigured() {
+		if isCaptcha, captchaErr := reqArgs.CaptchaHandler.Check(respWrapper); captchaErr != nil {
+			res.Body.Close()
+			return nil, false, captchaErr
+		} else if isCaptcha {
+			captchaErr := reqArgs.CaptchaHandler.Call(req)
+			if captchaErr != nil {
+				return nil, false, captchaErr
+			}
+			return nil, false, nil
+		}
+	}
+	return respWrapper, true, nil
+}
+
 // send the request to the target URL and retries if the request was not successful
-func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error) {
-	reqArgs.EditMu.Lock()
+func sendRequest(req *http.Request, reqArgs *RequestArgs) (*ResponseWrapper, error) {
+	if reqArgs.CaptchaHandler.InjectCaptchaCookies != nil {
+		for _, cookie := range reqArgs.CaptchaHandler.InjectCaptchaCookies() {
+			req.AddCookie(cookie)
+		}
+	}
 	AddCookies(reqArgs.Url, reqArgs.Cookies, req)
 	AddHeaders(reqArgs.Headers, reqArgs.UserAgent, req)
 	AddParams(reqArgs.Params, req)
-	reqArgs.EditMu.Unlock()
 
 	var err error
 	var res *http.Response
@@ -123,24 +143,29 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error
 		}
 
 		if err == nil {
+			respWrapper, ok, captchaErr := CaptchaHandlerLogic(req, res, reqArgs)
+			if captchaErr != nil {
+				return nil, captchaErr
+			}
+			if !ok {
+				continue
+			}
 			if res.StatusCode == 200 || !reqArgs.CheckStatus {
-				return res, nil
+				return respWrapper, nil
 			}
 			res.Body.Close()
 			retryCount++
-			goto retry
+		} else {
+			Http2FallbackLogic(
+				&isUsingHttp3,
+				&failedHttp3Req,
+				&retryCount,
+				err,
+				reqArgs,
+				client,
+			)
 		}
 
-		Http2FallbackLogic(
-			&isUsingHttp3,
-			&failedHttp3Req,
-			&retryCount,
-			err,
-			reqArgs,
-			client,
-		)
-
-	retry:
 		if retryCount < constants.RETRY_COUNTER {
 			time.Sleep(GetRandomDelay(reqArgs.RetryDelay))
 		}
@@ -171,7 +196,7 @@ func sendRequest(req *http.Request, reqArgs *RequestArgs) (*http.Response, error
 //
 // If the request fails, it will retry the request again up
 // to the defined max retries in the constants.go in utils package
-func CallRequest(reqArgs *RequestArgs) (*http.Response, error) {
+func CallRequest(reqArgs *RequestArgs) (*ResponseWrapper, error) {
 	err := reqArgs.ValidateArgs()
 	if err != nil {
 		return nil, err
@@ -216,22 +241,24 @@ func CheckInternetConnection() error {
 }
 
 // Sends a request with the given data
-func CallRequestWithData(reqArgs *RequestArgs, data map[string]string) (*http.Response, error) {
-	reqArgs.EditMu.Lock()
+func CallRequestWithData(reqArgs *RequestArgs, data map[string]string) (*ResponseWrapper, error) {
 	err := reqArgs.ValidateArgs()
 	if err != nil {
-		reqArgs.EditMu.Unlock()
 		return nil, err
 	}
 
 	form := url.Values{}
-	for key, value := range data {
-		form.Add(key, value)
-	}
 	if len(data) > 0 {
-		reqArgs.Headers["Content-Type"] = "application/x-www-form-urlencoded"
+		reqArgs.EditMu.Lock()
+		for key, value := range data {
+			form.Add(key, value)
+		}
+		const contentType = "application/x-www-form-urlencoded"
+		if val, ok := reqArgs.Headers["Content-Type"]; !ok || val != contentType {
+			reqArgs.Headers["Content-Type"] = contentType
+		}
+		reqArgs.EditMu.Unlock()
 	}
-	reqArgs.EditMu.Unlock()
 
 	req, err := http.NewRequestWithContext(
 		reqArgs.Context,

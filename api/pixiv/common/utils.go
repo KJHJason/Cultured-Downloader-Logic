@@ -1,12 +1,14 @@
 package pixivcommon
 
-import "github.com/KJHJason/Cultured-Downloader-Logic/api"
+import (
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
+)
 
 // Convert the page number to the offset as one page will have 60 illustrations.
 //
 // Usually for paginated results from Pixiv's mobile API, checkPixivMax should be set to true.
 func ConvertPageNumToOffset(minPageNum, maxPageNum, perPage int, checkPixivMax bool) (int, int) {
-	minOffset, maxOffset := api.ConvertPageNumToOffset(
+	minOffset, maxOffset := utils.ConvertPageNumToOffset(
 		minPageNum,
 		maxPageNum,
 		perPage,

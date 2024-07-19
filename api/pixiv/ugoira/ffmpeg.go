@@ -10,10 +10,10 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 type ffmpegOptions struct {
@@ -134,7 +134,7 @@ func getFlagsForGif(options *ffmpegOptions, imagesFolderPath string) ([]string, 
 		"-vf", "palettegen",
 		palettePath,
 	)
-	configs.PrepareCmdForBgTask(imagePaletteCmd)
+	utils.PrepareCmdForBgTask(imagePaletteCmd)
 	if constants.DEBUG_MODE {
 		imagePaletteCmd.Stdout = os.Stdout
 		imagePaletteCmd.Stderr = os.Stderr

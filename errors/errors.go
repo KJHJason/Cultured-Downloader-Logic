@@ -2,11 +2,10 @@ package cdlerrors
 
 import (
 	"errors"
-
-	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 )
 
 var (
-	ErrRecaptcha = errors.New(constants.ERR_RECAPTCHA_STR)
-	ErrSkipLine  = errors.New("skip line")
+	ErrSkipLine          = errors.New("skip line")
+	ErrChromeNotFound    = errors.New("could not find google chrome executable/binary path")
+	ErrCaptchaPrevFailed = errors.New("captcha has failed previously, skipping attempt of trying to bypass captcha again")
 )

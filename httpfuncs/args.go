@@ -24,6 +24,7 @@ type RequestArgs struct {
 	Cookies            []*http.Cookie
 	UserAgent          string
 	DisableCompression bool
+	SkipHeadReq        bool
 
 	// HTTP/2 and HTTP/3 Options
 	Http2 bool
@@ -36,12 +37,13 @@ type RequestArgs struct {
 	CheckStatus bool
 	RetryDelay  *RetryDelay
 
-	// Context is used to cancel the request if needed.
-	// E.g. if the user presses Ctrl+C, we can use context.WithCancel(context.Background())
+	// Context is used to signal the request to stop.
 	Context context.Context
 
 	// RequestHandler is the main function that will be called to make the request.
 	RequestHandler RequestHandler
+
+	CaptchaHandler CaptchaHandler
 }
 
 func (args *RequestArgs) validateHttp3Arg() error {
@@ -110,6 +112,9 @@ func (args *RequestArgs) getDefaultArgs() {
 //
 // Will panic if the arguments are invalid as this is a developer error
 func (args *RequestArgs) ValidateArgs() error {
+	args.EditMu.Lock()
+	defer args.EditMu.Unlock()
+
 	args.getDefaultArgs()
 	err := args.validateHttp3Arg()
 	if err != nil {

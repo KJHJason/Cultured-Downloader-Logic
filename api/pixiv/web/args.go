@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
+	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
-	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
-	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 // PixivToDl is the struct that contains the arguments of Pixiv download options.
@@ -19,8 +19,7 @@ type PixivWebDlOptions struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	UseCacheDb          bool
-	BaseDownloadDirPath string
+	Base *api.BaseDl
 
 	// Sort order of the results. Can be "date_desc" or "date_asc".
 	SortOrder    string
@@ -28,17 +27,18 @@ type PixivWebDlOptions struct {
 	SearchAiMode int // 1: filter AI works, 0: Display AI works
 	RatingMode   string
 	ArtworkType  string
+}
 
-	Configs *configs.Config
-
-	SessionCookies  []*http.Cookie
-	SessionCookieId string
-
-	Notifier notify.Notifier
-
-	// Progress indicators
-	MainProgBar          progress.ProgressBar
-	DownloadProgressBars *[]*progress.DownloadProgressBar
+func (p *PixivWebDlOptions) GetCaptchaHandler() httpfuncs.CaptchaHandler {
+	return httpfuncs.CaptchaHandler{
+		Check: pixivcommon.CaptchaChecker,
+		Handler: pixivcommon.NewCaptchaHandler(
+			p.ctx,
+			constants.PIXIV_MOBILE_URL,
+			p.Base.Notifier,
+		),
+		InjectCaptchaCookies: pixivcommon.GetCachedCfCookies,
+	}
 }
 
 func (p *PixivWebDlOptions) GetContext() context.Context {
@@ -66,44 +66,44 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		p.SetContext(context.Background())
 	}
 
-	if p.Configs == nil {
+	if p.Base.Configs == nil {
 		return fmt.Errorf(
 			"pixiv web error %d, configs is nil",
 			cdlerrors.DEV_ERROR,
 		)
 	}
 
-	if p.UseCacheDb && p.Configs.OverwriteFiles {
-		p.UseCacheDb = false
+	if p.Base.UseCacheDb && p.Base.Configs.OverwriteFiles {
+		p.Base.UseCacheDb = false
 	}
 
-	if len(p.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.PIXIV, userAgent, p.SessionCookies); err != nil {
+	if len(p.Base.SessionCookies) > 0 {
+		if err := api.VerifyCookies(constants.PIXIV, userAgent, p.Base.SessionCookies, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		}
-		p.SessionCookieId = ""
-	} else if p.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV, p.SessionCookieId, userAgent); err != nil {
+		p.Base.SessionCookieId = ""
+	} else if p.Base.SessionCookieId != "" {
+		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV, p.Base.SessionCookieId, userAgent, httpfuncs.CaptchaHandler{}); err != nil {
 			return err
 		} else {
-			p.SessionCookies = []*http.Cookie{cookie}
+			p.Base.SessionCookies = []*http.Cookie{cookie}
 		}
 	}
 
-	if dlDirPath, err := api.ValidateDlDirPath(p.BaseDownloadDirPath, constants.PIXIV_TITLE); err != nil {
+	if dlDirPath, err := utils.ValidateDlDirPath(p.Base.DownloadDirPath, constants.PIXIV_TITLE); err != nil {
 		return err
 	} else {
-		p.BaseDownloadDirPath = dlDirPath
+		p.Base.DownloadDirPath = dlDirPath
 	}
 
-	if p.MainProgBar == nil {
+	if p.Base.MainProgBar() == nil {
 		return fmt.Errorf(
 			"pixiv web error %d, main progress bar is nil",
 			cdlerrors.DEV_ERROR,
 		)
 	}
 
-	if p.Notifier == nil {
+	if p.Base.Notifier == nil {
 		return fmt.Errorf(
 			"pixiv web error %d: Notifier cannot be nil",
 			cdlerrors.DEV_ERROR,
@@ -118,7 +118,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	p.SortOrder = strings.ToLower(p.SortOrder)
-	_, err := api.ValidateStrArgs(
+	_, err := utils.ValidateStrArgs(
 		p.SortOrder,
 		constants.ACCEPTED_SORT_ORDER,
 		[]string{
@@ -134,7 +134,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	p.SearchMode = strings.ToLower(p.SearchMode)
-	_, err = api.ValidateStrArgs(
+	_, err = utils.ValidateStrArgs(
 		p.SearchMode,
 		constants.ACCEPTED_SEARCH_MODE,
 		[]string{
@@ -150,7 +150,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	p.RatingMode = strings.ToLower(p.RatingMode)
-	_, err = api.ValidateStrArgs(
+	_, err = utils.ValidateStrArgs(
 		p.RatingMode,
 		constants.ACCEPTED_RATING_MODE,
 		[]string{
@@ -166,7 +166,7 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 	}
 
 	p.ArtworkType = strings.ToLower(p.ArtworkType)
-	_, err = api.ValidateStrArgs(
+	_, err = utils.ValidateStrArgs(
 		p.ArtworkType,
 		constants.ACCEPTED_ARTWORK_TYPE,
 		[]string{

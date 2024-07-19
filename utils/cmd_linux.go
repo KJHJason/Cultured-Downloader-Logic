@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package configs
+package utils
 
 import (
 	"os/exec"

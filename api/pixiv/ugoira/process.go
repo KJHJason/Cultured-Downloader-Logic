@@ -12,17 +12,19 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/extractor"
+	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 )
 
 // Map the Ugoira frame delays to their respective filenames
@@ -44,7 +46,7 @@ type UgoiraFfmpegArgs struct {
 // Converts the Ugoira to the desired output path using FFmpeg
 func ConvertUgoira(ugoiraInfo *Ugoira, imagesFolderPath string, ugoiraFfmpeg *UgoiraFfmpegArgs) error {
 	outputExt := filepath.Ext(ugoiraFfmpeg.outputPath)
-	if !api.SliceContains(UGOIRA_ACCEPTED_EXT, outputExt) {
+	if !utils.SliceContains(UGOIRA_ACCEPTED_EXT, outputExt) {
 		return fmt.Errorf(
 			"pixiv error %d: Output extension %s is not allowed for ugoira conversion",
 			cdlerrors.INPUT_ERROR,
@@ -72,7 +74,7 @@ func ConvertUgoira(ugoiraInfo *Ugoira, imagesFolderPath string, ugoiraFfmpeg *Ug
 
 	// convert the frames to a gif or a video
 	cmd := exec.CommandContext(ugoiraFfmpeg.context, ugoiraFfmpeg.ffmpegPath, args...)
-	configs.PrepareCmdForBgTask(cmd)
+	utils.PrepareCmdForBgTask(cmd)
 	// cmd.Stderr = os.Stderr
 	// cmd.Stdout = os.Stdout
 
@@ -172,7 +174,7 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	}
 	var wg sync.WaitGroup
 	queue := make(chan struct{}, maxConcurrency)
-	errChan := make(chan error, downloadInfoLen)
+	errTsSlice := threadsafe.NewSlice[error]()
 
 	baseMsg := fmt.Sprintf("Converting Ugoira to %s ", ugoiraOptions.OutputFormat) + "[%d/" + fmt.Sprintf("%d]...", downloadInfoLen)
 	prog := ugoiraArgs.MainProgBar
@@ -195,9 +197,9 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 	prog.UpdateMax(downloadInfoLen)
 	defer prog.SnapshotTask()
 	prog.Start()
-	for i, ugoira := range ugoiraArgs.ToDownload {
+	for _, ugoira := range ugoiraArgs.ToDownload {
 		wg.Add(1)
-		go func(ugoira *Ugoira, i int) {
+		go func() {
 			defer func() {
 				wg.Done()
 				<-queue
@@ -205,20 +207,19 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 			queue <- struct{}{}
 			err := convertUgoira(ctx, ugoira, ugoiraOptions, config)
 			if err != nil {
-				errChan <- err
+				errTsSlice.Append(err)
 			}
 			prog.Increment()
-		}(ugoira, i)
+		}()
 	}
 	wg.Wait()
 	close(queue)
-	close(errChan)
 
 	var errSlice []error
-	hasErr := len(errChan) > 0
+	hasErr := errTsSlice.LenUnsafe() > 0
 	if hasErr {
 		var hasCancelled bool
-		if hasCancelled, errSlice = logger.LogChanErrors(logger.ERROR, errChan); hasCancelled {
+		if hasCancelled, errSlice = logger.LogSliceErrors(logger.ERROR, errTsSlice); hasCancelled {
 			prog.StopInterrupt(
 				fmt.Sprintf("Stopped converting ugoira to %s!", ugoiraOptions.OutputFormat),
 			)
@@ -230,12 +231,14 @@ func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions,
 }
 
 type UgoiraArgs struct {
-	context      context.Context
-	cancel       context.CancelFunc
-	UseMobileApi bool
-	ToDownload   []*Ugoira
-	Cookies      []*http.Cookie
-	MainProgBar  progress.ProgressBar
+	context        context.Context
+	cancel         context.CancelFunc
+	UseMobileApi   bool
+	Filters        *filters.Filters
+	CaptchaHandler httpfuncs.CaptchaHandler
+	ToDownload     []*Ugoira
+	Cookies        []*http.Cookie
+	MainProgBar    progress.ProgressBar
 }
 
 func (u *UgoiraArgs) SetContext(ctx context.Context) {
@@ -281,6 +284,16 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 		useHttp3 = httpfuncs.IsHttp3Supported(constants.PIXIV, true)
 	}
 
+	// since we're mainly dealing with .zip, we have to add it into the filters if it's not there
+	var filters *filters.Filters
+	const ugoiraFileExt = ".zip"
+	if ugoiraArgs.Filters.IsFileExtValid(ugoiraFileExt) {
+		filters = ugoiraArgs.Filters
+	} else {
+		filters = ugoiraArgs.Filters.Copy()
+		filters.FileExt = append(filters.FileExt, ugoiraFileExt)
+	}
+
 	cancelled, err := httpfuncs.DownloadUrlsWithHandler(
 		urlsToDownload,
 		&httpfuncs.DlOptions{
@@ -291,7 +304,9 @@ func DownloadMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions
 			Headers:         headers,
 			Cookies:         ugoiraArgs.Cookies,
 			UseHttp3:        useHttp3,
+			Filters:         filters,
 			ProgressBarInfo: progBarInfo,
+			CaptchaHandler:  ugoiraArgs.CaptchaHandler,
 		},
 		config, // Note: if isMobileApi is true, custom user-agent will be ignored
 		reqHandler,

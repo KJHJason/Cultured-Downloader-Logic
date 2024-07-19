@@ -13,6 +13,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils/threadsafe"
 )
 
 const (
@@ -22,16 +23,29 @@ const (
 )
 
 var (
-	MainLogger  Logger
-	logFolder   = filepath.Join(iofuncs.APP_PATH, "logs")
-	logFilePath = filepath.Join(logFolder, getLogFileName())
+	MainLogger Logger
+
+	logFolder        = filepath.Join(iofuncs.APP_PATH, "logs")
+	logFilePath      = filepath.Join(logFolder, getLogFileName())
+	CdlCfLogFilePath = filepath.Join(logFolder, getCdlCfLogFileName())
 )
+
+func getFilenameDateFmt() string {
+	return time.Now().Format("2006-01-02")
+}
 
 func getLogFileName() string {
 	return fmt.Sprintf(
-		"cultured_downloader-logic_v%s_%s.log",
+		"cultured-downloader-logic-v%s_%s.log",
 		constants.VERSION,
-		time.Now().Format("2006-01-02"),
+		getFilenameDateFmt(),
+	)
+}
+
+func getCdlCfLogFileName() string {
+	return fmt.Sprintf(
+		"kjhjason-cdl-cf_%s.log",
+		getFilenameDateFmt(),
 	)
 }
 
@@ -122,13 +136,18 @@ func LogErrors(level int, errs ...error) bool {
 	return hasCanceled
 }
 
-// Uses the thread-safe LogError() function to log a channel of errors
+// Uses the thread-safe LogError() function to log a slice of errors
+//
+// Note that the thread-safe slice will be cleared after logging using `ClearUnsafe`.
 //
 // Also returns if any errors were due to context.Canceled which is caused by Ctrl + C.
-func LogChanErrors(level int, errChan chan error) (bool, []error) {
+func LogSliceErrors(level int, tsErrSlice *threadsafe.Slice[error]) (bool, []error) {
 	var hasCanceled bool
-	errSlice := make([]error, 0, len(errChan))
-	for err := range errChan {
+
+	errSlice := make([]error, 0, tsErrSlice.Len())
+	it := tsErrSlice.NewIter()
+	for it.Next() {
+		err := it.Item()
 		if errors.Is(err, context.Canceled) {
 			if !hasCanceled {
 				hasCanceled = true
@@ -138,6 +157,7 @@ func LogChanErrors(level int, errChan chan error) (bool, []error) {
 		LogError(err, level)
 		errSlice = append(errSlice, err)
 	}
+	tsErrSlice.ClearUnsafe()
 	return hasCanceled, errSlice
 }
 

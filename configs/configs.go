@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 type Config struct {
@@ -33,10 +35,24 @@ type Config struct {
 	UserAgent string
 }
 
-func ValidateFfmpegPathLogic(ctx context.Context, ffmpegPath string) error {
-	_, ffmpegErr := exec.LookPath(ffmpegPath)
-	if ffmpegErr != nil {
-		return ffmpegErr
+var defaultFfmpegPath string
+
+func init() {
+	err := checkFfmpegBinIsValid(context.Background(), "ffmpeg")
+	if err == nil {
+		defaultFfmpegPath = "ffmpeg"
+	}
+}
+
+// Returns true if the provided path is a valid FFmpeg binary
+func checkFfmpegBinIsValid(ctx context.Context, ffmpegPath string) error {
+	if ffmpegPath == "" {
+		return errors.New("ffmpeg path is empty")
+	}
+
+	_, err := exec.LookPath(ffmpegPath)
+	if err != nil {
+		return err
 	}
 
 	cmdCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -44,7 +60,7 @@ func ValidateFfmpegPathLogic(ctx context.Context, ffmpegPath string) error {
 
 	// execute the ffmpeg binary to check if it's working
 	cmd := exec.CommandContext(cmdCtx, ffmpegPath, "-version")
-	PrepareCmdForBgTask(cmd)
+	utils.PrepareCmdForBgTask(cmd)
 	stdout, ffmpegErr := cmd.Output()
 	if ffmpegErr != nil {
 		return ffmpegErr
@@ -54,6 +70,19 @@ func ValidateFfmpegPathLogic(ctx context.Context, ffmpegPath string) error {
 		return nil
 	}
 	return errors.New("unexpected output from ffmpeg binary, please ensure it is the correct ffmpeg binary")
+}
+
+func ValidateFfmpegPathLogic(ctx context.Context, ffmpegPath string) error {
+	if defaultFfmpegPath != "" {
+		return nil
+	}
+
+	_, ffmpegErr := exec.LookPath(ffmpegPath)
+	if ffmpegErr != nil {
+		return ffmpegErr
+	}
+
+	return checkFfmpegBinIsValid(ctx, ffmpegPath)
 }
 
 func (c *Config) ValidateFfmpegPathLogic(ctx context.Context) error {

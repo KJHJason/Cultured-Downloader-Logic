@@ -1,11 +1,13 @@
-package api
+package utils
 
 import (
-	"errors"
 	"fmt"
-	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
+	"math/rand/v2"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -14,22 +16,9 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
-func ValidateDlDirPath(dlDirPath, targetDirName string) (validatedDirPath string, err error) {
-	if dlDirPath == "" {
-		return filepath.Join(iofuncs.DOWNLOAD_PATH, targetDirName), nil
-	}
-
-	if !iofuncs.DirPathExists(dlDirPath) {
-		return "", fmt.Errorf(
-			"error %d, download path does not exist or is not a directory, please create the directory and try again",
-			cdlerrors.INPUT_ERROR,
-		)
-	}
-
-	if filepath.Base(dlDirPath) != targetDirName {
-		return filepath.Join(dlDirPath, targetDirName), nil
-	}
-	return dlDirPath, nil
+func CheckIsArm() bool {
+	return runtime.GOARCH == "arm" || runtime.GOARCH == "arm64" ||
+		runtime.GOARCH == "arm64be" || runtime.GOARCH == "armbe"
 }
 
 // Convert the page number to the offset as one page might have x posts.
@@ -52,37 +41,6 @@ func ConvertPageNumToOffset(minPageNum, maxPageNum, perPage int) (int, int) {
 	minOffset := perPage * (minPageNum - 1)
 	maxOffset := perPage * (maxPageNum - minPageNum + 1)
 	return minOffset, maxOffset
-}
-
-// check page nums if they are in the correct format.
-//
-// E.g. "1-10" is valid, but "0-9" is not valid because "0" is not accepted
-func ValidatePageNumInput(baseSliceLen int, pageNums []string, errMsgs []string) error {
-	pageNumsLen := len(pageNums)
-	if baseSliceLen != pageNumsLen {
-		var msgBody error
-		if len(errMsgs) > 0 {
-			msgBody = errors.New(strings.Join(errMsgs, "\n"))
-		} else {
-			msgBody = fmt.Errorf(
-				"error %d: %d URLS provided, but %d page numbers provided\nPlease provide the same number of page numbers as the number of URLs",
-				cdlerrors.INPUT_ERROR,
-				baseSliceLen,
-				pageNumsLen,
-			)
-		}
-		return msgBody
-	}
-
-	valid, outlier := SliceMatchesRegex(constants.PAGE_NUM_REGEX, pageNums, false)
-	if !valid {
-		return fmt.Errorf(
-			"error %d: invalid page number format: %q\nPlease follow the format, \"1-10\", as an example.\nNote that \"0\" are not accepted! E.g. \"0-9\" is invalid",
-			cdlerrors.INPUT_ERROR,
-			outlier,
-		)
-	}
-	return nil
 }
 
 // Returns the min, max, hasMaxNum, and error from the given string of "num" or "min-max"
@@ -135,91 +93,6 @@ func GetMinMaxFromStr(numStr string) (int, int, bool, error) {
 		max = min
 	}
 	return min, max, true, nil
-}
-
-type SliceTypes interface {
-	~string | ~int
-}
-
-// Checks if the given target is in the given arr and returns a boolean
-func SliceContains[T SliceTypes](arr []T, target T) bool {
-	for _, el := range arr {
-		if el == target {
-			return true
-		}
-	}
-	return false
-}
-
-// Removes duplicates from the given slice.
-func RemoveSliceDuplicates[T SliceTypes](s []T) []T {
-	var result []T
-	seen := make(map[T]struct{})
-	for _, v := range s {
-		if _, ok := seen[v]; !ok {
-			seen[v] = struct{}{}
-			result = append(result, v)
-		}
-	}
-	return result
-}
-
-// Used for removing duplicate IDs with its corresponding page number from the given slices.
-//
-// Returns the the new idSlice and pageSlice with the duplicates removed.
-func RemoveDuplicateIdAndPageNum[T SliceTypes](idSlice, pageSlice []T) ([]T, []T) {
-	var idResult, pageResult []T
-	seen := make(map[T]struct{})
-	for idx, v := range idSlice {
-		if _, ok := seen[v]; !ok {
-			seen[v] = struct{}{}
-			idResult = append(idResult, v)
-			pageResult = append(pageResult, pageSlice[idx])
-		}
-	}
-	return idResult, pageResult
-}
-
-// Checks if the slice of string contains the target str. Otherwise, returns an error.
-func ValidateStrArgs(str string, slice, errMsgs []string) (string, error) {
-	if SliceContains(slice, str) {
-		return str, nil
-	}
-
-	var msgBody error
-	if len(errMsgs) > 0 {
-		msgBody = errors.New(strings.Join(errMsgs, "\n"))
-	} else {
-		msgBody = fmt.Errorf("input error, got: %s", str)
-	}
-	return "", fmt.Errorf(
-		"%w\nExpecting one of the following: %s",
-		msgBody,
-		strings.TrimSpace(strings.Join(slice, ", ")),
-	)
-}
-
-// Validates if the slice of strings contains only numbers
-// Otherwise, os.Exit(1) is called after printing error messages for the user to read
-func ValidateIds(args []string) error {
-	for _, id := range args {
-		err := ValidateId(id)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func ValidateId(arg string) error {
-	if !constants.NUMBER_REGEX.MatchString(arg) {
-		return fmt.Errorf(
-			"error %d: invalid ID, %q, must be a number",
-			cdlerrors.INPUT_ERROR,
-			arg,
-		)
-	}
-	return nil
 }
 
 // Same as strings.Join([]string, "\n")
@@ -297,4 +170,67 @@ func DetectOtherExtDLLink(text, postFolderPath string) bool {
 		}
 	}
 	return false
+}
+
+func GenerateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const charsetLen = len(charset)
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.IntN(charsetLen)]
+	}
+	return string(b)
+}
+
+var CachedChromeExecPath string
+
+// Mainly from https://github.com/chromedp/chromedp/blob/ebf842c7bc28db77d0bf4d757f5948d769d0866f/allocate.go#L349-L395
+//
+// Note: This is not thread-safe
+func GetChromeExecPath() (string, error) {
+	if CachedChromeExecPath != "" {
+		if found, err := exec.LookPath(CachedChromeExecPath); err == nil {
+			return found, nil
+		}
+	}
+
+	if chromeExec := os.Getenv("CHROME_EXECUTABLE"); chromeExec != "" {
+		if found, err := exec.LookPath(chromeExec); err == nil {
+			CachedChromeExecPath = chromeExec
+			return found, nil
+		}
+	}
+
+	var locations []string
+	switch runtime.GOOS {
+	case "darwin":
+		locations = []string{
+			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+		}
+	case "windows":
+		locations = []string{
+			`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
+			`C:\Program Files\Google\Chrome\Application\chrome.exe`,
+			filepath.Join(os.Getenv("USERPROFILE"), `AppData\Local\Google\Chrome\Application\chrome.exe`),
+		}
+	default:
+		locations = []string{
+			"google-chrome",
+			"google-chrome-stable",
+			"google-chrome-beta",
+			"google-chrome-unstable",
+			"/usr/bin/google-chrome",
+			"/usr/local/bin/chrome",
+			"chrome",
+		}
+	}
+
+	for _, path := range locations {
+		if found, err := exec.LookPath(path); err == nil {
+			CachedChromeExecPath = path
+			return found, nil
+		}
+	}
+	return "", cdlerrors.ErrChromeNotFound
 }

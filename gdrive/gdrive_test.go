@@ -8,18 +8,23 @@ import (
 	"os"
 	"testing"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 )
 
-func getProgInfo() *progress.ProgressBarInfo {
+func getTestProgInfo() *progress.ProgressBarInfo {
 	prog := &progress.ProgressBarInfo{
 		MainProgressBar:      &progress.DummyProgBar{},
 		DownloadProgressBars: nil,
 	}
 	return prog
+}
+
+func getTestFilter() *filters.Filters {
+	return &filters.Filters{}
 }
 
 func loadDotEnv(t *testing.T) {
@@ -46,7 +51,7 @@ func initTestGDrive(t *testing.T) (*GDrive, context.CancelFunc, *progress.Progre
 		t.Fatalf("Error creating GDrive client: %v", err)
 	}
 
-	prog := getProgInfo()
+	prog := getTestProgInfo()
 	return gdriveClient, cancel, prog
 }
 
@@ -66,6 +71,7 @@ func TestGDriveFileDownload(t *testing.T) {
 	errSlice := gdriveClient.DownloadGdriveUrls(
 		[]*httpfuncs.ToDownload{toDlInfo},
 		progInfo,
+		getTestFilter(),
 	)
 	if len(errSlice) > 0 {
 		t.Logf("Errors downloading file in %s", dirPath)
@@ -94,6 +100,7 @@ func TestGDriveFolderDownload(t *testing.T) {
 	errSlice := gdriveClient.DownloadGdriveUrls(
 		[]*httpfuncs.ToDownload{toDlInfo},
 		progInfo,
+		getTestFilter(),
 	)
 	if len(errSlice) > 0 {
 		t.Logf("Errors downloading folder at %s", dirPath)
@@ -137,10 +144,11 @@ func TestGDriveServiceAcc(t *testing.T) {
 		FilePath: dirPath,
 	}
 
-	progInfo := getProgInfo()
+	progInfo := getTestProgInfo()
 	errSlice := gdriveClient.DownloadGdriveUrls(
 		[]*httpfuncs.ToDownload{toDlInfo},
 		progInfo,
+		getTestFilter(),
 	)
 	if len(errSlice) > 0 {
 		t.Logf("Errors downloading file in %s", dirPath)
@@ -234,10 +242,11 @@ func TestGDriveOauthDownload(t *testing.T) {
 		FilePath: dirPath,
 	}
 
-	progInfo := getProgInfo()
+	progInfo := getTestProgInfo()
 	errSlice := gdriveClient.DownloadGdriveUrls(
 		[]*httpfuncs.ToDownload{toDlInfo},
 		progInfo,
+		getTestFilter(),
 	)
 	if len(errSlice) > 0 {
 		t.Logf("Errors downloading file in %s", dirPath)

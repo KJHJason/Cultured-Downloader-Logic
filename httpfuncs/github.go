@@ -95,7 +95,7 @@ func CheckVer(repo string, ver string, showProg bool, progBar progress.ProgressB
 			Http2:       true,
 		},
 	)
-	if err != nil || res.StatusCode != 200 {
+	if err != nil || res.Resp.StatusCode != 200 {
 		errMsg := fmt.Errorf(
 			"github error %d: unable to check for the latest version",
 			cdlerrors.CONNECTION_ERROR,
@@ -111,7 +111,7 @@ func CheckVer(repo string, ver string, showProg bool, progBar progress.ProgressB
 	}
 
 	var apiRes GithubApiRes
-	if err := LoadJsonFromResponse(res, &apiRes); err != nil {
+	if err := LoadJsonFromResponse(res.Resp, &apiRes); err != nil {
 		errMsg := fmt.Sprintf(
 			"github error %d: unable to marshal the response from the API into an interface",
 			cdlerrors.UNEXPECTED_ERROR,

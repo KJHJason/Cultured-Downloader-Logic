@@ -1,13 +1,57 @@
 package httpfuncs
 
 import (
+	"bytes"
 	"context"
 	"net/http"
+	"time"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
 )
 
-type RequestHandler func(reqArgs *RequestArgs) (*http.Response, error)
+type RequestHandler func(reqArgs *RequestArgs) (*ResponseWrapper, error)
+
+type ResponseWrapper struct {
+	Resp   *http.Response
+	body   []byte
+	closed bool
+}
+
+func NewResponseWrapper(resp *http.Response) *ResponseWrapper {
+	return &ResponseWrapper{Resp: resp}
+}
+
+// Close the response body
+func (rw *ResponseWrapper) Close() {
+	if !rw.closed && rw.Resp != nil {
+		rw.Resp.Body.Close()
+	}
+}
+
+func (rw *ResponseWrapper) Url() string {
+	return rw.Resp.Request.URL.String()
+}
+
+func (rw *ResponseWrapper) GetBody() ([]byte, error) {
+	if rw.body == nil {
+		rw.closed = true // since ReadResBody closes the body
+		if body, err := ReadResBody(rw.Resp); err != nil {
+			return nil, err
+		} else {
+			rw.body = body
+		}
+	}
+	return rw.body, nil
+}
+
+func (rw *ResponseWrapper) GetBodyReader() (bodyReader *bytes.Reader, err error) {
+	body, err := rw.GetBody()
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(body), nil
+}
 
 type versionInfo struct {
 	Major int
@@ -15,9 +59,10 @@ type versionInfo struct {
 	Patch int
 }
 
+// Max and Min time in nano-seconds (refer to time.Duration)
 type RetryDelay struct {
-	Max float32
-	Min float32
+	Max time.Duration
+	Min time.Duration
 }
 
 type ToDownload struct {
@@ -25,6 +70,22 @@ type ToDownload struct {
 	CacheFn  func(key string)
 	Url      string
 	FilePath string
+}
+
+type CaptchaHandler struct {
+	Check   func(*ResponseWrapper) (bool, error)
+	Handler interface {
+		Call(*http.Request) error
+	}
+	InjectCaptchaCookies func() []*http.Cookie
+}
+
+func (ch CaptchaHandler) IsNotConfigured() bool {
+	return ch.Check == nil || ch.Handler == nil
+}
+
+func (ch CaptchaHandler) Call(req *http.Request) error {
+	return ch.Handler.Call(req)
 }
 
 type DlOptions struct {
@@ -54,7 +115,11 @@ type DlOptions struct {
 	// Whether the server supports Accept-Ranges header value
 	SupportRange bool
 
+	Filters *filters.Filters
+
 	ProgressBarInfo *progress.ProgressBarInfo
+
+	CaptchaHandler CaptchaHandler
 }
 
 type GithubApiRes struct {

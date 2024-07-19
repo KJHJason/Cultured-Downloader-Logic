@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
@@ -20,7 +23,7 @@ import (
 
 var (
 	captchaMu  sync.Mutex
-	solvedTime *time.Time
+	solvedTime time.Time
 )
 
 type CaptchaOptions interface {
@@ -38,8 +41,8 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		fmt.Sprintf("reCAPTCHA detected for the current %s session! Trying to solve it automatically...", readableSite),
 	)
 
-	configs := captchaOptions.GetConfigs()
-	allocCtx, cancel := api.GetDefaultChromedpAlloc(configs.UserAgent, captchaOptions.GetContext())
+	captchaConfigs := captchaOptions.GetConfigs()
+	allocCtx, cancel := api.GetDefaultChromedpAlloc(captchaConfigs.UserAgent, captchaOptions.GetContext())
 	defer cancel()
 
 	actions := []chromedp.Action{
@@ -50,7 +53,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		chromedp.WaitVisible(`//h3[@class='mb-15'][contains(text(), 'ファンティアでクリエイターを応援しよう！')]`, chromedp.BySearch),
 	}
 
-	allocCtx, cancel = context.WithTimeout(allocCtx, constants.FANTIA_CAPTCHA_TIMEOUT*time.Second)
+	allocCtx, cancel = context.WithTimeout(allocCtx, constants.FANTIA_CAPTCHA_TIMEOUT)
 	if err := api.ExecuteChromedpActions(allocCtx, cancel, actions...); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return err
@@ -77,6 +80,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 		return fmtErr
 	}
 	notifier.Alert("Successfully solved reCAPTCHA automatically!")
+	solvedTime = time.Now()
 	return nil
 }
 
@@ -84,7 +88,7 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 	captchaMu.Lock()
 	defer captchaMu.Unlock()
 
-	if solvedTime != nil && (time.Since(*solvedTime) < constants.FANTIA_CAPTCHA_TIMEOUT*time.Second) {
+	if !solvedTime.IsZero() && time.Since(solvedTime) < constants.FANTIA_CAPTCHA_CACHE_TIMEOUT {
 		// if the reCAPTCHA was solved within the last few seconds,
 		// then skip solving it to avoid solving it multiple times
 		return nil
@@ -100,4 +104,40 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 		)
 	}
 	return autoSolveCaptcha(captchaOptions)
+}
+
+type CaptchaHandler struct {
+	dlOptions *FantiaDlOptions
+}
+
+func newCaptchaHandler(dlOptions *FantiaDlOptions) CaptchaHandler {
+	return CaptchaHandler{dlOptions: dlOptions}
+}
+
+func (ch CaptchaHandler) Call(*http.Request) error {
+	return SolveCaptcha(ch.dlOptions)
+}
+
+func CaptchaChecker(res *httpfuncs.ResponseWrapper) (bool, error) {
+	finalUrl := res.Url()
+	if finalUrl == constants.FANTIA_RECAPTCHA_URL {
+		return true, nil
+	}
+
+	// check if response is json
+	contentType := res.Resp.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "application/json") {
+		return false, nil
+	}
+
+	body, err := res.GetBody()
+	if err != nil {
+		return false, err
+	}
+
+	var captchaResp CaptchaResponse
+	if err := httpfuncs.LoadJsonFromBytes(res.Url(), body, &captchaResp); err != nil {
+		return false, err
+	}
+	return captchaResp.Redirect != "", nil
 }

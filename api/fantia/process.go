@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
@@ -18,6 +18,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
+	"github.com/KJHJason/Cultured-Downloader-Logic/metadata"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -116,39 +117,54 @@ func dlAttachmentsFromPost(content *FantiaContent, postFolderPath string) []*htt
 	return urlsSlice
 }
 
+// Convert string value like "Wed, 14 Feb 2024 20:00:00 +0900" to time.Time
+func parseDateStrToDateTime(dateStr string) time.Time {
+	dateTime, err := time.Parse(time.RFC1123Z, dateStr)
+	if err != nil {
+		errMsg := fmt.Errorf(
+			"fantia error %d: failed to parse date string %q to datetime: %w",
+			cdlerrors.UNEXPECTED_ERROR,
+			dateStr,
+			err,
+		)
+		logger.LogError(errMsg, logger.ERROR)
+		return time.Time{}
+	}
+	return dateTime
+}
+
 // Process the JSON response from Fantia's API and
 // returns a slice of urls and a slice of gdrive urls to download from
-func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+func processFantiaPost(res *httpfuncs.ResponseWrapper, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
+	respBody, err := res.GetBody()
+	if err != nil {
+		return nil, nil, err
+	}
+	resUrl := res.Url()
+
 	// processes a fantia post
 	// returns a map containing the post id and the url to download the file from
 	var postJson FantiaPost
-	if err := httpfuncs.LoadJsonFromResponse(res, &postJson); err != nil {
+	if err := httpfuncs.LoadJsonFromBytes(resUrl, respBody, &postJson); err != nil {
 		return nil, nil, err
 	}
 
-	if postJson.Redirect != "" {
-		if postJson.Redirect != "/recaptcha" {
-			return nil, nil, fmt.Errorf(
-				"fantia error %d: unknown redirect url, %q",
-				cdlerrors.UNEXPECTED_ERROR,
-				postJson.Redirect,
-			)
-		}
-		return nil, nil, cdlerrors.ErrRecaptcha
-	}
-
 	post := postJson.Post
+	postDate := parseDateStrToDateTime(post.PostedAt)
+	if dlOptions.Base.Filters.IsPostDateValid(postDate) {
+		return nil, nil, nil
+	}
 	postId := strconv.Itoa(post.ID)
 	postTitle := post.Title
-	creatorName := post.Fanclub.FanclubNameWithCreatorName
-	if creatorName == "" { // just in case but shouldn't happen
-		creatorName = post.Fanclub.User.Name
+	fanclubName := post.Fanclub.FanclubNameWithCreatorName
+	if fanclubName == "" { // just in case but shouldn't happen
+		fanclubName = post.Fanclub.User.Name
 	}
-	postFolderPath := iofuncs.GetPostFolder(dlOptions.BaseDownloadDirPath, creatorName, postId, postTitle)
+	postFolderPath := iofuncs.GetPostFolder(dlOptions.Base.DownloadDirPath, fanclubName, postId, postTitle)
 
 	var urlsSlice []*httpfuncs.ToDownload
 	thumbnail := post.Thumb.Original
-	if dlOptions.DlThumbnails && thumbnail != "" {
+	if dlOptions.Base.DlThumbnails && thumbnail != "" {
 		urlsSlice = append(urlsSlice, &httpfuncs.ToDownload{
 			Url:      thumbnail,
 			FilePath: postFolderPath,
@@ -158,13 +174,30 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 	gdriveLinks := gdrive.ProcessPostText(
 		post.Comment,
 		postFolderPath,
-		dlOptions.DlGdrive,
-		dlOptions.Configs.LogUrls,
+		dlOptions.Base.DlGdrive,
+		dlOptions.Base.Configs.LogUrls,
 	)
 
 	postContent := post.PostContents
 	if postContent == nil {
 		return urlsSlice, gdriveLinks, nil
+	}
+
+	if dlOptions.Base.SetMetadata {
+		comments := make([]string, 0, len(postContent))
+		for _, content := range postContent {
+			comments = append(comments, content.Comment)
+		}
+		postMetadata := metadata.FantiaPost{
+			Url:                  resUrl,
+			PostedAt:             postDate,
+			Title:                postTitle,
+			PostComment:          post.Comment,
+			EmbeddedPostComments: comments,
+		}
+		if err := metadata.WriteMetadata(postMetadata, postFolderPath); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	contentIds := &postContentId{
@@ -175,16 +208,16 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 		commentGdriveLinks := gdrive.ProcessPostText(
 			content.Comment,
 			postFolderPath,
-			dlOptions.DlGdrive,
-			dlOptions.Configs.LogUrls,
+			dlOptions.Base.DlGdrive,
+			dlOptions.Base.Configs.LogUrls,
 		)
 		if len(commentGdriveLinks) > 0 {
 			gdriveLinks = append(gdriveLinks, commentGdriveLinks...)
 		}
-		if dlOptions.DlImages {
-			urlsSlice = append(urlsSlice, dlImagesFromPost(&content, postFolderPath, dlOptions.OrganiseImages, contentIds)...)
+		if dlOptions.Base.DlImages {
+			urlsSlice = append(urlsSlice, dlImagesFromPost(&content, postFolderPath, dlOptions.Base.OrganiseImages, contentIds)...)
 		}
-		if dlOptions.DlAttachments {
+		if dlOptions.Base.DlAttachments {
 			urlsSlice = append(urlsSlice, dlAttachmentsFromPost(&content, postFolderPath)...)
 		}
 	}
@@ -192,15 +225,15 @@ func processFantiaPost(res *http.Response, dlOptions *FantiaDlOptions) ([]*httpf
 }
 
 type processIllustArgs struct {
-	res        *http.Response
-	postId     string
-	postIdsLen int
-	msgSuffix  string
+	respWrapper *httpfuncs.ResponseWrapper
+	postId      string
+	postIdsLen  int
+	msgSuffix   string
 }
 
 // Process the JSON response to get the urls to download
 func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDownload, []*httpfuncs.ToDownload, error) {
-	progress := dlOptions.MainProgBar
+	progress := dlOptions.Base.MainProgBar()
 	progress.SetToSpinner()
 	progress.UpdateBaseMsg(
 		fmt.Sprintf(
@@ -227,13 +260,10 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 	defer progress.SnapshotTask()
 
 	urlsToDownload, gdriveLinks, err := processFantiaPost(
-		illustArgs.res,
+		illustArgs.respWrapper,
 		dlOptions,
 	)
 	if err != nil {
-		if errors.Is(err, cdlerrors.ErrRecaptcha) {
-			progress.UpdateErrorMsg(constants.ERR_RECAPTCHA_STR)
-		}
 		progress.Stop(true)
 		return nil, nil, err
 	}
@@ -242,11 +272,19 @@ func processIllustDetailApiRes(illustArgs *processIllustArgs, dlOptions *FantiaD
 }
 
 func getAndProcessProductPaidContent(purchaseRelativeUrl, productId string, dlOptions *FantiaDlOptions) ([]string, error) {
-	res, err := getFantiaProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
+	respWrapper, err := getFantiaProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
+	//lint:ignore SA5001 Ignore the error check from closing the response body
+	defer respWrapper.Close()
 	if err != nil {
 		return nil, err
 	}
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+
+	respBody, err := respWrapper.GetBodyReader()
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(respBody)
 	if err != nil {
 		err = fmt.Errorf(
 			"fantia error %d: failed to parse response body when getting paid content from Fantia: %w",
@@ -283,24 +321,24 @@ func getAndProcessProductPaidContent(purchaseRelativeUrl, productId string, dlOp
 	return paidContentUrls, nil
 }
 
-func getCreatorNameFromProductPage(productId string, doc *goquery.Document) string {
-	creatorName := doc.Find(".fanclub-show-header h1.fanclub-name a").Text()
-	if creatorName == "" {
+func getFanclubNameFromProductPage(productId string, doc *goquery.Document) string {
+	fanclubName := doc.Find(".fanclub-show-header h1.fanclub-name a").Text()
+	if fanclubName == "" {
 		htmlContent, err := doc.Html()
 		if err != nil {
 			htmlContent = "failed to get HTML"
 		}
 		//lint:ignore ST1005 Since the html content is long, it's better to have it on a new line for readability
 		errMsg := fmt.Errorf(
-			"fantia error %d: failed to get creator name from product id %q, please report this issue with the html content below;\n%s\n",
+			"fantia error %d: failed to get fanclub name from product id %q, please report this issue with the html content below;\n%s\n",
 			cdlerrors.HTML_ERROR,
 			productId,
 			htmlContent,
 		)
 		logger.LogError(errMsg, logger.ERROR)
-		creatorName = constants.FANTIA_UNKNOWN_CREATOR
+		fanclubName = constants.FANTIA_UNKNOWN_CREATOR
 	}
-	return creatorName
+	return fanclubName
 }
 
 func getProductPaidContent(productId string, doc *goquery.Document, dlOptions *FantiaDlOptions) ([]string, error) {
@@ -325,7 +363,8 @@ func getProductPaidContent(productId string, doc *goquery.Document, dlOptions *F
 	return getAndProcessProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
 }
 
-func getProductDetails(productId string, doc *goquery.Document) (productName string, thumbnailUrl string, previewContents []string) {
+//lint:ignore SA4009 This function is meant to modify the productInfo pointer
+func getProductDetails(productId string, doc *goquery.Document, productInfo *ProductInfo) (productName string, thumbnailUrl string, previewContents []string) {
 	jsonContent := doc.Find("head script[type='application/ld+json']").Text()
 	if jsonContent == "" {
 		logger.LogError(
@@ -340,8 +379,8 @@ func getProductDetails(productId string, doc *goquery.Document) (productName str
 	}
 
 	// get the product details from the JSON content
-	var productInfo ProductInfo
-	if err := json.Unmarshal([]byte(jsonContent), &productInfo); err != nil {
+	var productInfoSlice []ProductInfo
+	if err := json.Unmarshal([]byte(jsonContent), &productInfoSlice); err != nil {
 		logger.LogError(
 			//lint:ignore ST1005 Since the json content is long, it's better to have it on a new line for readability
 			fmt.Errorf(
@@ -356,7 +395,7 @@ func getProductDetails(productId string, doc *goquery.Document) (productName str
 		return
 	}
 
-	if len(productInfo) == 0 {
+	if len(productInfoSlice) == 0 {
 		logger.LogError(
 			fmt.Errorf(
 				"fantia error %d: although unmarshalled successfully, there is no element in the product info slice from product id %q",
@@ -368,7 +407,8 @@ func getProductDetails(productId string, doc *goquery.Document) (productName str
 		return
 	}
 
-	product := productInfo[0]
+	product := productInfoSlice[0]
+	productInfo = &product
 	productName = product.Name
 
 	// alternatively, we can use
@@ -392,9 +432,14 @@ func getProductDetails(productId string, doc *goquery.Document) (productName str
 
 // Note: response body is closed in this function
 // errors returned are usually due to parsing error or context cancellation
-func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, res *http.Response) ([]*httpfuncs.ToDownload, error) {
-	defer res.Body.Close()
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, respWrapper *httpfuncs.ResponseWrapper) ([]*httpfuncs.ToDownload, error) {
+	defer respWrapper.Close()
+	respBody, err := respWrapper.GetBodyReader()
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(respBody)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"fantia error %d: failed to parse response body when getting product page from Fantia: %w",
@@ -404,18 +449,16 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(3)
-	var creatorName string
-	go func() {
-		defer wg.Done()
-		creatorName = getCreatorNameFromProductPage(productId, doc)
-	}()
+	wg.Add(2)
 
+	var fanclubName string
+	var productInfo ProductInfo
 	var previewContentUrls []string
 	var thumbnailUrl, productName string
 	go func() {
 		defer wg.Done()
-		productName, thumbnailUrl, previewContentUrls = getProductDetails(productId, doc)
+		fanclubName = getFanclubNameFromProductPage(productId, doc)
+		productName, thumbnailUrl, previewContentUrls = getProductDetails(productId, doc, &productInfo)
 	}()
 
 	// Check if the user has purchased the product so that we can get and download the paid content as well.
@@ -440,12 +483,28 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 	}
 
 	toDownload := make([]*httpfuncs.ToDownload, 0, numOfEl)
-	dirPath := iofuncs.GetPostFolder(dlOptions.BaseDownloadDirPath, creatorName, productId, productName)
+	dirPath := iofuncs.GetPostFolder(dlOptions.Base.DownloadDirPath, fanclubName, productId, productName)
 	dirPath = filepath.Join(
 		filepath.Dir(dirPath), // go up one directory
 		constants.FANTIA_PRODUCT_DIR_NAME,
 		filepath.Base(dirPath), // go back to the original directory
 	)
+
+	if dlOptions.Base.SetMetadata {
+		productMetadata := metadata.FantiaProduct{
+			Url:         constants.FANTIA_PRODUCT_URL + productId,
+			Name:        productName,
+			Description: productInfo.Description,
+			Images:      productInfo.Image,
+			Pricing: metadata.FantiaProductPricing{
+				Price:    productInfo.Offers.Price,
+				Currency: productInfo.Offers.PriceCurrency,
+			},
+		}
+		if err := metadata.WriteMetadata(productMetadata, dirPath); err != nil {
+			return nil, err
+		}
+	}
 
 	if thumbnailUrl != "" {
 		toDownload = append(toDownload, &httpfuncs.ToDownload{
@@ -457,7 +516,7 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 	}
 	for i, url := range previewContentUrls {
 		dlFilePath := filepath.Join(dirPath, constants.FANTIA_PRODUCT_PREVIEW_DIR_NAME)
-		if dlOptions.OrganiseImages {
+		if dlOptions.Base.OrganiseImages {
 			fileExt := filepath.Ext(url)
 			dlFilePath = filepath.Join(dlFilePath, fmt.Sprintf("%d%s", i+1, fileExt))
 		}
