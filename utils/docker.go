@@ -77,9 +77,9 @@ type ContainerConfigs struct {
 	NetworkingConfig *network.NetworkingConfig
 }
 
-func CreateContainer(ctx context.Context, cli *client.Client, containerName string, configs *ContainerConfigs) (container.CreateResponse, error) {
+func CreateContainer(ctx context.Context, cli *client.Client, containerName string, configs *ContainerConfigs, supportsArm bool) (container.CreateResponse, error) {
 	var arch string
-	if CheckIsArm() {
+	if supportsArm && CheckIsArm() {
 		arch = "arm64"
 	} else {
 		arch = "amd64"

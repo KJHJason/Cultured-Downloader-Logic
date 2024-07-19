@@ -9,7 +9,3 @@ updates:
     directory: /
     schedule:
       interval: daily
-  - package-ecosystem: pip
-    directory: /api/cf/python_scripts
-    schedule:
-      interval: daily

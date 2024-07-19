@@ -9,7 +9,6 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/cf"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
-	"github.com/KJHJason/Cultured-Downloader-Logic/startup"
 )
 
 var (
@@ -82,17 +81,9 @@ func addCacheCookiesToReq(req *http.Request) {
 func callMainLogicUnsafe(ctx context.Context) error {
 	var err error
 	var cfCookies cf.Cookies
-	cfArgs := cf.NewCfArgs(constants.PIXIV_FANBOX_URL)
-	if startup.UseDockerForCf {
-		cfCookies, err = cf.CallDockerImage(ctx, cfArgs)
-		if err != nil {
-			return err
-		}
-	} else {
-		cfCookies, err = cf.CallPyScript(cfArgs)
-		if err != nil {
-			return err
-		}
+	cfCookies, err = cf.CallDockerImage(ctx, constants.PIXIV_FANBOX_URL)
+	if err != nil {
+		return err
 	}
 
 	solvedUnixTime = time.Now().UnixMilli()

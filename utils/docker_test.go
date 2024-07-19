@@ -38,7 +38,7 @@ func TestPullImage(t *testing.T) {
 	}
 
 	var createResp container.CreateResponse
-	if createResp, err = CreateContainer(ctx, client, containerName, &config); err != nil {
+	if createResp, err = CreateContainer(ctx, client, containerName, &config, false); err != nil {
 		t.Error(err)
 	}
 	t.Logf("Container ID: %s", createResp.ID)

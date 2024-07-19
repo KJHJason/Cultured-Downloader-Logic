@@ -20,12 +20,13 @@ import (
 )
 
 const (
+	SUPPORTS_ARM   = false // Currently, Google Chrome does not support ARM
 	CONTAINER_NAME = "cdl-cf"
 	IMAGE_NAME     = "kjhjason/" + CONTAINER_NAME + ":" + VERSION
 )
 
 func createCfContainer(ctx context.Context, cli *client.Client, createConfig *utils.ContainerConfigs) (string, error) {
-	if createResp, err := utils.CreateContainer(ctx, cli, CONTAINER_NAME, createConfig); err != nil {
+	if createResp, err := utils.CreateContainer(ctx, cli, CONTAINER_NAME, createConfig, SUPPORTS_ARM); err != nil {
 		return "", err
 	} else {
 		return createResp.ID, nil
@@ -82,7 +83,7 @@ func PullCfDockerImage(ctx context.Context) error {
 	return nil
 }
 
-func CallDockerImage(ctx context.Context, args CfArgs) (Cookies, error) {
+func CallDockerImage(ctx context.Context, url string) (Cookies, error) {
 	cli, err := utils.GetDefaultClient()
 	if err != nil {
 		return nil, err
@@ -123,18 +124,8 @@ func CallDockerImage(ctx context.Context, args CfArgs) (Cookies, error) {
 		Target: dockerCookieFilePath,
 	}
 
-	args.BrowserPath = ""
-	args.Headless = false
-	cmdArgs := args.ParseCmdArgs()
-	cmdArgs = append(cmdArgs,
-		"--os-name", runtime.GOOS,
-		"--cookie-path", dockerCookieFilePath,
-		"--log-path", dockerLogFilePath,
-		"--virtual-display",
-		// yes, it is hardcoded mainly to make the docker
-		// image harder to run for people without dev knowledge
-		"--app-key", "fzN9Hvkb9s+mwPGCDd5YFnLiqKx8WhZfWoZE5nZC",
-	)
+	cfArgs := newCfArgs(url, dockerCookieFilePath, dockerLogFilePath)
+	cmdArgs := cfArgs.parseCmdArgs()
 
 	createConfig := utils.ContainerConfigs{
 		Config: &container.Config{
