@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"

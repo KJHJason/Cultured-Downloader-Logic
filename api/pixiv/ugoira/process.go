@@ -13,10 +13,10 @@ import (
 	"syscall"
 
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/extractor"
 	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"

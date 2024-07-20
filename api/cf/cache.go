@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 )
@@ -16,13 +16,18 @@ type cacheValues struct {
 	solved  time.Time
 }
 
-var (
-	cfCacheMu     sync.RWMutex
-	cachedCookies = make(map[string]*cacheValues)
-	failedKeys    = make(map[string]struct{})
+const (
+	PixivCacheKey       = 1
+	PixivFanboxCacheKey = 2
 )
 
-func getFilteredCachedCookiesUnsafe(key string) []*http.Cookie {
+var (
+	cfCacheMu     sync.RWMutex
+	cachedCookies = make(map[int]*cacheValues)
+	failedKeys    = make(map[int]struct{})
+)
+
+func getFilteredCachedCookiesUnsafe(key int) []*http.Cookie {
 	var ok bool
 	var cachedValues *cacheValues
 	if cachedValues, ok = cachedCookies[key]; !ok {
@@ -38,13 +43,13 @@ func getFilteredCachedCookiesUnsafe(key string) []*http.Cookie {
 	return cfCookies
 }
 
-func GetCachedCfCookies(key string, timeout time.Duration) []*http.Cookie {
+func GetCachedCfCookies(key int, timeout time.Duration) []*http.Cookie {
 	cfCacheMu.RLock()
 	defer cfCacheMu.RUnlock()
 	return getCachedCfCookiesUnsafe(key, timeout)
 }
 
-func getCachedCfCookiesUnsafe(key string, timeout time.Duration) []*http.Cookie {
+func getCachedCfCookiesUnsafe(key int, timeout time.Duration) []*http.Cookie {
 	var ok bool
 	var cachedValues *cacheValues
 	if cachedValues, ok = cachedCookies[key]; !ok {
@@ -67,7 +72,7 @@ func checkHasCfCookies(req *http.Request) bool {
 	return false
 }
 
-func addCacheCookiesToReq(req *http.Request, key string) {
+func addCacheCookiesToReq(req *http.Request, key int) {
 	if checkHasCfCookies(req) {
 		cookiesCopy := make([]*http.Cookie, len(req.Cookies()))
 		copy(cookiesCopy, req.Cookies())
@@ -90,7 +95,7 @@ func alert(notifier notify.Notifier, msg string) {
 	}
 }
 
-func callMainLogicUnsafe(ctx context.Context, key string, url string, notifier notify.Notifier) error {
+func callMainLogicUnsafe(ctx context.Context, key int, url string, notifier notify.Notifier) error {
 	if _, ok := failedKeys[key]; ok {
 		return cdlerrors.ErrCaptchaPrevFailed
 	}
@@ -130,7 +135,7 @@ func CaptchaChecker(res *httpfuncs.ResponseWrapper) (bool, error) {
 	return true, nil
 }
 
-func Call(ctx context.Context, req *http.Request, key, url string, timeout time.Duration, notifier notify.Notifier) error {
+func Call(ctx context.Context, req *http.Request, key int, url string, timeout time.Duration, notifier notify.Notifier) error {
 	cfCacheMu.Lock()
 	defer cfCacheMu.Unlock()
 
@@ -146,7 +151,7 @@ func Call(ctx context.Context, req *http.Request, key, url string, timeout time.
 	return nil
 }
 
-func GetCfCookies(ctx context.Context, key, url string, timeout time.Duration, notifier notify.Notifier) ([]*http.Cookie, error) {
+func GetCfCookies(ctx context.Context, key int, url string, timeout time.Duration, notifier notify.Notifier) ([]*http.Cookie, error) {
 	cfCacheMu.Lock()
 	defer cfCacheMu.Unlock()
 

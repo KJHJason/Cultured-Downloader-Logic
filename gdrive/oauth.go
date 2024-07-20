@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"

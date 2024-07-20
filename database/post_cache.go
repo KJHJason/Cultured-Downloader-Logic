@@ -8,8 +8,8 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 // example of the Key-Value pairs in the database

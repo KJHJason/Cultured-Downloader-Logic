@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 type RequestArgs struct {

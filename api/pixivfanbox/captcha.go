@@ -7,16 +7,12 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 )
 
-const (
-	cacheKey = "fanbox"
-)
-
 var (
 	CaptchaChecker = cf.CaptchaChecker
 )
 
 func GetCachedCfCookies() []*http.Cookie {
-	return cf.GetCachedCfCookies(cacheKey, constants.CF_BOT_COOKIE_TIMEOUT)
+	return cf.GetCachedCfCookies(cf.PixivFanboxCacheKey, constants.CF_BOT_COOKIE_TIMEOUT)
 }
 
 type CaptchaHandler struct {
@@ -31,7 +27,7 @@ func (ch CaptchaHandler) Call(req *http.Request) error {
 	return cf.Call(
 		ch.dlOptions.GetContext(),
 		req,
-		cacheKey,
+		cf.PixivFanboxCacheKey,
 		constants.PIXIV_FANBOX_URL,
 		constants.CF_BOT_COOKIE_TIMEOUT,
 		ch.dlOptions.Base.Notifier,
@@ -41,7 +37,7 @@ func (ch CaptchaHandler) Call(req *http.Request) error {
 func (ch CaptchaHandler) GetCfCookies() ([]*http.Cookie, error) {
 	return cf.GetCfCookies(
 		ch.dlOptions.GetContext(),
-		cacheKey,
+		cf.PixivFanboxCacheKey,
 		constants.PIXIV_FANBOX_URL,
 		constants.CF_BOT_COOKIE_TIMEOUT,
 		ch.dlOptions.Base.Notifier,

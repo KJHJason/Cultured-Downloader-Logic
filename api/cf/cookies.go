@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 )
 
 const (

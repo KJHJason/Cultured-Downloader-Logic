@@ -9,16 +9,12 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 )
 
-const (
-	cacheKey = "pixiv"
-)
-
 var (
 	CaptchaChecker = cf.CaptchaChecker
 )
 
 func GetCachedCfCookies() []*http.Cookie {
-	return cf.GetCachedCfCookies(cacheKey, constants.CF_BOT_COOKIE_TIMEOUT)
+	return cf.GetCachedCfCookies(cf.PixivCacheKey, constants.CF_BOT_COOKIE_TIMEOUT)
 }
 
 type CaptchaHandler struct {
@@ -39,7 +35,7 @@ func (ch CaptchaHandler) Call(req *http.Request) error {
 	return cf.Call(
 		ch.ctx,
 		req,
-		cacheKey,
+		cf.PixivCacheKey,
 		ch.url,
 		constants.CF_BOT_COOKIE_TIMEOUT,
 		ch.notifier,
@@ -49,7 +45,7 @@ func (ch CaptchaHandler) Call(req *http.Request) error {
 func (ch CaptchaHandler) GetCfCookies() ([]*http.Cookie, error) {
 	return cf.GetCfCookies(
 		ch.ctx,
-		cacheKey,
+		cf.PixivCacheKey,
 		ch.url,
 		constants.CF_BOT_COOKIE_TIMEOUT,
 		ch.notifier,

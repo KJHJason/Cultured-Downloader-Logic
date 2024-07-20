@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"

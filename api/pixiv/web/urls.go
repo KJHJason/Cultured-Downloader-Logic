@@ -3,8 +3,8 @@ package pixivweb
 import (
 	"fmt"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 func getDownloadableUrls(artworkType int, artworkId string) (string, error) {

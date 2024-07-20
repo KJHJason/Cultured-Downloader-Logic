@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
-	cdlerrors "github.com/KJHJason/Cultured-Downloader-Logic/errors"
 )
 
 var DEFAULT_USER_AGENT string
