@@ -197,16 +197,17 @@ func (k *KemonoDlOptions) ValidateArgs(userAgent string) error {
 		k.Base.DownloadDirPath = dlDirPath
 	}
 
-	if len(k.Base.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.KEMONO, userAgent, k.Base.SessionCookies, httpfuncs.CaptchaHandler{}); err != nil {
-			return err
+	if k.Base.SessionCookieId != "" {
+		k.Base.SessionCookies = []*http.Cookie{
+			api.GetCookie(k.Base.SessionCookieId, constants.KEMONO),
 		}
 		k.Base.SessionCookieId = ""
-	} else if k.Base.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.KEMONO, k.Base.SessionCookieId, userAgent, httpfuncs.CaptchaHandler{}); err != nil {
+	}
+
+	if len(k.Base.SessionCookies) > 0 {
+		ch := httpfuncs.CaptchaHandler{}
+		if err := api.VerifyCookies(constants.KEMONO, userAgent, k.Base.SessionCookies, ch); err != nil {
 			return err
-		} else {
-			k.Base.SessionCookies = []*http.Cookie{cookie}
 		}
 	} else {
 		return fmt.Errorf(

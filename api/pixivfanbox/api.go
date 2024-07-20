@@ -29,20 +29,16 @@ func getPostDetails(cacheKey, postId, url string, dlOptions *PixivFanboxDlOption
 	params := map[string]string{"postId": postId}
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:    "GET",
-			Url:       url,
-			Cookies:   dlOptions.Base.SessionCookies,
-			Headers:   header,
-			Params:    params,
-			UserAgent: dlOptions.Base.Configs.UserAgent,
-			Http2:     !useHttp3,
-			Http3:     useHttp3,
-			Context:   dlOptions.ctx,
-			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:                CaptchaChecker,
-				Handler:              NewCaptchaHandler(dlOptions),
-				InjectCaptchaCookies: GetCachedCfCookies,
-			},
+			Method:         "GET",
+			Url:            url,
+			Cookies:        dlOptions.Base.SessionCookies,
+			Headers:        header,
+			Params:         params,
+			UserAgent:      dlOptions.Base.Configs.UserAgent,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			Context:        dlOptions.ctx,
+			CaptchaHandler: dlOptions.GetCaptchaHandler(),
 		},
 	)
 	if err != nil {
@@ -196,20 +192,16 @@ func getCreatorPaginatedPosts(creatorId string, dlOptions *PixivFanboxDlOptions)
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV_FANBOX, true)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:    "GET",
-			Url:       url,
-			Cookies:   dlOptions.Base.SessionCookies,
-			Headers:   headers,
-			Params:    params,
-			UserAgent: dlOptions.Base.Configs.UserAgent,
-			Http2:     !useHttp3,
-			Http3:     useHttp3,
-			Context:   dlOptions.GetContext(),
-			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:                CaptchaChecker,
-				Handler:              NewCaptchaHandler(dlOptions),
-				InjectCaptchaCookies: GetCachedCfCookies,
-			},
+			Method:         "GET",
+			Url:            url,
+			Cookies:        dlOptions.Base.SessionCookies,
+			Headers:        headers,
+			Params:         params,
+			UserAgent:      dlOptions.Base.Configs.UserAgent,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			Context:        dlOptions.GetContext(),
+			CaptchaHandler: dlOptions.GetCaptchaHandler(),
 		},
 	)
 	if err != nil || res.Resp.StatusCode != 200 {
@@ -252,19 +244,15 @@ type resStruct struct {
 func getFanboxPostsLogic(reqUrl string, headers map[string]string, dlOptions *PixivFanboxDlOptions, useHttp3 bool) *resStruct {
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:    "GET",
-			Url:       reqUrl,
-			Cookies:   dlOptions.Base.SessionCookies,
-			Headers:   headers,
-			UserAgent: dlOptions.Base.Configs.UserAgent,
-			Http2:     !useHttp3,
-			Http3:     useHttp3,
-			Context:   dlOptions.GetContext(),
-			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:                CaptchaChecker,
-				Handler:              NewCaptchaHandler(dlOptions),
-				InjectCaptchaCookies: GetCachedCfCookies,
-			},
+			Method:         "GET",
+			Url:            reqUrl,
+			Cookies:        dlOptions.Base.SessionCookies,
+			Headers:        headers,
+			UserAgent:      dlOptions.Base.Configs.UserAgent,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			Context:        dlOptions.GetContext(),
+			CaptchaHandler: dlOptions.GetCaptchaHandler(),
 		},
 	)
 	if err != nil || res.Resp.StatusCode != 200 {

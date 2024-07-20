@@ -73,6 +73,16 @@ type PixivFanboxDlOptions struct {
 	CfCookies []*http.Cookie
 }
 
+func (pf *PixivFanboxDlOptions) GetCaptchaHandler() httpfuncs.CaptchaHandler {
+	handler := newCaptchaHandlerWithDlOptions(pf)
+	return httpfuncs.CaptchaHandler{
+		Check:         CaptchaChecker,
+		Handler:       handler,
+		CallBeforeReq: true,
+		ReqModifier:   handler.CallIfReq,
+	}
+}
+
 func (pf *PixivFanboxDlOptions) GetContext() context.Context {
 	return pf.ctx
 }
@@ -136,22 +146,23 @@ func (pf *PixivFanboxDlOptions) ValidateArgs(userAgent string) error {
 		pf.Base.DownloadDirPath = dlDirPath
 	}
 
-	captchaHandler := httpfuncs.CaptchaHandler{
-		Check:                CaptchaChecker,
-		Handler:              NewCaptchaHandler(pf),
-		InjectCaptchaCookies: nil,
+	if pf.Base.SessionCookieId != "" {
+		pf.Base.SessionCookies = []*http.Cookie{
+			api.GetCookie(pf.Base.SessionCookieId, constants.PIXIV_FANBOX),
+		}
+		pf.Base.SessionCookieId = ""
 	}
+
 	if len(pf.Base.SessionCookies) > 0 {
+		captchaHandler := pf.GetCaptchaHandler()
 		if err := api.VerifyCookies(constants.PIXIV_FANBOX, userAgent, pf.Base.SessionCookies, captchaHandler); err != nil {
 			return err
 		}
-		pf.Base.SessionCookieId = ""
-	} else if pf.Base.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV_FANBOX, pf.Base.SessionCookieId, userAgent, captchaHandler); err != nil {
-			return err
-		} else {
-			pf.Base.SessionCookies = []*http.Cookie{cookie}
-		}
+	} else {
+		return fmt.Errorf(
+			"pixiv fanbox error %d: Session cookies cannot be empty",
+			cdlerrors.INPUT_ERROR,
+		)
 	}
 
 	if pf.Base.DlGdrive && pf.Base.GdriveClient == nil {

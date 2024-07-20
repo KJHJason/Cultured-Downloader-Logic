@@ -15,11 +15,7 @@ import (
 )
 
 // Returns a cookie with given value and website to be used in requests
-func GetCookie(sessionID, website string) *http.Cookie {
-	if sessionID == "" {
-		return &http.Cookie{}
-	}
-
+func GetCookie(sessionId, website string) *http.Cookie {
 	sessionCookieInfo := parsers.GetSessionCookieInfo(website)
 	domain := sessionCookieInfo.Domain
 	cookieName := sessionCookieInfo.Name
@@ -27,7 +23,7 @@ func GetCookie(sessionID, website string) *http.Cookie {
 
 	cookie := http.Cookie{
 		Name:     cookieName,
-		Value:    sessionID,
+		Value:    sessionId,
 		Domain:   domain,
 		Expires:  time.Now().Add(365 * 24 * time.Hour),
 		Path:     "/",
@@ -134,50 +130,32 @@ func VerifyCookie(cookie *http.Cookie, website, userAgent string, captchaHandler
 	return resUrl == websiteUrl, nil
 }
 
-// Prints out the error message and exits the program if the cookie verification fails
+// Formats the error message and logs it
 func processCookieVerification(website string, err error) error {
 	if err != nil {
-		logger.LogError(
-			fmt.Errorf("error occurred when trying to verify %s cookie...\n%w", database.GetReadableSiteStr(website), err),
-			logger.ERROR,
-		)
-		return fmt.Errorf(
+		fmtErr := fmt.Errorf(
 			"error %d: could not verify %s cookie.\nPlease refer to the log file for more details",
 			cdlerrors.INPUT_ERROR,
 			database.GetReadableSiteStr(website),
 		)
+		logger.LogError(fmtErr, logger.ERROR)
+		return fmtErr
 	}
 	return nil
 }
 
-// Verifies the given cookie by making a request to the website and checks if the cookie is valid
-// If the cookie is valid, the cookie will be returned
-//
-// However, if the cookie is invalid, an error message will be printed out and the program will shutdown
-func VerifyAndGetCookie(website, cookieValue, userAgent string, captchaHandler httpfuncs.CaptchaHandler) (*http.Cookie, error) {
-	cookie := GetCookie(cookieValue, website)
-	cookieIsValid, err := VerifyCookie(cookie, website, userAgent, captchaHandler)
-	processCookieVerification(website, err)
-
-	if !cookieIsValid {
-		return nil, fmt.Errorf(
-			"error %d: %s cookie is invalid",
-			cdlerrors.INPUT_ERROR,
-			database.GetReadableSiteStr(website),
-		)
-	}
-	return cookie, nil
-}
-
 func VerifyCookies(website, userAgent string, cookies []*http.Cookie, captchaHandler httpfuncs.CaptchaHandler) error {
-	baseCookie := GetCookie("placeholder-value", website)
+	baseCookie := GetCookie("", website)
 	for _, cookie := range cookies {
 		if cookie.Name != baseCookie.Name {
 			continue
 		}
 
 		cookieIsValid, err := VerifyCookie(cookie, website, userAgent, captchaHandler)
-		processCookieVerification(website, err)
+		if err := processCookieVerification(website, err); err != nil {
+			return err
+		}
+
 		if !cookieIsValid {
 			return fmt.Errorf(
 				"error %d: %s cookie is invalid",

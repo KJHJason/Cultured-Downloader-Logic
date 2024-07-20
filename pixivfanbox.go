@@ -18,18 +18,6 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 		defer stopSignal()
 	}
 
-	// add cf cookies into all requests
-	ch := pixivfanbox.NewCaptchaHandler(pixivFanboxDlOptions)
-	if cfCookies, err := ch.GetCfCookies(); err != nil {
-		return []error{err}
-	} else {
-		pixivFanboxDlOptions.CfCookies = cfCookies
-	}
-	httpCaptchaHandler := httpfuncs.CaptchaHandler{
-		Check:   pixivfanbox.CaptchaChecker,
-		Handler: ch,
-	}
-
 	var errSlice []error
 	if len(pixivFanboxDl.CreatorIds) > 0 {
 		if err := pixivFanboxDl.GetCreatorsPosts(pixivFanboxDlOptions); len(err) > 0 {
@@ -66,7 +54,7 @@ func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivF
 				SupportRange:    constants.PIXIV_FANBOX_RANGE_SUPPORTED,
 				Filters:         pixivFanboxDlOptions.Base.Filters,
 				ProgressBarInfo: pixivFanboxDlOptions.Base.ProgressBarInfo,
-				CaptchaHandler:  httpCaptchaHandler,
+				CaptchaHandler:  pixivFanboxDlOptions.GetCaptchaHandler(),
 			},
 			pixivFanboxDlOptions.Base.Configs,
 		)

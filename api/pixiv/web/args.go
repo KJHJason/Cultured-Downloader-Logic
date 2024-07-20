@@ -24,14 +24,16 @@ type PixivWebDlOptions struct {
 }
 
 func (p *PixivWebDlOptions) GetCaptchaHandler() httpfuncs.CaptchaHandler {
+	handler := pixivcommon.NewCaptchaHandler(
+		p.ctx,
+		constants.PIXIV_URL,
+		p.Base.Notifier,
+	)
 	return httpfuncs.CaptchaHandler{
-		Check: pixivcommon.CaptchaChecker,
-		Handler: pixivcommon.NewCaptchaHandler(
-			p.ctx,
-			constants.PIXIV_MOBILE_URL,
-			p.Base.Notifier,
-		),
-		InjectCaptchaCookies: pixivcommon.GetCachedCfCookies,
+		Check:         pixivcommon.CaptchaChecker,
+		Handler:       handler,
+		CallBeforeReq: true,
+		ReqModifier:   handler.CallIfReq,
 	}
 }
 
@@ -75,29 +77,6 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 		)
 	}
 
-	if p.Base.UseCacheDb && p.Base.Configs.OverwriteFiles {
-		p.Base.UseCacheDb = false
-	}
-
-	if len(p.Base.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.PIXIV, userAgent, p.Base.SessionCookies, httpfuncs.CaptchaHandler{}); err != nil {
-			return err
-		}
-		p.Base.SessionCookieId = ""
-	} else if p.Base.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.PIXIV, p.Base.SessionCookieId, userAgent, httpfuncs.CaptchaHandler{}); err != nil {
-			return err
-		} else {
-			p.Base.SessionCookies = []*http.Cookie{cookie}
-		}
-	}
-
-	if dlDirPath, err := utils.ValidateDlDirPath(p.Base.DownloadDirPath, constants.PIXIV_TITLE); err != nil {
-		return err
-	} else {
-		p.Base.DownloadDirPath = dlDirPath
-	}
-
 	if p.Base.MainProgBar() == nil {
 		return fmt.Errorf(
 			"pixiv web error %d, main progress bar is nil",
@@ -110,6 +89,35 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 			"pixiv web error %d: Notifier cannot be nil",
 			cdlerrors.DEV_ERROR,
 		)
+	}
+
+	if p.Base.UseCacheDb && p.Base.Configs.OverwriteFiles {
+		p.Base.UseCacheDb = false
+	}
+
+	if p.Base.SessionCookieId != "" {
+		p.Base.SessionCookies = []*http.Cookie{
+			api.GetCookie(p.Base.SessionCookieId, constants.PIXIV),
+		}
+		p.Base.SessionCookieId = ""
+	}
+
+	if len(p.Base.SessionCookies) > 0 {
+		ch := p.GetCaptchaHandler()
+		if err := api.VerifyCookies(constants.PIXIV, userAgent, p.Base.SessionCookies, ch); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf(
+			"pixiv web error %d: Session cookies cannot be empty",
+			cdlerrors.INPUT_ERROR,
+		)
+	}
+
+	if dlDirPath, err := utils.ValidateDlDirPath(p.Base.DownloadDirPath, constants.PIXIV_TITLE); err != nil {
+		return err
+	} else {
+		p.Base.DownloadDirPath = dlDirPath
 	}
 	return nil
 }

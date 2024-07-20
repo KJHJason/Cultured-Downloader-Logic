@@ -77,7 +77,17 @@ type CaptchaHandler struct {
 	Handler interface {
 		Call(*http.Request) error
 	}
-	InjectCaptchaCookies func() []*http.Cookie
+
+	// Will call the captcha handler before the download process
+	//
+	// Mainly useful for sites that requires modifications to the request
+	// struct before the download process like adding CF cookies.
+	CallBeforeReq bool
+
+	// ReqModifier is a function that modifies the request before the download process.
+	//
+	// Will be called if CallBeforeReq is true
+	ReqModifier func(*http.Request) error
 }
 
 func (ch CaptchaHandler) IsNotConfigured() bool {

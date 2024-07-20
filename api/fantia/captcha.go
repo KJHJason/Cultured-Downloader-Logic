@@ -13,7 +13,6 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api"
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
-	"github.com/KJHJason/Cultured-Downloader-Logic/configs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/database"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -26,27 +25,26 @@ var (
 	solvedTime time.Time
 )
 
-type CaptchaOptions interface {
-	GetConfigs() *configs.Config
-	GetSessionCookies() []*http.Cookie
-	GetNotifier() notify.Notifier
-	GetContext() context.Context
+type CaptchaOptions struct {
+	Ctx            context.Context
+	UserAgent      string
+	SessionCookies []*http.Cookie
+	Notifier       notify.Notifier
 }
 
 // Automatically try to solve the reCAPTCHA for Fantia.
 func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 	readableSite := database.GetReadableSiteStr(constants.FANTIA)
-	notifier := captchaOptions.GetNotifier()
+	notifier := captchaOptions.Notifier
 	notifier.Alert(
 		fmt.Sprintf("reCAPTCHA detected for the current %s session! Trying to solve it automatically...", readableSite),
 	)
 
-	captchaConfigs := captchaOptions.GetConfigs()
-	allocCtx, cancel := api.GetDefaultChromedpAlloc(captchaConfigs.UserAgent, captchaOptions.GetContext())
+	allocCtx, cancel := api.GetDefaultChromedpAlloc(captchaOptions.UserAgent, captchaOptions.Ctx)
 	defer cancel()
 
 	actions := []chromedp.Action{
-		api.SetChromedpAllocCookies(captchaOptions.GetSessionCookies()),
+		api.SetChromedpAllocCookies(captchaOptions.SessionCookies),
 		chromedp.Navigate(constants.FANTIA_RECAPTCHA_URL),
 		chromedp.WaitVisible(constants.FANTIA_CAPTCHA_BTN_SELECTOR, chromedp.BySearch),
 		chromedp.Click(constants.FANTIA_CAPTCHA_BTN_SELECTOR, chromedp.BySearch),
@@ -94,7 +92,7 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 		return nil
 	}
 
-	if len(captchaOptions.GetSessionCookies()) == 0 {
+	if len(captchaOptions.SessionCookies) == 0 {
 		// Since reCAPTCHA is per session for Fantia, the program shall avoid
 		// trying to solve it and alert the user to login or create a Fantia account.
 		// It is possible that the reCAPTCHA is per IP address for guests, but I'm not sure.
@@ -106,16 +104,38 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 	return autoSolveCaptcha(captchaOptions)
 }
 
-type CaptchaHandler struct {
-	dlOptions *FantiaDlOptions
+func getHttpCaptchaHandler(dlOptions *FantiaDlOptions) httpfuncs.CaptchaHandler {
+	return httpfuncs.CaptchaHandler{
+		Check:         CaptchaChecker,
+		Handler:       NewCaptchaHandler(dlOptions),
+		CallBeforeReq: false,
+		ReqModifier:   nil,
+	}
 }
 
-func newCaptchaHandler(dlOptions *FantiaDlOptions) CaptchaHandler {
-	return CaptchaHandler{dlOptions: dlOptions}
+type CaptchaHandler struct {
+	options CaptchaOptions
+}
+
+func NewCaptchaHandler(dlOptions *FantiaDlOptions) CaptchaHandler {
+	return CaptchaHandler{
+		options: CaptchaOptions{
+			Ctx:            dlOptions.GetContext(),
+			UserAgent:      dlOptions.Base.Configs.UserAgent,
+			SessionCookies: dlOptions.Base.SessionCookies,
+			Notifier:       dlOptions.Base.Notifier,
+		},
+	}
+}
+
+func NewCaptchaHandlerWithOptions(options CaptchaOptions) CaptchaHandler {
+	return CaptchaHandler{
+		options: options,
+	}
 }
 
 func (ch CaptchaHandler) Call(*http.Request) error {
-	return SolveCaptcha(ch.dlOptions)
+	return SolveCaptcha(ch.options)
 }
 
 func CaptchaChecker(res *httpfuncs.ResponseWrapper) (bool, error) {

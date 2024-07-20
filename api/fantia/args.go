@@ -135,25 +135,21 @@ func (f *FantiaDlOptions) CtxIsActive() bool {
 
 // GetCsrfToken gets the CSRF token from Fantia's index HTML
 // which is required to communicate with their utils.
-func (f *FantiaDlOptions) GetCsrfToken(userAgent string) error {
+func (f *FantiaDlOptions) GetCsrfToken(userAgent string, captchaHandler httpfuncs.CaptchaHandler) error {
 	f.csrfMu.Lock()
 	defer f.csrfMu.Unlock()
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.FANTIA, false)
 	res, err := httpfuncs.CallRequest(
 		&httpfuncs.RequestArgs{
-			Method:      "GET",
-			Url:         "https://fantia.jp/",
-			Cookies:     f.Base.SessionCookies,
-			Http2:       !useHttp3,
-			Http3:       useHttp3,
-			CheckStatus: true,
-			UserAgent:   userAgent,
-			CaptchaHandler: httpfuncs.CaptchaHandler{
-				Check:                CaptchaChecker,
-				Handler:              newCaptchaHandler(f),
-				InjectCaptchaCookies: nil,
-			},
+			Method:         "GET",
+			Url:            "https://fantia.jp/",
+			Cookies:        f.Base.SessionCookies,
+			Http2:          !useHttp3,
+			Http3:          useHttp3,
+			CheckStatus:    true,
+			UserAgent:      userAgent,
+			CaptchaHandler: captchaHandler,
 		},
 	)
 	if err != nil {
@@ -250,17 +246,23 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		f.Base.DownloadDirPath = dlDirPath
 	}
 
-	if len(f.Base.SessionCookies) > 0 {
-		if err := api.VerifyCookies(constants.FANTIA, userAgent, f.Base.SessionCookies, httpfuncs.CaptchaHandler{}); err != nil {
-			return err
+	if f.Base.SessionCookieId != "" {
+		f.Base.SessionCookies = []*http.Cookie{
+			api.GetCookie(f.Base.SessionCookieId, constants.FANTIA),
 		}
 		f.Base.SessionCookieId = ""
-	} else if f.Base.SessionCookieId != "" {
-		if cookie, err := api.VerifyAndGetCookie(constants.FANTIA, f.Base.SessionCookieId, userAgent, httpfuncs.CaptchaHandler{}); err != nil {
+	}
+
+	ch := getHttpCaptchaHandler(f)
+	if len(f.Base.SessionCookies) > 0 {
+		if err := api.VerifyCookies(constants.FANTIA, userAgent, f.Base.SessionCookies, ch); err != nil {
 			return err
-		} else {
-			f.Base.SessionCookies = []*http.Cookie{cookie}
 		}
+	} else {
+		return fmt.Errorf(
+			"fantia error %d: session cookie is required",
+			cdlerrors.INPUT_ERROR,
+		)
 	}
 
 	if f.Base.DlGdrive && f.Base.GdriveClient == nil {
@@ -269,5 +271,5 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		f.Base.GdriveClient = nil
 	}
 
-	return f.GetCsrfToken(userAgent)
+	return f.GetCsrfToken(userAgent, ch)
 }

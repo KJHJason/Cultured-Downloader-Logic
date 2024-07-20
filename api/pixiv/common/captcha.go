@@ -13,10 +13,6 @@ var (
 	CaptchaChecker = cf.CaptchaChecker
 )
 
-func GetCachedCfCookies() []*http.Cookie {
-	return cf.GetCachedCfCookies(cf.PixivCacheKey, constants.CF_BOT_COOKIE_TIMEOUT)
-}
-
 type CaptchaHandler struct {
 	url      string
 	ctx      context.Context
@@ -42,9 +38,10 @@ func (ch CaptchaHandler) Call(req *http.Request) error {
 	)
 }
 
-func (ch CaptchaHandler) GetCfCookies() ([]*http.Cookie, error) {
-	return cf.GetCfCookies(
+func (ch CaptchaHandler) CallIfReq(req *http.Request) error {
+	return cf.CallIfReq(
 		ch.ctx,
+		req,
 		cf.PixivCacheKey,
 		ch.url,
 		constants.CF_BOT_COOKIE_TIMEOUT,

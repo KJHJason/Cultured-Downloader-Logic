@@ -120,14 +120,15 @@ func CaptchaHandlerLogic(req *http.Request, res *http.Response, reqArgs *Request
 
 // send the request to the target URL and retries if the request was not successful
 func sendRequest(req *http.Request, reqArgs *RequestArgs) (*ResponseWrapper, error) {
-	if reqArgs.CaptchaHandler.InjectCaptchaCookies != nil {
-		for _, cookie := range reqArgs.CaptchaHandler.InjectCaptchaCookies() {
-			req.AddCookie(cookie)
-		}
-	}
 	AddCookies(reqArgs.Url, reqArgs.Cookies, req)
 	AddHeaders(reqArgs.Headers, reqArgs.UserAgent, req)
 	AddParams(reqArgs.Params, req)
+
+	if reqArgs.CaptchaHandler.CallBeforeReq {
+		if err := reqArgs.CaptchaHandler.ReqModifier(req); err != nil {
+			return nil, err
+		}
+	}
 
 	var err error
 	var res *http.Response

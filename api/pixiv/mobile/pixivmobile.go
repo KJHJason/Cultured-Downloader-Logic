@@ -34,14 +34,16 @@ type PixivMobile struct {
 }
 
 func (p *PixivMobile) GetCaptchaHandler() httpfuncs.CaptchaHandler {
+	handler := pixivcommon.NewCaptchaHandler(
+		p.ctx,
+		constants.PIXIV_MOBILE_URL,
+		p.Base.Notifier,
+	)
 	return httpfuncs.CaptchaHandler{
-		Check: pixivcommon.CaptchaChecker,
-		Handler: pixivcommon.NewCaptchaHandler(
-			p.ctx,
-			constants.PIXIV_MOBILE_URL,
-			p.Base.Notifier,
-		),
-		InjectCaptchaCookies: pixivcommon.GetCachedCfCookies,
+		Check:         pixivcommon.CaptchaChecker,
+		Handler:       handler,
+		CallBeforeReq: true,
+		ReqModifier:   handler.CallIfReq,
 	}
 }
 
@@ -159,6 +161,12 @@ func (pixiv *PixivMobile) SendRequest(reqArgs *httpfuncs.RequestArgs) (*httpfunc
 
 	if reqArgs.CaptchaHandler.IsNotConfigured() {
 		reqArgs.CaptchaHandler = pixiv.GetCaptchaHandler()
+	}
+
+	if reqArgs.CaptchaHandler.CallBeforeReq {
+		if err := reqArgs.CaptchaHandler.ReqModifier(req); err != nil {
+			return nil, err
+		}
 	}
 
 	var res *http.Response

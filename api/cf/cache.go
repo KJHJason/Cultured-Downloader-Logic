@@ -44,12 +44,6 @@ func getFilteredCachedCookiesUnsafe(key int) []*http.Cookie {
 	return cfCookies
 }
 
-func GetCachedCfCookies(key int, timeout time.Duration) []*http.Cookie {
-	cfCacheMu.RLock()
-	defer cfCacheMu.RUnlock()
-	return getCachedCfCookiesUnsafe(key, timeout)
-}
-
 func getCachedCfCookiesUnsafe(key int, timeout time.Duration) []*http.Cookie {
 	var ok bool
 	var cachedValues *cacheValues
@@ -140,7 +134,20 @@ func CaptchaChecker(res *httpfuncs.ResponseWrapper) (bool, error) {
 	return true, nil
 }
 
+// Note: This function does not check for cached cookies.
 func Call(ctx context.Context, req *http.Request, key int, url string, timeout time.Duration, notifier notify.Notifier) error {
+	cfCacheMu.Lock()
+	defer cfCacheMu.Unlock()
+
+	if err := callMainLogicUnsafe(ctx, key, url, notifier); err != nil {
+		return err
+	}
+	addCacheCookiesToReq(req, key)
+	return nil
+}
+
+// Similar to Call, but checks for cached cookies.
+func CallIfReq(ctx context.Context, req *http.Request, key int, url string, timeout time.Duration, notifier notify.Notifier) error {
 	cfCacheMu.Lock()
 	defer cfCacheMu.Unlock()
 
@@ -154,18 +161,4 @@ func Call(ctx context.Context, req *http.Request, key int, url string, timeout t
 	}
 	addCacheCookiesToReq(req, key)
 	return nil
-}
-
-func GetCfCookies(ctx context.Context, key int, url string, timeout time.Duration, notifier notify.Notifier) ([]*http.Cookie, error) {
-	cfCacheMu.Lock()
-	defer cfCacheMu.Unlock()
-
-	if cfCookies := getCachedCfCookiesUnsafe(key, timeout); cfCookies != nil {
-		return cfCookies, nil
-	}
-
-	if err := callMainLogicUnsafe(ctx, key, url, notifier); err != nil {
-		return nil, err
-	}
-	return getFilteredCachedCookiesUnsafe(key), nil
 }
