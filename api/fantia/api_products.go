@@ -26,7 +26,7 @@ func getFantiaProductPaidContent(purchaseRelativeUrl, productId string, dlOption
 			Http3:          useHttp3,
 			UserAgent:      dlOptions.Base.Configs.UserAgent,
 			Context:        dlOptions.GetContext(),
-			CaptchaHandler: getHttpCaptchaHandler(dlOptions),
+			CaptchaHandler: newHttpCaptchaHandler(dlOptions),
 		},
 	)
 	if err != nil {
@@ -64,7 +64,7 @@ func getProduct(productId string, dlOptions *FantiaDlOptions) ([]*httpfuncs.ToDo
 			Http3:          useHttp3,
 			UserAgent:      dlOptions.Base.Configs.UserAgent,
 			Context:        dlOptions.GetContext(),
-			CaptchaHandler: getHttpCaptchaHandler(dlOptions),
+			CaptchaHandler: newHttpCaptchaHandler(dlOptions),
 		},
 	)
 	if err != nil {

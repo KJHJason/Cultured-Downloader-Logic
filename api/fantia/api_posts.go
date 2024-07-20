@@ -63,7 +63,7 @@ func getFantiaPostDetails(postArg *fantiaPostArgs, dlOptions *FantiaDlOptions) (
 			Http3:          useHttp3,
 			UserAgent:      dlOptions.Base.Configs.UserAgent,
 			Context:        dlOptions.GetContext(),
-			CaptchaHandler: getHttpCaptchaHandler(dlOptions),
+			CaptchaHandler: newHttpCaptchaHandler(dlOptions),
 		},
 	)
 	if err != nil || res.Resp.StatusCode != 200 {

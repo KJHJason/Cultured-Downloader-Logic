@@ -6,6 +6,7 @@ import (
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/api/cf"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
+	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/notify"
 )
 
@@ -13,23 +14,22 @@ var (
 	CaptchaChecker = cf.CaptchaChecker
 )
 
-type CaptchaHandler struct {
-	ctx      context.Context
-	notifier notify.Notifier
-}
-
-func NewCaptchaHandler(ctx context.Context, notifier notify.Notifier) CaptchaHandler {
-	return CaptchaHandler{
+func NewHttpCaptchaHandler(ctx context.Context, notifier notify.Notifier) httpfuncs.CaptchaHandler {
+	handler := CaptchaHandler{
 		ctx:      ctx,
 		notifier: notifier,
 	}
+	return httpfuncs.CaptchaHandler{
+		Check:         CaptchaChecker,
+		Handler:       handler,
+		CallBeforeReq: true,
+		ReqModifier:   handler.CallIfReq,
+	}
 }
 
-func newCaptchaHandlerWithDlOptions(dlOptions *PixivFanboxDlOptions) CaptchaHandler {
-	return CaptchaHandler{
-		ctx:      dlOptions.GetContext(),
-		notifier: dlOptions.Base.Notifier,
-	}
+type CaptchaHandler struct {
+	ctx      context.Context
+	notifier notify.Notifier
 }
 
 func (ch CaptchaHandler) Call(req *http.Request) error {

@@ -24,17 +24,11 @@ type PixivWebDlOptions struct {
 }
 
 func (p *PixivWebDlOptions) GetCaptchaHandler() httpfuncs.CaptchaHandler {
-	handler := pixivcommon.NewCaptchaHandler(
+	return pixivcommon.NewHttpCaptchaHandler(
 		p.ctx,
 		constants.PIXIV_URL,
 		p.Base.Notifier,
 	)
-	return httpfuncs.CaptchaHandler{
-		Check:         pixivcommon.CaptchaChecker,
-		Handler:       handler,
-		CallBeforeReq: true,
-		ReqModifier:   handler.CallIfReq,
-	}
 }
 
 func (p *PixivWebDlOptions) GetContext() context.Context {

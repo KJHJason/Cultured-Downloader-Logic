@@ -34,17 +34,11 @@ type PixivMobile struct {
 }
 
 func (p *PixivMobile) GetCaptchaHandler() httpfuncs.CaptchaHandler {
-	handler := pixivcommon.NewCaptchaHandler(
+	return pixivcommon.NewHttpCaptchaHandler(
 		p.ctx,
 		constants.PIXIV_MOBILE_URL,
 		p.Base.Notifier,
 	)
-	return httpfuncs.CaptchaHandler{
-		Check:         pixivcommon.CaptchaChecker,
-		Handler:       handler,
-		CallBeforeReq: true,
-		ReqModifier:   handler.CallIfReq,
-	}
 }
 
 func (p *PixivMobile) GetContext() context.Context {

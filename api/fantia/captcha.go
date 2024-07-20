@@ -104,21 +104,8 @@ func SolveCaptcha(captchaOptions CaptchaOptions) error {
 	return autoSolveCaptcha(captchaOptions)
 }
 
-func getHttpCaptchaHandler(dlOptions *FantiaDlOptions) httpfuncs.CaptchaHandler {
-	return httpfuncs.CaptchaHandler{
-		Check:         CaptchaChecker,
-		Handler:       NewCaptchaHandler(dlOptions),
-		CallBeforeReq: false,
-		ReqModifier:   nil,
-	}
-}
-
-type CaptchaHandler struct {
-	options CaptchaOptions
-}
-
-func NewCaptchaHandler(dlOptions *FantiaDlOptions) CaptchaHandler {
-	return CaptchaHandler{
+func newHttpCaptchaHandler(dlOptions *FantiaDlOptions) httpfuncs.CaptchaHandler {
+	handler := CaptchaHandler{
 		options: CaptchaOptions{
 			Ctx:            dlOptions.GetContext(),
 			UserAgent:      dlOptions.Base.Configs.UserAgent,
@@ -126,6 +113,33 @@ func NewCaptchaHandler(dlOptions *FantiaDlOptions) CaptchaHandler {
 			Notifier:       dlOptions.Base.Notifier,
 		},
 	}
+	return httpfuncs.CaptchaHandler{
+		Check:         CaptchaChecker,
+		Handler:       handler,
+		CallBeforeReq: false,
+		ReqModifier:   nil,
+	}
+}
+
+func NewHttpCaptchaHandler(options CaptchaOptions) httpfuncs.CaptchaHandler {
+	handler := CaptchaHandler{
+		options: CaptchaOptions{
+			Ctx:            options.Ctx,
+			UserAgent:      options.UserAgent,
+			SessionCookies: options.SessionCookies,
+			Notifier:       options.Notifier,
+		},
+	}
+	return httpfuncs.CaptchaHandler{
+		Check:         CaptchaChecker,
+		Handler:       handler,
+		CallBeforeReq: false,
+		ReqModifier:   nil,
+	}
+}
+
+type CaptchaHandler struct {
+	options CaptchaOptions
 }
 
 func NewCaptchaHandlerWithOptions(options CaptchaOptions) CaptchaHandler {

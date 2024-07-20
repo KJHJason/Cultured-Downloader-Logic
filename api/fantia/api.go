@@ -103,7 +103,7 @@ func getFanclubContent(fanclubId, pageNum string, dlOptions *FantiaDlOptions, co
 				CheckStatus:    true,
 				UserAgent:      dlOptions.Base.Configs.UserAgent,
 				Context:        dlOptions.GetContext(),
-				CaptchaHandler: getHttpCaptchaHandler(dlOptions),
+				CaptchaHandler: newHttpCaptchaHandler(dlOptions),
 			},
 		)
 		if err != nil {

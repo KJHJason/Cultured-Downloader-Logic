@@ -253,7 +253,7 @@ func (f *FantiaDlOptions) ValidateArgs(userAgent string) error {
 		f.Base.SessionCookieId = ""
 	}
 
-	ch := getHttpCaptchaHandler(f)
+	ch := newHttpCaptchaHandler(f)
 	if len(f.Base.SessionCookies) > 0 {
 		if err := api.VerifyCookies(constants.FANTIA, userAgent, f.Base.SessionCookies, ch); err != nil {
 			return err

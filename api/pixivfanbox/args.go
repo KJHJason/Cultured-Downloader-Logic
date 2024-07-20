@@ -74,13 +74,7 @@ type PixivFanboxDlOptions struct {
 }
 
 func (pf *PixivFanboxDlOptions) GetCaptchaHandler() httpfuncs.CaptchaHandler {
-	handler := newCaptchaHandlerWithDlOptions(pf)
-	return httpfuncs.CaptchaHandler{
-		Check:         CaptchaChecker,
-		Handler:       handler,
-		CallBeforeReq: true,
-		ReqModifier:   handler.CallIfReq,
-	}
+	return NewHttpCaptchaHandler(pf.ctx, pf.Base.Notifier)
 }
 
 func (pf *PixivFanboxDlOptions) GetContext() context.Context {
