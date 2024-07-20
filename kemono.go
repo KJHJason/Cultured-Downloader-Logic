@@ -7,10 +7,15 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
-func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDlOptions) []error {
+func KemonoDownloadProcess(kemonoDl *kemono.KemonoDl, dlOptions *kemono.KemonoDlOptions, catchInterrupt bool) []error {
 	defer dlOptions.CancelCtx()
 	if !dlOptions.Base.DlAttachments && !dlOptions.Base.DlGdrive {
 		return nil
+	}
+
+	if catchInterrupt {
+		stopSignal := catchInterruptSignal(dlOptions.CancelCtx)
+		defer stopSignal()
 	}
 
 	var errSlice []error

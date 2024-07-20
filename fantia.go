@@ -7,10 +7,15 @@ import (
 )
 
 // Start the download process for Fantia
-func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.FantiaDlOptions) []error {
+func FantiaDownloadProcess(fantiaDl *fantia.FantiaDl, fantiaDlOptions *fantia.FantiaDlOptions, catchInterrupt bool) []error {
 	defer fantiaDlOptions.CancelCtx()
 	if !fantiaDlOptions.Base.DlThumbnails && !fantiaDlOptions.Base.DlImages && !fantiaDlOptions.Base.DlAttachments {
 		return nil
+	}
+
+	if catchInterrupt {
+		stopSignal := catchInterruptSignal(fantiaDlOptions.CancelCtx)
+		defer stopSignal()
 	}
 
 	var errorSlice []error

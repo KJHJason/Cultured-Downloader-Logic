@@ -8,11 +8,9 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -220,19 +218,6 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 		return nil
 	}
 
-	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
-	ctx, cancel := context.WithCancel(gdrive.ctx)
-	defer cancel()
-
-	// Catch SIGINT/SIGTERM signal and cancel the context when received
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigs
-		cancel()
-	}()
-	defer signal.Stop(sigs)
-
 	maxConcurrency := gdrive.maxDownloadWorkers
 	if dlLen < maxConcurrency {
 		maxConcurrency = dlLen
@@ -280,7 +265,7 @@ func (gdrive *GDrive) DownloadMultipleFiles(files []*GdriveFileToDl, progBarInfo
 			filePath := filepath.Join(file.FilePath, file.Name)
 
 			queue <- struct{}{}
-			err := gdrive.DownloadFile(ctx, file, filePath, progBarInfo, filters)
+			err := gdrive.DownloadFile(gdrive.ctx, file, filePath, progBarInfo, filters)
 			hasErr := err != nil
 			if hasErr && !errors.Is(err, context.Canceled) {
 				err = fmt.Errorf(

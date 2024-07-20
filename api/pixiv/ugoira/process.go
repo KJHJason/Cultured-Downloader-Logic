@@ -7,10 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"sync"
-	"syscall"
 
 	pixivcommon "github.com/KJHJason/Cultured-Downloader-Logic/api/pixiv/common"
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
@@ -151,18 +149,8 @@ func convertUgoira(ctx context.Context, ugoira *Ugoira, ugoiraOptions *UgoiraOpt
 }
 
 func convertMultipleUgoira(ugoiraArgs *UgoiraArgs, ugoiraOptions *UgoiraOptions, config *configs.Config) []error {
-	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
 	ctx, cancel := context.WithCancel(ugoiraArgs.context)
 	defer cancel()
-
-	// Catch SIGINT/SIGTERM signal and cancel the context when received
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigs
-		cancel()
-	}()
-	defer signal.Stop(sigs)
 
 	downloadInfoLen := len(ugoiraArgs.ToDownload)
 	maxConcurrency := config.FfmpegWorkers

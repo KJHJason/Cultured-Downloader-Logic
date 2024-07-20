@@ -7,10 +7,15 @@ import (
 )
 
 // Start the download process for Pixiv Fanbox
-func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivFanboxDlOptions *pixivfanbox.PixivFanboxDlOptions) []error {
+func PixivFanboxDownloadProcess(pixivFanboxDl *pixivfanbox.PixivFanboxDl, pixivFanboxDlOptions *pixivfanbox.PixivFanboxDlOptions, catchInterrupt bool) []error {
 	defer pixivFanboxDlOptions.CancelCtx()
 	if !pixivFanboxDlOptions.Base.DlThumbnails && !pixivFanboxDlOptions.Base.DlImages && !pixivFanboxDlOptions.Base.DlAttachments && !pixivFanboxDlOptions.Base.DlGdrive {
 		return nil
+	}
+
+	if catchInterrupt {
+		stopSignal := catchInterruptSignal(pixivFanboxDlOptions.CancelCtx)
+		defer stopSignal()
 	}
 
 	// add cf cookies into all requests

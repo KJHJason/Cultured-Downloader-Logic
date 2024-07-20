@@ -23,11 +23,16 @@ func alertUser(artworksToDl []*httpfuncs.ToDownload, ugoiraToDl []*ugoira.Ugoira
 }
 
 // Start the download process for Pixiv
-func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.PixivWebDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions) []error {
+func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.PixivWebDlOptions, pixivUgoiraOptions *ugoira.UgoiraOptions, catchInterrupt bool) []error {
 	defer pixivDlOptions.CancelCtx()
 	var errSlice []error
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
+
+	if catchInterrupt {
+		stopSignal := catchInterruptSignal(pixivDlOptions.CancelCtx)
+		defer stopSignal()
+	}
 
 	tagNameLen := len(pixivDl.TagNames)
 	if tagNameLen > 0 && pixivDlOptions.CtxIsActive() {
@@ -148,11 +153,16 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 }
 
 // Start the download process for Pixiv
-func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivMobile *pixivmobile.PixivMobile, pixivUgoiraOptions *ugoira.UgoiraOptions) []error {
+func PixivMobileDownloadProcess(pixivDl *pixiv.PixivDl, pixivMobile *pixivmobile.PixivMobile, pixivUgoiraOptions *ugoira.UgoiraOptions, catchInterrupt bool) []error {
 	defer pixivMobile.CancelCtx()
 	var errSlice []error
 	var ugoiraToDl []*ugoira.Ugoira
 	var artworksToDl []*httpfuncs.ToDownload
+
+	if catchInterrupt {
+		stopSignal := catchInterruptSignal(pixivMobile.CancelCtx)
+		defer stopSignal()
+	}
 
 	if len(pixivDl.ArtistIds) > 0 {
 		artworkSlice, ugoiraSlice, err := pixivMobile.GetMultipleArtistsPosts(

@@ -9,11 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	ctxio "github.com/jbenet/go-context/io"
@@ -383,19 +381,6 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 	errTsSlice := threadsafe.NewSlice[error]()
 	cacheTsSlice := threadsafe.NewSliceWithCapacity[*cacheEl](urlsLen)
 
-	// Create a context that can be cancelled when SIGINT/SIGTERM signal is received
-	ctx, cancel := context.WithCancel(dlOptions.Context)
-	defer cancel()
-
-	// Catch SIGINT/SIGTERM signal and cancel the context when received
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigs
-		cancel()
-	}()
-	defer signal.Stop(sigs)
-
 	baseMsg := "Downloading files [%d/" + fmt.Sprintf("%d]...", urlsLen)
 	progress := dlOptions.ProgressBarInfo.MainProgressBar
 	progress.SetToProgressBar()
@@ -436,7 +421,7 @@ func DownloadUrlsWithHandler(urlInfoSlice []*ToDownload, dlOptions *DlOptions, c
 					RetryDelay:     dlOptions.RetryDelay,
 					UserAgent:      config.UserAgent,
 					RequestHandler: reqHandler,
-					Context:        ctx,
+					Context:        dlOptions.Context,
 				},
 				config.OverwriteFiles,
 				dlOptions,
