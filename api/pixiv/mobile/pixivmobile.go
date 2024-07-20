@@ -19,14 +19,8 @@ type PixivMobile struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	Base *api.BaseDl
-
-	// Sort order of the results. Can be "date_desc" or "date_asc".
-	SortOrder    string
-	SearchMode   string
-	SearchAiMode int // 0: filter AI works, 1: Display AI works
-	RatingMode   string
-	ArtworkType  string
+	Base     *api.BaseDl
+	pFilters *pixivcommon.PixivFilters
 
 	// API information and its endpoints
 	refreshToken string
@@ -73,10 +67,11 @@ func (p *PixivMobile) CtxIsActive() bool {
 }
 
 // Get a new PixivMobile structure
-func NewPixivMobile(refreshToken string, timeout int, ctx context.Context) (*PixivMobile, error) {
+func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, pixivFilters pixivcommon.PixivFilters) (*PixivMobile, error) {
 	pixivMobile := &PixivMobile{
 		refreshToken: refreshToken,
 		apiTimeout:   timeout,
+		pFilters:     &pixivFilters,
 	}
 	pixivMobile.SetContext(ctx)
 	if refreshToken != "" {

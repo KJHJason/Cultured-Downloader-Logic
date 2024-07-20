@@ -20,7 +20,7 @@ func processArtistPostsJson(resJson *IllustratorJson, pageNum string, pixivDlOpt
 	minOffset, maxOffset := pixivcommon.ConvertPageNumToOffset(minPage, maxPage, constants.PIXIV_PER_PAGE, false)
 
 	var artworkIds []string
-	if pixivDlOptions.ArtworkType == "all" || pixivDlOptions.ArtworkType == "illust_and_ugoira" {
+	if pixivDlOptions.pFilters.ArtworkType == "all" || pixivDlOptions.pFilters.ArtworkType == "illust_and_ugoira" {
 		illusts := resJson.Body.Illusts
 		switch t := illusts.(type) {
 		case map[string]any:
@@ -41,7 +41,7 @@ func processArtistPostsJson(resJson *IllustratorJson, pageNum string, pixivDlOpt
 		}
 	}
 
-	if pixivDlOptions.ArtworkType == "all" || pixivDlOptions.ArtworkType == "manga" {
+	if pixivDlOptions.pFilters.ArtworkType == "all" || pixivDlOptions.pFilters.ArtworkType == "manga" {
 		manga := resJson.Body.Manga
 		switch t := manga.(type) {
 		case map[string]any:

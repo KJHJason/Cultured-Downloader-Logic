@@ -256,9 +256,9 @@ func (pixiv *PixivMobile) getArtistPosts(userId, pageNum string) ([]*httpfuncs.T
 		"user_id": userId,
 		"filter":  "for_ios",
 		"offset":  strconv.Itoa(minOffset),
-		"type":    pixiv.ArtworkType,
+		"type":    pixiv.pFilters.ArtworkType,
 	}
-	if pixiv.ArtworkType == "all" {
+	if pixiv.pFilters.ArtworkType == "all" {
 		params["type"] = "illust"
 	}
 
@@ -277,7 +277,7 @@ func (pixiv *PixivMobile) getArtistPosts(userId, pageNum string) ([]*httpfuncs.T
 		return nil, nil, errSlice
 	}
 
-	if params["type"] == "illust" && pixiv.ArtworkType == "all" {
+	if params["type"] == "illust" && pixiv.pFilters.ArtworkType == "all" {
 		// if the user is downloading both
 		// illust and manga, loop again to get the manga
 		params["type"] = "manga"
@@ -359,11 +359,11 @@ func (pixiv *PixivMobile) tagSearchLogic(tagName string, offsetArg *offsetArgs) 
 	var artworksToDownload []*httpfuncs.ToDownload
 	params := map[string]string{
 		"word":           tagName,
-		"search_target":  pixiv.SearchMode,
-		"sort":           pixiv.SortOrder,
+		"search_target":  pixiv.pFilters.SearchMode,
+		"sort":           pixiv.pFilters.SortOrder,
 		"filter":         "for_ios",
 		"offset":         strconv.Itoa(offsetArg.minOffset),
-		"search_ai_type": strconv.Itoa(pixiv.SearchAiMode),
+		"search_ai_type": strconv.Itoa(pixiv.pFilters.SearchAiMode),
 	}
 	curOffset := offsetArg.minOffset
 	nextUrl := constants.PIXIV_MOBILE_ILLUST_SEARCH_URL

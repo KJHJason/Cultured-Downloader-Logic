@@ -443,20 +443,20 @@ func TagSearch(tagName, pageNum string, dlOptions *PixivWebDlOptions) ([]string,
 		"word": tagName,
 
 		// search mode: s_tag, s_tag_full, s_tc
-		"s_mode": dlOptions.SearchMode,
+		"s_mode": dlOptions.pFilters.SearchMode,
 
 		// sort order: date, popular, popular_male, popular_female
 		// (add "_d" suffix for descending order, e.g. date_d)
-		"order": dlOptions.SortOrder,
+		"order": dlOptions.pFilters.SortOrder,
 
 		//  r18, safe, or all for both
-		"mode": dlOptions.RatingMode,
+		"mode": dlOptions.pFilters.RatingMode,
 
 		// illust_and_ugoira, manga, all
-		"type": dlOptions.ArtworkType,
+		"type": dlOptions.pFilters.ArtworkType,
 
 		// 0: display AI works, 1: hide AI works
-		"ai_type": strconv.Itoa(dlOptions.SearchAiMode),
+		"ai_type": strconv.Itoa(dlOptions.pFilters.SearchAiMode),
 	}
 
 	useHttp3 := httpfuncs.IsHttp3Supported(constants.PIXIV, true)
