@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
@@ -153,17 +152,7 @@ func CallDockerImage(ctx context.Context, url string) (Cookies, error) {
 	if err := cli.ContainerStart(ctx, containerId, container.StartOptions{}); err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := utils.RemoveContainer(ctx, cli, containerId, nil); err != nil {
-			logger.LogError(
-				fmt.Errorf(
-					"error %d: failed to remove container => %w",
-					cdlerrors.UNEXPECTED_ERROR, err,
-				),
-				logger.ERROR,
-			)
-		}
-	}()
+	defer utils.RemoveContainer(ctx, cli, containerId, nil)
 
 	if _, err := utils.WaitForContainer(ctx, cli, containerId); err != nil {
 		return nil, err

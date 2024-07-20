@@ -169,6 +169,7 @@ func RemoveContainer(ctx context.Context, cli *client.Client, containerId string
 	} else {
 		options = *rmOptions
 	}
+
 	if err := cli.ContainerRemove(ctx, containerId, options); err != nil {
 		logger.MainLogger.Errorf(
 			"error %d: failed to remove container %s => %v",

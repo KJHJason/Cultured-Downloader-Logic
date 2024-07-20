@@ -2,6 +2,7 @@ package cf
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -117,7 +118,11 @@ func callMainLogicUnsafe(ctx context.Context, key int, url string, notifier noti
 	cfCookies, err = CallDockerImage(ctx, url)
 	if err != nil {
 		alert(notifier, "Failed to solve CF Captcha automatically...")
-		return err
+		return fmt.Errorf(
+			"error %d: failed to solve CF Captcha automatically => %w",
+			cdlerrors.CAPTCHA_ERROR,
+			err,
+		)
 	}
 
 	alert(notifier, "Successfully solved CF Captcha automatically!")

@@ -1,6 +1,8 @@
 package cf
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
@@ -21,11 +23,12 @@ func sendReqAndGetCfCookies(url string) ([]*http.Cookie, error) {
 	}
 	res, err := httpfuncs.CallRequest(&reqArgs)
 	if err != nil {
-		logger.MainLogger.Errorf(
+		fmtErr := fmt.Sprintf(
 			"error %d: failed to send request to get cf cookies => %v",
 			cdlerrors.CONNECTION_ERROR, err,
 		)
-		return nil, err
+		logger.MainLogger.Error(fmtErr)
+		return nil, errors.New(fmtErr)
 	}
 	defer res.Close()
 
