@@ -16,36 +16,43 @@ func checkDockerDaemonIsRunning() bool {
 	return cmd.Run() == nil
 }
 
-func checkDockerRequirements(ctx context.Context, panicHandler func(msg string)) {
+func checkDockerRequirements(ctx context.Context, infoHandler func(msg string)) {
+	msgPrefix := fmt.Sprintf(
+		"Features like the Captcha Solver will not work properly due to error %d",
+		cdlerrors.STARTUP_ERROR,
+	)
 	if _, err := exec.LookPath("docker"); err != nil {
-		panicHandler(
+		infoHandler(
 			fmt.Sprintf(
-				"error %d: Docker executable not found, please install Docker and ensure it's in the PATH environment variable",
-				cdlerrors.STARTUP_ERROR,
+				"%s: Docker executable not found, please install Docker and ensure it's in the PATH environment variable",
+				msgPrefix,
 			),
 		)
+		return
 	}
 	if !checkDockerDaemonIsRunning() {
-		panicHandler(
+		infoHandler(
 			fmt.Sprintf(
-				"error %d: Docker is not running, please start Docker daemon",
-				cdlerrors.STARTUP_ERROR,
+				"%s: Docker is not running, please start the Docker daemon",
+				msgPrefix,
 			),
 		)
+		return
 	}
 
 	if err := cf.PullCfDockerImage(ctx); err != nil {
-		panicHandler(
+		infoHandler(
 			fmt.Sprintf(
-				"error %d: failed to pull Docker image -> %v",
-				cdlerrors.STARTUP_ERROR,
+				"%s: failed to pull Docker image -> %v",
+				msgPrefix,
 				err,
 			),
 		)
+		return
 	}
 }
 
-func CheckPrerequisites(ctx context.Context, panicHandler func(msg string)) {
+func CheckPrerequisites(ctx context.Context, infoHandler func(msg string), panicHandler func(msg string)) {
 	if _, err := utils.GetChromeExecPath(); err != nil {
 		panicHandler(
 			fmt.Sprintf(
@@ -54,5 +61,5 @@ func CheckPrerequisites(ctx context.Context, panicHandler func(msg string)) {
 			),
 		)
 	}
-	checkDockerRequirements(ctx, panicHandler)
+	checkDockerRequirements(ctx, infoHandler)
 }

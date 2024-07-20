@@ -92,6 +92,7 @@ func CallDockerImage(ctx context.Context, url string) (Cookies, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer os.RemoveAll(cdlCfTempDir)
 
 	const cookieFilename = "cookie.json"
 	cookiePath := filepath.Join(cdlCfTempDir, cookieFilename)
@@ -106,7 +107,6 @@ func CallDockerImage(ctx context.Context, url string) (Cookies, error) {
 	if runtime.GOOS == "windows" {
 		cookieUnixFilePath = filepath.ToSlash(cookieUnixFilePath)
 	}
-	defer os.RemoveAll(cdlCfTempDir)
 
 	dockerLogFileMount, err := getLogPathMount()
 	if err != nil {
