@@ -52,6 +52,14 @@ func (p *PixivWebDlOptions) CtxIsActive() bool {
 	return p.ctx.Err() == nil
 }
 
+func (p *PixivWebDlOptions) SetPixivFilters(filters pixivcommon.PixivFilters) error {
+	if err := filters.ValidateForWebApi(); err != nil {
+		return err
+	}
+	p.pFilters = &filters
+	return nil
+}
+
 // ValidateArgs validates the arguments of the Pixiv download options.
 //
 // Should be called after initialising the struct.
@@ -65,10 +73,6 @@ func (p *PixivWebDlOptions) ValidateArgs(userAgent string) error {
 			"pixiv web error %d, configs is nil",
 			cdlerrors.DEV_ERROR,
 		)
-	}
-
-	if err := p.pFilters.ValidateForWebApi(); err != nil {
-		return err
 	}
 
 	if p.Base.UseCacheDb && p.Base.Configs.OverwriteFiles {

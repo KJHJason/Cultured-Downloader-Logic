@@ -66,12 +66,23 @@ func (p *PixivMobile) CtxIsActive() bool {
 	return p.ctx.Err() == nil
 }
 
+func (pixiv *PixivMobile) SetPixivFilters(filters pixivcommon.PixivFilters) error {
+	if pixiv.user == nil {
+		panic("pixiv user is nil, did you forget to use NewPixivMobile() or forgot to refresh the access token first?")
+	}
+
+	if err := filters.ValidateForMobileApi(pixiv.user.IsPremium); err != nil {
+		return err
+	}
+	pixiv.pFilters = &filters
+	return nil
+}
+
 // Get a new PixivMobile structure
-func NewPixivMobile(refreshToken string, timeout int, ctx context.Context, pixivFilters pixivcommon.PixivFilters) (*PixivMobile, error) {
+func NewPixivMobile(refreshToken string, timeout int, ctx context.Context) (*PixivMobile, error) {
 	pixivMobile := &PixivMobile{
 		refreshToken: refreshToken,
 		apiTimeout:   timeout,
-		pFilters:     &pixivFilters,
 	}
 	pixivMobile.SetContext(ctx)
 	if refreshToken != "" {
