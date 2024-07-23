@@ -8,7 +8,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/chromedp/cdproto v0.0.0-20240709201219-e202069cc16b
 	github.com/chromedp/chromedp v0.9.5
-	github.com/docker/docker v27.0.3+incompatible
+	github.com/docker/docker v27.1.0+incompatible
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/joho/godotenv v1.5.1
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
