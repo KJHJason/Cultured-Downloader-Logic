@@ -24,32 +24,29 @@ type CreatorPaginatedPostsJson struct {
 }
 
 type FanboxCreatorPostsJson struct {
-	Body struct {
-		Items []struct {
-			ID                string    `json:"id"`
-			Title             string    `json:"title"`
-			FeeRequired       int       `json:"feeRequired"`
-			PublishedDatetime time.Time `json:"publishedDatetime"` // "2023-03-15T14:08:23+09:00",
-			UpdatedDatetime   time.Time `json:"updatedDatetime"`   // "2023-03-15T14:08:23+09:00",
-			Tags              []string  `json:"tags"`
-			IsLiked           bool      `json:"isLiked"`
-			LikeCount         int       `json:"likeCount"`
-			CommentCount      int       `json:"commentCount"`
-			IsRestricted      bool      `json:"isRestricted"`
-			User              struct {
-				UserID  string `json:"userId"`
-				Name    string `json:"name"`
-				IconURL string `json:"iconUrl"`
-			} `json:"user"`
-			CreatorID       string `json:"creatorId"`
-			HasAdultContent bool   `json:"hasAdultContent"`
-			Cover           struct {
-				Type string `json:"type"`
-				URL  string `json:"url"`
-			} `json:"cover"`
-			Excerpt string `json:"excerpt"`
-		} `json:"items"`
-		NextURL *string `json:"nextUrl"` // can be null value
+	Body []struct {
+		ID                string    `json:"id"`
+		Title             string    `json:"title"`
+		FeeRequired       int       `json:"feeRequired"`
+		PublishedDatetime time.Time `json:"publishedDatetime"` // "2023-03-15T14:08:23+09:00",
+		UpdatedDatetime   time.Time `json:"updatedDatetime"`   // "2023-03-15T14:08:23+09:00",
+		Tags              []string  `json:"tags"`
+		IsLiked           bool      `json:"isLiked"`
+		LikeCount         int       `json:"likeCount"`
+		CommentCount      int       `json:"commentCount"`
+		IsRestricted      bool      `json:"isRestricted"`
+		User              struct {
+			UserID  string `json:"userId"`
+			Name    string `json:"name"`
+			IconURL string `json:"iconUrl"`
+		} `json:"user"`
+		CreatorID       string `json:"creatorId"`
+		HasAdultContent bool   `json:"hasAdultContent"`
+		Cover           struct {
+			Type string `json:"type"`
+			URL  string `json:"url"`
+		} `json:"cover"`
+		Excerpt string `json:"excerpt"`
 	} `json:"body"`
 }
 

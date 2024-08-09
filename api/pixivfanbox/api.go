@@ -336,7 +336,7 @@ func getFanboxPosts(creatorId, pageNum string, dlOptions *PixivFanboxDlOptions) 
 			continue
 		}
 
-		for _, postInfoMap := range res.json.Body.Items {
+		for _, postInfoMap := range res.json.Body {
 			if dlOptions.Base.Filters.IsPostDateValid(postInfoMap.PublishedDatetime) {
 				postIds = append(postIds, postInfoMap.ID)
 			}
