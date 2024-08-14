@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/KJHJason/Cultured-Downloader-Logic/api/cf"
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/cdlsolvers/cdldocker"
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
@@ -40,7 +40,7 @@ func checkDockerRequirements(ctx context.Context, infoHandler func(msg string)) 
 		return
 	}
 
-	if err := cf.PullCfDockerImage(ctx); err != nil {
+	if err := cdldocker.PullDockerImage(ctx); err != nil {
 		infoHandler(
 			fmt.Sprintf(
 				"%s: failed to pull Docker image -> %v",

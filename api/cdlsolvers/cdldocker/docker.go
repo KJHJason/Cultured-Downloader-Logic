@@ -1,8 +1,9 @@
-package cf
+package cdldocker
 
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -20,11 +21,12 @@ import (
 
 const (
 	SUPPORTS_ARM   = false // Currently, Google Chrome does not support ARM
-	CONTAINER_NAME = "cdl-cf"
+	VERSION        = "0.2.1"
+	CONTAINER_NAME = "cdl-solvers"
 	IMAGE_NAME     = "kjhjason/" + CONTAINER_NAME + ":" + VERSION
 )
 
-func createCfContainer(ctx context.Context, cli *client.Client, createConfig *utils.ContainerConfigs) (string, error) {
+func createContainer(ctx context.Context, cli *client.Client, createConfig *utils.ContainerConfigs) (string, error) {
 	if createResp, err := utils.CreateContainer(ctx, cli, CONTAINER_NAME, createConfig, SUPPORTS_ARM); err != nil {
 		return "", err
 	} else {
@@ -32,7 +34,7 @@ func createCfContainer(ctx context.Context, cli *client.Client, createConfig *ut
 	}
 }
 
-func pullCfDockerImage(ctx context.Context, cli *client.Client) error {
+func pullDockerImage(ctx context.Context, cli *client.Client) error {
 	if ok, err := utils.HasImage(ctx, cli, IMAGE_NAME); ok {
 		return nil
 	} else if err != nil {
@@ -70,32 +72,61 @@ func getLogPathMount() (mount.Mount, error) {
 	return logMount, nil
 }
 
-func PullCfDockerImage(ctx context.Context) error {
+func PullDockerImage(ctx context.Context) error {
 	cli, err := utils.GetDefaultClient()
 	if err != nil {
 		return err
 	}
 
-	if err := pullCfDockerImage(ctx, cli); err != nil {
+	if err := pullDockerImage(ctx, cli); err != nil {
 		return err
 	}
 	return nil
 }
 
-func CallDockerImage(ctx context.Context, url string) (Cookies, error) {
+func dockerCallLogic(ctx context.Context, cli *client.Client, createConfig utils.ContainerConfigs) error {
+	var err error
+	if err = pullDockerImage(ctx, cli); err != nil {
+		return err
+	}
+
+	var containerId string
+	if containerId, err = createContainer(ctx, cli, &createConfig); err != nil {
+		return err
+	}
+
+	if err = cli.ContainerStart(ctx, containerId, container.StartOptions{}); err != nil {
+		return err
+	}
+	defer utils.RemoveContainer(ctx, cli, containerId, nil)
+
+	if _, err = utils.WaitForContainer(ctx, cli, containerId); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CallDockerImageForCf(ctx context.Context, userAgent string, targetUrl string) ([]*DevToolsCookie, error) {
 	cli, err := utils.GetDefaultClient()
 	if err != nil {
 		return nil, err
 	}
 
-	cdlCfTempDir, err := os.MkdirTemp("", "cdl-cf-")
+	dockerLogFileMount, err := getLogPathMount()
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(cdlCfTempDir)
+	dockerLogFilePath := dockerLogFileMount.Target
+
+	cdlTempDir, err := os.MkdirTemp("", "cdlsolvers-cf-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(cdlTempDir)
 
 	const cookieFilename = "cookie.json"
-	cookiePath := filepath.Join(cdlCfTempDir, cookieFilename)
+	cookiePath := filepath.Join(cdlTempDir, cookieFilename)
 	// create the cookie file so that docker doesn't bind it as a directory
 	if f, err := os.OpenFile(cookiePath, os.O_RDONLY|os.O_CREATE, constants.DEFAULT_PERMS); err != nil {
 		return nil, fmt.Errorf("failed to create cookie file: %w", err)
@@ -108,12 +139,6 @@ func CallDockerImage(ctx context.Context, url string) (Cookies, error) {
 		cookieUnixFilePath = filepath.ToSlash(cookieUnixFilePath)
 	}
 
-	dockerLogFileMount, err := getLogPathMount()
-	if err != nil {
-		return nil, err
-	}
-	dockerLogFilePath := dockerLogFileMount.Target
-
 	// using path instead of path/filepath to
 	// avoid windows path issues on docker (Linux)
 	dockerCookieFilePath := path.Join("/app", utils.GenerateRandomString(12), cookieFilename)
@@ -123,7 +148,7 @@ func CallDockerImage(ctx context.Context, url string) (Cookies, error) {
 		Target: dockerCookieFilePath,
 	}
 
-	cfArgs := newCfArgs(url, dockerCookieFilePath, dockerLogFilePath)
+	cfArgs := newCfArgs(targetUrl, dockerCookieFilePath, userAgent, dockerLogFilePath)
 	cmdArgs := cfArgs.parseCmdArgs()
 
 	createConfig := utils.ContainerConfigs{
@@ -140,27 +165,59 @@ func CallDockerImage(ctx context.Context, url string) (Cookies, error) {
 		NetworkingConfig: &network.NetworkingConfig{},
 	}
 
-	if err := pullCfDockerImage(ctx, cli); err != nil {
+	if err := dockerCallLogic(ctx, cli, createConfig); err != nil {
 		return nil, err
 	}
 
-	var containerId string
-	if containerId, err = createCfContainer(ctx, cli, &createConfig); err != nil {
-		return nil, err
-	}
-
-	if err := cli.ContainerStart(ctx, containerId, container.StartOptions{}); err != nil {
-		return nil, err
-	}
-	defer utils.RemoveContainer(ctx, cli, containerId, nil)
-
-	if _, err := utils.WaitForContainer(ctx, cli, containerId); err != nil {
-		return nil, err
-	}
-
-	cookies, err := parseCookies(cookiePath)
+	cookies, err := parseCookiesFromFile(cookiePath)
 	if err != nil {
 		return nil, err
 	}
 	return cookies, nil
+}
+
+func CallDockerImageForFantia(ctx context.Context, userAgent string, cookies []*http.Cookie) error {
+	cli, err := utils.GetDefaultClient()
+	if err != nil {
+		return err
+	}
+
+	cdlTempDir, err := os.MkdirTemp("", "cdlsolvers-fantia-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(cdlTempDir)
+
+	dockerLogFileMount, err := getLogPathMount()
+	if err != nil {
+		return err
+	}
+	dockerLogFilePath := dockerLogFileMount.Target
+
+	cookieParams := convertCookiesToDevToolsCookiesParam(cookies)
+	cookiePath, err := makeTempCookieParamFile(cdlTempDir, cookieParams)
+	if err != nil {
+		return err
+	}
+
+	fantiaArgs := newFantiaArgs(userAgent, dockerLogFilePath, cookiePath)
+	cmdArgs := fantiaArgs.parseCmdArgs()
+
+	createConfig := utils.ContainerConfigs{
+		Config: &container.Config{
+			Image: IMAGE_NAME,
+			Cmd:   cmdArgs,
+		},
+		HostConfig: &container.HostConfig{
+			Mounts: []mount.Mount{
+				dockerLogFileMount,
+			},
+		},
+		NetworkingConfig: &network.NetworkingConfig{},
+	}
+
+	if err := dockerCallLogic(ctx, cli, createConfig); err != nil {
+		return err
+	}
+	return nil
 }

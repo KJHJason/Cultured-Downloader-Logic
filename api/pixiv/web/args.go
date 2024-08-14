@@ -27,6 +27,7 @@ func (p *PixivWebDlOptions) GetCaptchaHandler() httpfuncs.CaptchaHandler {
 	return pixivcommon.NewHttpCaptchaHandler(
 		p.ctx,
 		constants.PIXIV_URL,
+		p.Base.Configs.UserAgent,
 		p.Base.Notifier,
 	)
 }

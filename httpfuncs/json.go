@@ -69,7 +69,7 @@ func LoadJsonFromBytes(url string, body []byte, format any) error {
 		}
 		return fmt.Errorf(
 			"error %d: failed to unmarshal json response from %s due to %w\nBody: %s",
-			cdlerrors.RESPONSE_ERROR,
+			cdlerrors.JSON_ERROR,
 			url,
 			err,
 			string(body),

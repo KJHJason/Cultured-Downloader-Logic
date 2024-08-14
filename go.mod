@@ -6,8 +6,6 @@ retract v1.0.2 // old unstable ver
 
 require (
 	github.com/PuerkitoBio/goquery v1.9.2
-	github.com/chromedp/cdproto v0.0.0-20240709201219-e202069cc16b
-	github.com/chromedp/chromedp v0.9.5
 	github.com/docker/docker v27.0.3+incompatible
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/joho/godotenv v1.5.1
@@ -29,7 +27,6 @@ require (
 	github.com/bodgit/plumbing v1.3.0 // indirect
 	github.com/bodgit/sevenzip v1.5.1 // indirect
 	github.com/bodgit/windows v1.0.1 // indirect
-	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
@@ -39,9 +36,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/gobwas/httphead v0.1.0 // indirect
-	github.com/gobwas/pool v0.2.1 // indirect
-	github.com/gobwas/ws v1.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -54,10 +48,8 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
-	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/KJHJason/Cultured-Downloader-Logic/api/cdlsolvers/cdldocker"
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
 func IsCfCookies(name string) bool {
-	return name == BOT_COOKIE || name == CLEARANCE_COOKIE
+	return name == cdldocker.BOT_COOKIE || name == cdldocker.CLEARANCE_COOKIE
 }
 
 func sendReqAndGetCfCookies(url string) ([]*http.Cookie, error) {

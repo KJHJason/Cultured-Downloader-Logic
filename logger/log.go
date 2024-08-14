@@ -25,9 +25,10 @@ const (
 var (
 	MainLogger Logger
 
-	logFolder        = filepath.Join(iofuncs.APP_PATH, "logs")
-	logFilePath      = filepath.Join(logFolder, getLogFileName())
-	CdlCfLogFilePath = filepath.Join(logFolder, getCdlCfLogFileName())
+	logFolder            = filepath.Join(iofuncs.APP_PATH, "logs")
+	logFilePath          = filepath.Join(logFolder, getLogFileName())
+	CdlCfLogFilePath     = filepath.Join(logFolder, getCdlCfLogFileName())
+	CdlFantiaLogFilePath = filepath.Join(logFolder, getCdlFantiaLogFileName())
 )
 
 func getFilenameDateFmt() string {
@@ -44,7 +45,14 @@ func getLogFileName() string {
 
 func getCdlCfLogFileName() string {
 	return fmt.Sprintf(
-		"kjhjason-cdl-cf_%s.log",
+		"cdlsolvers-cf_%s.log",
+		getFilenameDateFmt(),
+	)
+}
+
+func getCdlFantiaLogFileName() string {
+	return fmt.Sprintf(
+		"cdlsolvers-fantia_%s.log",
 		getFilenameDateFmt(),
 	)
 }

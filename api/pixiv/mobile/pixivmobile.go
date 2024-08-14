@@ -36,7 +36,8 @@ type PixivMobile struct {
 func (p *PixivMobile) GetCaptchaHandler() httpfuncs.CaptchaHandler {
 	return pixivcommon.NewHttpCaptchaHandler(
 		p.ctx,
-		constants.PIXIV_MOBILE_URL,
+		constants.PIXIV_URL, // not using constants.PIXIV_MOBILE_URL as it's under the same domain
+		p.Base.Configs.UserAgent,
 		p.Base.Notifier,
 	)
 }
