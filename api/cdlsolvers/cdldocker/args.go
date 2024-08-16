@@ -26,19 +26,24 @@ func (args CdlSolversArgs) parseCmdArgs() []string {
 		userAgent = httpfuncs.DEFAULT_USER_AGENT
 	}
 
+	var subcmd, advFeature string
+	switch args.subcmd {
+	case Cf:
+		subcmd = "cf"
+		advFeature = "1HrEnmTKajwzUBwPkeJXtTezuX8jsUhWQKasNb9Z9ShNB6nBJScvMGhG6ujtbfhC"
+	case Fantia:
+		subcmd = "fantia"
+		advFeature = "dNf9fgd6GabVZdFGERMZUzHGt8QkurCmdZ0G5KsvnCaBAn3PmAWakgaFE7VDAxgs"
+	default:
+		panic("Invalid subcommand")
+	}
+
 	cmdArgs := []string{
+		subcmd,
 		"--headless", "0",
 		"--virtual-display",
 		"--user-agent", userAgent,
-		"--adv-feature",
-	}
-	switch args.subcmd {
-	case Cf:
-		cmdArgs = append(cmdArgs, "1HrEnmTKajwzUBwPkeJXtTezuX8jsUhWQKasNb9Z9ShNB6nBJScvMGhG6ujtbfhC")
-	case Fantia:
-		cmdArgs = append(cmdArgs, "dNf9fgd6GabVZdFGERMZUzHGt8QkurCmdZ0G5KsvnCaBAn3PmAWakgaFE7VDAxgs")
-	default:
-		panic("Invalid subcommand")
+		"--adv-feature", advFeature,
 	}
 
 	if args.logPath != "" {

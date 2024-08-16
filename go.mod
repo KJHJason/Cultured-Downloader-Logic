@@ -1,6 +1,6 @@
 module github.com/KJHJason/Cultured-Downloader-Logic
 
-go 1.22
+go 1.23
 
 retract v1.0.2 // old unstable ver
 

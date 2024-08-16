@@ -21,13 +21,13 @@ import (
 
 const (
 	SUPPORTS_ARM   = false // Currently, Google Chrome does not support ARM
-	VERSION        = "0.2.1"
+	VERSION        = "0.3.0"
 	CONTAINER_NAME = "cdl-solvers"
 	IMAGE_NAME     = "kjhjason/" + CONTAINER_NAME + ":" + VERSION
 )
 
 func createContainer(ctx context.Context, cli *client.Client, createConfig *utils.ContainerConfigs) (string, error) {
-	if createResp, err := utils.CreateContainer(ctx, cli, CONTAINER_NAME, createConfig, SUPPORTS_ARM); err != nil {
+	if createResp, err := utils.CreateContainer(ctx, cli, "", createConfig, SUPPORTS_ARM); err != nil {
 		return "", err
 	} else {
 		return createResp.ID, nil
@@ -44,19 +44,28 @@ func pullDockerImage(ctx context.Context, cli *client.Client) error {
 	return utils.PullImage(ctx, cli, IMAGE_NAME, SUPPORTS_ARM)
 }
 
-func getLogPathMount() (mount.Mount, error) {
+func getLogPathMount(subcmd SubCommand) (mount.Mount, error) {
 	var logMount mount.Mount
 
-	cdlCfLogFilePath := logger.CdlCfLogFilePath
-	if !iofuncs.PathExists(cdlCfLogFilePath) {
+	var cdlLogFilePath string
+	switch subcmd {
+	case Cf:
+		cdlLogFilePath = logger.CdlCfLogFilePath
+	case Fantia:
+		cdlLogFilePath = logger.CdlFantiaLogFilePath
+	default:
+		panic("Invalid subcommand")
+	}
+
+	if !iofuncs.PathExists(cdlLogFilePath) {
 		// create the log file so that docker doesn't bind it as a directory
-		if f, err := os.OpenFile(cdlCfLogFilePath, os.O_RDONLY|os.O_CREATE, constants.DEFAULT_PERMS); err != nil {
+		if f, err := os.OpenFile(cdlLogFilePath, os.O_RDONLY|os.O_CREATE, constants.DEFAULT_PERMS); err != nil {
 			return logMount, fmt.Errorf("failed to create log file: %w", err)
 		} else {
 			f.Close()
 		}
 	}
-	cdlCfLogUnixFilePath := cdlCfLogFilePath
+	cdlCfLogUnixFilePath := cdlLogFilePath
 	if runtime.GOOS == "windows" {
 		cdlCfLogUnixFilePath = filepath.ToSlash(cdlCfLogUnixFilePath)
 	}
@@ -98,7 +107,7 @@ func dockerCallLogic(ctx context.Context, cli *client.Client, createConfig utils
 	if err = cli.ContainerStart(ctx, containerId, container.StartOptions{}); err != nil {
 		return err
 	}
-	defer utils.RemoveContainer(ctx, cli, containerId, nil)
+	// defer utils.RemoveContainer(ctx, cli, containerId, nil)
 
 	if _, err = utils.WaitForContainer(ctx, cli, containerId); err != nil {
 		return err
@@ -113,7 +122,7 @@ func CallDockerImageForCf(ctx context.Context, userAgent string, targetUrl strin
 		return nil, err
 	}
 
-	dockerLogFileMount, err := getLogPathMount()
+	dockerLogFileMount, err := getLogPathMount(Cf)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +197,7 @@ func CallDockerImageForFantia(ctx context.Context, userAgent string, cookies []*
 	}
 	defer os.RemoveAll(cdlTempDir)
 
-	dockerLogFileMount, err := getLogPathMount()
+	dockerLogFileMount, err := getLogPathMount(Fantia)
 	if err != nil {
 		return err
 	}
@@ -200,7 +209,18 @@ func CallDockerImageForFantia(ctx context.Context, userAgent string, cookies []*
 		return err
 	}
 
-	fantiaArgs := newFantiaArgs(userAgent, dockerLogFilePath, cookiePath)
+	cookieUnixFilePath := cookiePath
+	if runtime.GOOS == "windows" {
+		cookieUnixFilePath = filepath.ToSlash(cookieUnixFilePath)
+	}
+	dockerCookieFilePath := path.Join("/app", utils.GenerateRandomString(12), "cookies.json")
+	dockerCookieFileMount := mount.Mount{
+		Type:   mount.TypeBind,
+		Source: cookieUnixFilePath,
+		Target: dockerCookieFilePath,
+	}
+
+	fantiaArgs := newFantiaArgs(userAgent, dockerLogFilePath, dockerCookieFilePath)
 	cmdArgs := fantiaArgs.parseCmdArgs()
 
 	createConfig := utils.ContainerConfigs{
@@ -211,6 +231,7 @@ func CallDockerImageForFantia(ctx context.Context, userAgent string, cookies []*
 		HostConfig: &container.HostConfig{
 			Mounts: []mount.Mount{
 				dockerLogFileMount,
+				dockerCookieFileMount,
 			},
 		},
 		NetworkingConfig: &network.NetworkingConfig{},

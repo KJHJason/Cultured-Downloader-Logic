@@ -29,9 +29,7 @@ func TestDockerImageForFantia(t *testing.T) {
 			Value:    sessionId,
 			Domain:   ".fantia.jp",
 			Path:     "/",
-			HttpOnly: true,
 			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
 			Expires:  time.Now().Add(24 * time.Hour),
 		},
 	}

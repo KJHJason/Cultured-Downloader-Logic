@@ -24,45 +24,23 @@ func convertSameSite(sameSite string) http.SameSite {
 	}
 }
 
-func convertSameSiteToString(sameSite http.SameSite) string {
-	switch sameSite {
-	case http.SameSiteLaxMode:
-		return "Lax"
-	case http.SameSiteStrictMode:
-		return "Strict"
-	case http.SameSiteNoneMode:
-		return "None"
-	default:
-		return ""
-	}
-}
-
-// https://chromedevtools.github.io/devtools-protocol/tot/Network/#type-CookieParam
 // E.g.
 // [
-//
 //	{
 //	  "name": "_session_id",
 //	  "value": "cookie-value",
-//	  "url": null,
 //	  "domain": "fantia.jp",
 //	  "path": "/",
 //	  "secure": true,
-//	  "httpOnly": true,
-//	  "sameSite": "Lax",
 //	  "expires": 1721925436
 //	}
-//
 // ]
 type DevToolsCookieParam struct {
 	Name     string `json:"name"`
 	Value    string `json:"value"`
-	Url      string `json:"url,omitempty"`
 	Domain   string `json:"domain,omitempty"`
 	Path     string `json:"path,omitempty"`
 	Secure   *bool  `json:"secure,omitempty"`
-	HttpOnly *bool  `json:"httpOnly,omitempty"`
-	SameSite string `json:"sameSite,omitempty"`
 	Expires  int64  `json:"expires,omitempty"`
 }
 
@@ -72,12 +50,9 @@ func convertCookiesToDevToolsCookiesParam(cookies []*http.Cookie) []*DevToolsCoo
 		devToolsCookies[idx] = &DevToolsCookieParam{
 			Name:     cookie.Name,
 			Value:    cookie.Value,
-			Url:      "",
 			Domain:   cookie.Domain,
 			Path:     cookie.Path,
 			Secure:   &cookie.Secure,
-			HttpOnly: &cookie.HttpOnly,
-			SameSite: convertSameSiteToString(cookie.SameSite),
 			Expires:  cookie.Expires.Unix(),
 		}
 	}
@@ -108,25 +83,26 @@ func makeTempCookieParamFile(cdlTempDir string, cookies []*DevToolsCookieParam) 
 
 // E.g.
 //
-//	{
-//		"name": "cf_clearance",
-//		"value": "Y.y1g4TLzz8EImSH0MQ09QB7hKr6azxd4hoKE8tkpWQ-1720623556-1.0.1.1-v7ULqmIQEgT0xCuYh8R4WIh45_m_jC_2eXoPWGea2GXyuYdkJ216zo9dTnSwK3Wiaat1Xjhg8d.zGJLqk0X19g",
-//		"domain": ".nopecha.com",
-//		"path": "/",
-//		"expires": 1752159568.841206,
-//		"size": 161,
-//		"httpOnly": true,
-//		"secure": true,
-//		"session": false,
-//		"sameSite": "None",
-//		"priority": "Medium",
-//		"sameParty": false,
-//		"sourceScheme": "Secure",
-//		"sourcePort": 443,
-//		"partitionKey": "https://nopecha.com"
-//	}
-//
-// https://chromedevtools.github.io/devtools-protocol/tot/Network/#type-Cookie
+// {
+// 	"name": "cf_clearance",
+// 	"value": "cookie-value",
+// 	"domain": ".nopecha.com",
+// 	"path": "/",
+// 	"expires": 1755272665.550445,
+// 	"size": 161,
+// 	"httpOnly": true,
+// 	"secure": true,
+// 	"session": false,
+// 	"sameSite": "None",
+// 	"priority": "Medium",
+// 	"sameParty": false,
+// 	"sourceScheme": "Secure",
+// 	"sourcePort": 443,
+// 	"partitionKey": {
+// 		"topLevelSite": "https://nopecha.com",
+// 		"hasCrossSiteAncestor": false
+// 	}
+// }
 type DevToolsCookie struct {
 	Name         string  `json:"name"`
 	Value        string  `json:"value"`
@@ -134,7 +110,7 @@ type DevToolsCookie struct {
 	Path         string  `json:"path"`
 	Expires      float64 `json:"expires"`
 	Size         int     `json:"size"`
-	HttpOnly     bool    `json:"httpOnly"`
+	HTTPOnly     bool    `json:"httpOnly"`
 	Secure       bool    `json:"secure"`
 	Session      bool    `json:"session"`
 	SameSite     string  `json:"sameSite"`
@@ -142,6 +118,10 @@ type DevToolsCookie struct {
 	SameParty    bool    `json:"sameParty"`
 	SourceScheme string  `json:"sourceScheme"`
 	SourcePort   int     `json:"sourcePort"`
+	PartitionKey struct {
+		TopLevelSite         string `json:"topLevelSite"`
+		HasCrossSiteAncestor bool   `json:"hasCrossSiteAncestor"`
+	} `json:"partitionKey"`
 }
 
 func convertExpiresToTime(unix float64) time.Time {
@@ -162,7 +142,6 @@ func ConvertDevToolsCookies(cookies []*DevToolsCookie) []*http.Cookie {
 			Expires: convertExpiresToTime(cookie.Expires),
 
 			Secure:   cookie.Secure,
-			HttpOnly: cookie.HttpOnly,
 			SameSite: convertSameSite(cookie.SameSite),
 		}
 	}
@@ -177,6 +156,14 @@ func parseCookiesFromFile(filePath string) ([]*DevToolsCookie, error) {
 			cdlerrors.OS_ERROR,
 			filePath,
 			err,
+		)
+	}
+
+	if len(data) == 0 {
+		return nil, fmt.Errorf(
+			"error %d: empty cookies file %s",
+			cdlerrors.CAPTCHA_ERROR,
+			filePath,
 		)
 	}
 

@@ -2,6 +2,8 @@ package utils
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
@@ -26,7 +28,7 @@ func GetDefaultClient() (*client.Client, error) {
 	if err != nil {
 		logger.MainLogger.Errorf(
 			"error %d: failed to initialise Docker client => %v",
-			cdlerrors.UNEXPECTED_ERROR,
+			cdlerrors.DOCKER_ERROR,
 			err,
 		)
 		return nil, err
@@ -40,7 +42,7 @@ func GetContainerId(ctx context.Context, cli *client.Client, imageName string) (
 	if err != nil {
 		logger.MainLogger.Errorf(
 			"error %d: failed to list containers => %v",
-			cdlerrors.UNEXPECTED_ERROR,
+			cdlerrors.DOCKER_ERROR,
 			err,
 		)
 		return "", err
@@ -61,7 +63,7 @@ func HasImage(ctx context.Context, cli *client.Client, imageName string) (bool, 
 	if err != nil {
 		logger.MainLogger.Errorf(
 			"error %d: failed to list images => %v",
-			cdlerrors.UNEXPECTED_ERROR,
+			cdlerrors.DOCKER_ERROR,
 			err,
 		)
 		return false, err
@@ -99,7 +101,7 @@ func PullImage(ctx context.Context, cli *client.Client, imageName string, suppor
 	if err != nil {
 		logger.MainLogger.Errorf(
 			"error %d: failed to pull image %s => %v",
-			cdlerrors.UNEXPECTED_ERROR,
+			cdlerrors.DOCKER_ERROR,
 			imageName,
 			err,
 		)
@@ -111,7 +113,7 @@ func PullImage(ctx context.Context, cli *client.Client, imageName string, suppor
 	if output, err = io.ReadAll(res); err != nil {
 		logger.MainLogger.Errorf(
 			"error %d: failed to read image pull output => %v",
-			cdlerrors.UNEXPECTED_ERROR,
+			cdlerrors.DOCKER_ERROR,
 			err,
 		)
 		return err
@@ -151,7 +153,7 @@ func CreateContainer(ctx context.Context, cli *client.Client, containerName stri
 	if err != nil {
 		logger.MainLogger.Errorf(
 			"error %d: failed to create container %s => %v",
-			cdlerrors.UNEXPECTED_ERROR,
+			cdlerrors.DOCKER_ERROR,
 			containerName,
 			err,
 		)
@@ -173,7 +175,7 @@ func RemoveContainer(ctx context.Context, cli *client.Client, containerId string
 	if err := cli.ContainerRemove(ctx, containerId, options); err != nil {
 		logger.MainLogger.Errorf(
 			"error %d: failed to remove container %s => %v",
-			cdlerrors.UNEXPECTED_ERROR,
+			cdlerrors.DOCKER_ERROR,
 			containerId,
 			err,
 		)
@@ -190,13 +192,30 @@ func WaitForContainer(ctx context.Context, cli *client.Client, containerId strin
 	case err := <-errCh:
 		logger.MainLogger.Errorf(
 			"error %d: failed to wait for container or container did not exit successfully %s => %v",
-			cdlerrors.UNEXPECTED_ERROR,
+			cdlerrors.DOCKER_ERROR,
 			containerId,
 			err,
 		)
 		return nil, err
 	case waitRes := <-statusCh:
 		logger.MainLogger.Infof("Container %s stopped", containerId)
-		return &waitRes, nil
+		if waitRes.StatusCode == 0 {
+			return &waitRes, nil
+		}
+
+		errMsg := fmt.Sprintf(
+			"error %d: container %s exited with non-zero status code %d",
+			cdlerrors.DOCKER_ERROR,
+			containerId,
+			waitRes.StatusCode,
+		)
+		if dockerErrDetails := waitRes.Error.Message; dockerErrDetails != "" {
+			errMsg += fmt.Sprintf(
+				" with the following error details below...\n%s\n",
+				dockerErrDetails,
+			)
+		}
+		logger.MainLogger.Error(errMsg)
+		return &waitRes, errors.New(errMsg)
 	}
 }
