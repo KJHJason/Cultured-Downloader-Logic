@@ -12,7 +12,7 @@ require (
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/quic-go/quic-go v0.46.0
-	go.etcd.io/bbolt v1.3.10
+	go.etcd.io/bbolt v1.3.11
 	golang.org/x/oauth2 v0.22.0
 	google.golang.org/api v0.192.0
 )
