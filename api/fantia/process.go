@@ -41,9 +41,13 @@ func dlImagesFromPost(content *FantiaContent, postFolderPath string, organise bo
 	commentCount := 0
 	commentFolderId := strconv.Itoa(id.commentId)
 	for _, matched := range matchedUrlInComments {
-		imageUrl := constants.FANTIA_URL + matched[constants.FANTIA_COMMENT_REGEX_URL_IDX]
-		filePath := filepath.Join(postFolderPath, constants.FANTIA_POST_BLOG_DIR_NAME)
+		// Note: urls in the comments are now absolute paths, no need to add constants.FANTIA_URL prefix.
+		imageUrl := matched[constants.FANTIA_COMMENT_REGEX_URL_IDX]
 
+		// Since the API returns the URL with escaped & characters, we need to replace them so that the URL is valid.
+		imageUrl = strings.Replace(imageUrl, "\\u0026", "&", 2)
+
+		filePath := filepath.Join(postFolderPath, constants.FANTIA_POST_BLOG_DIR_NAME)
 		if organise {
 			commentCount++
 			fileExt := matched[constants.FANTIA_COMMENT_REGEX_EXT_IDX]
