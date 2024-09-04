@@ -1,20 +1,36 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"math/rand/v2"
-	"os"
-	"os/exec"
+	"net"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
+
+func GetUnusedTcpPort() (uint16, error) {
+	var port uint16
+	for port = 8000; port <= 19600; port++ {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf(":%d", port), time.Second)
+		if err != nil {
+			continue
+		}
+
+		defer conn.Close()
+		return port, nil
+	}
+
+	return 0, errors.New("could not find an unused port from 8000 to 19600")
+}
 
 func CheckIsArm() bool {
 	return runtime.GOARCH == "arm" || runtime.GOARCH == "arm64" ||
@@ -181,56 +197,4 @@ func GenerateRandomString(length int) string {
 		b[i] = charset[rand.IntN(charsetLen)]
 	}
 	return string(b)
-}
-
-var CachedChromeExecPath string
-
-// Mainly from https://github.com/chromedp/chromedp/blob/ebf842c7bc28db77d0bf4d757f5948d769d0866f/allocate.go#L349-L395
-//
-// Note: This is not thread-safe
-func GetChromeExecPath() (string, error) {
-	if CachedChromeExecPath != "" {
-		if found, err := exec.LookPath(CachedChromeExecPath); err == nil {
-			return found, nil
-		}
-	}
-
-	if chromeExec := os.Getenv("CHROME_EXECUTABLE"); chromeExec != "" {
-		if found, err := exec.LookPath(chromeExec); err == nil {
-			CachedChromeExecPath = chromeExec
-			return found, nil
-		}
-	}
-
-	var locations []string
-	switch runtime.GOOS {
-	case "darwin":
-		locations = []string{
-			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-		}
-	case "windows":
-		locations = []string{
-			`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
-			`C:\Program Files\Google\Chrome\Application\chrome.exe`,
-			filepath.Join(os.Getenv("USERPROFILE"), `AppData\Local\Google\Chrome\Application\chrome.exe`),
-		}
-	default:
-		locations = []string{
-			"google-chrome",
-			"google-chrome-stable",
-			"google-chrome-beta",
-			"google-chrome-unstable",
-			"/usr/bin/google-chrome",
-			"/usr/local/bin/chrome",
-			"chrome",
-		}
-	}
-
-	for _, path := range locations {
-		if found, err := exec.LookPath(path); err == nil {
-			CachedChromeExecPath = path
-			return found, nil
-		}
-	}
-	return "", cdlerrors.ErrChromeNotFound
 }

@@ -42,7 +42,7 @@ func (f *Filters) ValidateArgs() error {
 
 	noStartDate := f.StartDate.IsZero()
 	noEndDate := f.EndDate.IsZero()
-	if !noStartDate && !noEndDate && f.StartDate.After(f.EndDate)  {
+	if !noStartDate && !noEndDate && f.StartDate.After(f.EndDate) {
 		return errors.New("start date cannot be after end date")
 	} else if noStartDate != noEndDate { // same as XOR
 		return errors.New("both start and end date must be set or unset")

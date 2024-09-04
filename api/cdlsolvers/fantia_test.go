@@ -25,12 +25,12 @@ func TestDockerImageForFantia(t *testing.T) {
 	sessionId := os.Getenv("FANTIA_SESSION_ID")
 	cookies := []*http.Cookie{
 		{
-			Name:     "_session_id",
-			Value:    sessionId,
-			Domain:   ".fantia.jp",
-			Path:     "/",
-			Secure:   true,
-			Expires:  time.Now().Add(24 * time.Hour),
+			Name:    "_session_id",
+			Value:   sessionId,
+			Domain:  ".fantia.jp",
+			Path:    "/",
+			Secure:  true,
+			Expires: time.Now().Add(24 * time.Hour),
 		},
 	}
 

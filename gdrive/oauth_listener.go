@@ -3,6 +3,7 @@ package gdrive
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -12,7 +13,7 @@ import (
 )
 
 // Example OAuth callback URL:
-// http://localhost:8080/?state=state-token&code=<code>&scope=https://www.googleapis.com/auth/drive.readonly%20https://www.googleapis.com/auth/drive.metadata.readonly
+// http://localhost:<port>/?state=state-token&code=<code>&scope=https://www.googleapis.com/auth/drive.readonly%20https://www.googleapis.com/auth/drive.metadata.readonly
 
 func getOAuthCode(w http.ResponseWriter, r *http.Request) {
 	// get the code from the URL
@@ -28,7 +29,7 @@ func getOAuthCode(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("The authentication flow has completed. You may close this window."))
 }
 
-func startOAuthServer(ctx context.Context) error {
+func startOAuthServer(ctx context.Context, port uint16) error {
 	childCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -36,7 +37,7 @@ func startOAuthServer(ctx context.Context) error {
 	mux.HandleFunc("/", getOAuthCode)
 
 	server := &http.Server{
-		Addr: ":8080",
+		Addr: fmt.Sprintf(":%d", port),
 		BaseContext: func(listener net.Listener) context.Context {
 			return childCtx
 		},
@@ -78,7 +79,7 @@ func getOauthCode() string {
 	return oauthCode
 }
 
-func StartOAuthListener(ctx context.Context, config *oauth2.Config) (*oauth2.Token, error) {
+func StartOAuthListener(ctx context.Context, port uint16, config *oauth2.Config) (*oauth2.Token, error) {
 	updateOauthCode("")
 	srvCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -86,7 +87,7 @@ func StartOAuthListener(ctx context.Context, config *oauth2.Config) (*oauth2.Tok
 
 	var srvErr error
 	go func() {
-		srvErr = startOAuthServer(srvCtx)
+		srvErr = startOAuthServer(srvCtx, port)
 	}()
 
 codeLoop:

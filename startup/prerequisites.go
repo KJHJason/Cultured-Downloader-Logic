@@ -53,13 +53,5 @@ func checkDockerRequirements(ctx context.Context, infoHandler func(msg string)) 
 }
 
 func CheckPrerequisites(ctx context.Context, infoHandler func(msg string), panicHandler func(msg string)) {
-	if _, err := utils.GetChromeExecPath(); err != nil {
-		panicHandler(
-			fmt.Sprintf(
-				"error %d: Google Chrome executable not found, please install Google Chrome or set the CHROME_EXECUTABLE environment variable",
-				cdlerrors.STARTUP_ERROR,
-			),
-		)
-	}
 	checkDockerRequirements(ctx, infoHandler)
 }

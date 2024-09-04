@@ -11,6 +11,7 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/filters"
 	"github.com/KJHJason/Cultured-Downloader-Logic/httpfuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/progress"
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 )
@@ -188,7 +189,12 @@ func TestGDriveOauthProcessFlow(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	token, err := StartOAuthListener(ctx, oauthConfig)
+	port, err := utils.GetUnusedTcpPort()
+	if err != nil {
+		t.Fatalf("Error getting unused port: %v", err)
+	}
+
+	token, err := StartOAuthListener(ctx, port, oauthConfig)
 	if err != nil {
 		t.Fatal(err)
 	}

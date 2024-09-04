@@ -26,6 +26,7 @@ func convertSameSite(sameSite string) http.SameSite {
 
 // E.g.
 // [
+//
 //	{
 //	  "name": "_session_id",
 //	  "value": "cookie-value",
@@ -34,26 +35,27 @@ func convertSameSite(sameSite string) http.SameSite {
 //	  "secure": true,
 //	  "expires": 1721925436
 //	}
+//
 // ]
 type DevToolsCookieParam struct {
-	Name     string `json:"name"`
-	Value    string `json:"value"`
-	Domain   string `json:"domain,omitempty"`
-	Path     string `json:"path,omitempty"`
-	Secure   *bool  `json:"secure,omitempty"`
-	Expires  int64  `json:"expires,omitempty"`
+	Name    string `json:"name"`
+	Value   string `json:"value"`
+	Domain  string `json:"domain,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Secure  *bool  `json:"secure,omitempty"`
+	Expires int64  `json:"expires,omitempty"`
 }
 
 func convertCookiesToDevToolsCookiesParam(cookies []*http.Cookie) []*DevToolsCookieParam {
 	devToolsCookies := make([]*DevToolsCookieParam, len(cookies))
 	for idx, cookie := range cookies {
 		devToolsCookies[idx] = &DevToolsCookieParam{
-			Name:     cookie.Name,
-			Value:    cookie.Value,
-			Domain:   cookie.Domain,
-			Path:     cookie.Path,
-			Secure:   &cookie.Secure,
-			Expires:  cookie.Expires.Unix(),
+			Name:    cookie.Name,
+			Value:   cookie.Value,
+			Domain:  cookie.Domain,
+			Path:    cookie.Path,
+			Secure:  &cookie.Secure,
+			Expires: cookie.Expires.Unix(),
 		}
 	}
 	return devToolsCookies
@@ -83,26 +85,26 @@ func makeTempCookieParamFile(cdlTempDir string, cookies []*DevToolsCookieParam) 
 
 // E.g.
 //
-// {
-// 	"name": "cf_clearance",
-// 	"value": "cookie-value",
-// 	"domain": ".nopecha.com",
-// 	"path": "/",
-// 	"expires": 1755272665.550445,
-// 	"size": 161,
-// 	"httpOnly": true,
-// 	"secure": true,
-// 	"session": false,
-// 	"sameSite": "None",
-// 	"priority": "Medium",
-// 	"sameParty": false,
-// 	"sourceScheme": "Secure",
-// 	"sourcePort": 443,
-// 	"partitionKey": {
-// 		"topLevelSite": "https://nopecha.com",
-// 		"hasCrossSiteAncestor": false
-// 	}
-// }
+//	{
+//		"name": "cf_clearance",
+//		"value": "cookie-value",
+//		"domain": ".nopecha.com",
+//		"path": "/",
+//		"expires": 1755272665.550445,
+//		"size": 161,
+//		"httpOnly": true,
+//		"secure": true,
+//		"session": false,
+//		"sameSite": "None",
+//		"priority": "Medium",
+//		"sameParty": false,
+//		"sourceScheme": "Secure",
+//		"sourcePort": 443,
+//		"partitionKey": {
+//			"topLevelSite": "https://nopecha.com",
+//			"hasCrossSiteAncestor": false
+//		}
+//	}
 type DevToolsCookie struct {
 	Name         string  `json:"name"`
 	Value        string  `json:"value"`
