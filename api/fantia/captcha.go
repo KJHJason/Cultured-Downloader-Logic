@@ -51,6 +51,7 @@ func autoSolveCaptcha(captchaOptions CaptchaOptions) error {
 			err,
 		)
 		notifier.Alert("Failed to solve reCAPTCHA automatically...")
+		return err
 	}
 
 	notifier.Alert("Successfully solved reCAPTCHA automatically!")

@@ -40,8 +40,12 @@ func (f *Filters) ValidateArgs() error {
 		return errors.New("min file size cannot be greater than max file size")
 	}
 
-	if f.StartDate.After(f.EndDate) {
+	noStartDate := f.StartDate.IsZero()
+	noEndDate := f.EndDate.IsZero()
+	if !noStartDate && !noEndDate && f.StartDate.After(f.EndDate)  {
 		return errors.New("start date cannot be after end date")
+	} else if noStartDate != noEndDate { // same as XOR
+		return errors.New("both start and end date must be set or unset")
 	}
 
 	for idx, ext := range f.FileExt {

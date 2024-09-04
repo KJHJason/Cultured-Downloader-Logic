@@ -151,7 +151,7 @@ func processFantiaPost(res *httpfuncs.ResponseWrapper, dlOptions *FantiaDlOption
 
 	post := postJson.Post
 	postDate := parseDateStrToDateTime(post.PostedAt)
-	if dlOptions.Base.Filters.IsPostDateValid(postDate) {
+	if !dlOptions.Base.Filters.IsPostDateValid(postDate) {
 		return nil, nil, nil
 	}
 	postId := strconv.Itoa(post.ID)
