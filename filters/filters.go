@@ -9,8 +9,8 @@ import (
 )
 
 type Filters struct {
-	MinFileSize int64
-	MaxFileSize int64
+	MinFileSize int64 // In bytes
+	MaxFileSize int64 // In bytes
 
 	FileExt []string
 
@@ -18,6 +18,12 @@ type Filters struct {
 	EndDate   time.Time
 
 	FileNameFilter *regexp.Regexp
+}
+
+func (f *Filters) ConvertFileSizeFromMB() {
+	const mb = 1024 * 1024
+	f.MinFileSize = f.MinFileSize * mb
+	f.MaxFileSize = f.MaxFileSize * mb
 }
 
 func (f *Filters) Copy() *Filters {
@@ -63,6 +69,7 @@ func (f *Filters) ValidateArgs() error {
 	return nil
 }
 
+// Note: In bytes
 func (f *Filters) IsFileSizeInRange(fileSize int64) bool {
 	if f.MinFileSize == 0 && f.MaxFileSize == 0 {
 		return true
