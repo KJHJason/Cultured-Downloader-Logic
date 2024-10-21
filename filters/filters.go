@@ -49,11 +49,12 @@ func (f *Filters) Copy() *Filters {
 }
 
 func (f *Filters) ValidateArgs() error {
-	if f.MinFileSize < 0 || (f.MaxFileSize != NO_MAX_FILESIZE && f.MaxFileSize < 0) {
+	hasMaxFileSize := f.MaxFileSize != NO_MAX_FILESIZE
+	if f.MinFileSize < 0 || (hasMaxFileSize && f.MaxFileSize < 0) {
 		return errors.New("min and max file size cannot be negative")
 	}
 
-	if f.MinFileSize > f.MaxFileSize {
+	if hasMaxFileSize && f.MinFileSize > f.MaxFileSize {
 		return errors.New("min file size cannot be greater than max file size")
 	}
 
