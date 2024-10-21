@@ -420,6 +420,6 @@ func (pf *PixivFanboxDl) GetCreatorsPosts(dlOptions *PixivFanboxDlOptions) []err
 		logger.LogErrors(logger.ERROR, errSlice...)
 	}
 	progress.Stop(hasErr)
-	pf.PostIds = utils.RemoveSliceDuplicates(pf.PostIds)
+	pf.PostIds = utils.RemoveDuplicatesFromSlice(pf.PostIds)
 	return errSlice
 }

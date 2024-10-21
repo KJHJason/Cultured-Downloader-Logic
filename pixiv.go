@@ -94,7 +94,7 @@ func PixivWebDownloadProcess(pixivDl *pixiv.PixivDl, pixivDlOptions *pixivweb.Pi
 	}
 
 	if len(pixivDl.ArtworkIds) > 0 && pixivDlOptions.CtxIsActive() {
-		pixivDl.ArtworkIds = utils.RemoveSliceDuplicates(pixivDl.ArtworkIds)
+		pixivDl.ArtworkIds = utils.RemoveDuplicatesFromSlice(pixivDl.ArtworkIds)
 		artworkSlice, ugoiraSlice, err := pixivweb.GetMultipleArtworkDetails(
 			pixivDl.ArtworkIds,
 			pixivDlOptions,

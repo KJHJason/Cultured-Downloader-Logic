@@ -74,19 +74,6 @@ func SliceContains[T SliceTypes](arr []T, target T) bool {
 	return false
 }
 
-// Removes duplicates from the given slice.
-func RemoveSliceDuplicates[T SliceTypes](s []T) []T {
-	var result []T
-	seen := make(map[T]struct{})
-	for _, v := range s {
-		if _, ok := seen[v]; !ok {
-			seen[v] = struct{}{}
-			result = append(result, v)
-		}
-	}
-	return result
-}
-
 // Used for removing duplicate IDs with its corresponding page number from the given slices.
 //
 // Returns the the new idSlice and pageSlice with the duplicates removed.

@@ -31,7 +31,7 @@ func (pf *PixivFanboxDl) ValidateArgs() error {
 		return err
 	}
 
-	pf.PostIds = utils.RemoveSliceDuplicates(pf.PostIds)
+	pf.PostIds = utils.RemoveDuplicatesFromSlice(pf.PostIds)
 
 	for _, creatorId := range pf.CreatorIds {
 		if !constants.PIXIV_FANBOX_CREATOR_ID_REGEX.MatchString(creatorId) {

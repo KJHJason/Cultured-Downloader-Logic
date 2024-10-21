@@ -32,7 +32,7 @@ func (p *PixivDl) ValidateArgs() error {
 		return err
 	}
 
-	p.ArtworkIds = utils.RemoveSliceDuplicates(p.ArtworkIds)
+	p.ArtworkIds = utils.RemoveDuplicatesFromSlice(p.ArtworkIds)
 	if len(p.ArtistPageNums) > 0 {
 		err = utils.ValidatePageNumInput(
 			len(p.ArtistIds),

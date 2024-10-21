@@ -50,8 +50,8 @@ func (f *FantiaDl) ValidateArgs() error {
 		return err
 	}
 
-	f.ProductIds = utils.RemoveSliceDuplicates(f.ProductIds)
-	f.PostIds = utils.RemoveSliceDuplicates(f.PostIds)
+	f.ProductIds = utils.RemoveDuplicatesFromSlice(f.ProductIds)
+	f.PostIds = utils.RemoveDuplicatesFromSlice(f.PostIds)
 
 	if len(f.FanclubPageNums) > 0 {
 		err = utils.ValidatePageNumInput(

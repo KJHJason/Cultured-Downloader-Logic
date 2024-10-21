@@ -17,6 +17,28 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 )
 
+type PrimitiveTypes interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | 
+	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
+	~string 
+}
+
+func RemoveDuplicatesFromSlice[T PrimitiveTypes](s []T) []T {
+	if len(s) <= 1 {
+		return s
+	}
+	seen := make(map[T]struct{})
+
+	var unique []T
+	for _, val := range s {
+		if _, exists := seen[val]; !exists {
+			seen[val] = struct{}{}
+			unique = append(unique, val)
+		}
+	}
+	return unique
+}
+
 func GetUnusedTcpPort() (uint16, error) {
 	var port uint16
 	for port = 8000; port <= 19600; port++ {

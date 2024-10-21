@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/KJHJason/Cultured-Downloader-Logic/utils"
 )
 
 const (
@@ -25,16 +27,7 @@ type Filters struct {
 }
 
 func (f *Filters) RemoveDuplicateFileExt() {
-	extMap := make(map[string]struct{})
-
-	var uniqueExt []string
-	for _, ext := range f.FileExt {
-		if _, exists := extMap[ext]; !exists {
-			extMap[ext] = struct{}{}
-			uniqueExt = append(uniqueExt, ext)
-		}
-	}
-	f.FileExt = uniqueExt
+	f.FileExt = utils.RemoveDuplicatesFromSlice(f.FileExt)
 }
 
 func (f *Filters) ConvertFileSizeFromMB() {

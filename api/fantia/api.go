@@ -256,9 +256,9 @@ func (f *FantiaDl) GetFanclubsContents(fanclubIds []string, pageNums []string, c
 		}
 	}
 	if contentType == PRODUCTS {
-		f.ProductIds = utils.RemoveSliceDuplicates(f.ProductIds)
+		f.ProductIds = utils.RemoveDuplicatesFromSlice(f.ProductIds)
 	} else {
-		f.PostIds = utils.RemoveSliceDuplicates(f.PostIds)
+		f.PostIds = utils.RemoveDuplicatesFromSlice(f.PostIds)
 	}
 	return errorSlice
 }
