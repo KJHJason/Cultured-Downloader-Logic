@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+const (
+	NO_MAX_FILESIZE = -1
+)
+
 type Filters struct {
 	MinFileSize int64 // In bytes
 	MaxFileSize int64 // In bytes
@@ -21,9 +25,16 @@ type Filters struct {
 }
 
 func (f *Filters) ConvertFileSizeFromMB() {
+	if f.MinFileSize == 0 {
+		return
+	}
+
 	const mb = 1024 * 1024
 	f.MinFileSize = f.MinFileSize * mb
-	f.MaxFileSize = f.MaxFileSize * mb
+
+	if f.MaxFileSize != NO_MAX_FILESIZE {
+		f.MaxFileSize = f.MaxFileSize * mb
+	}
 }
 
 func (f *Filters) Copy() *Filters {
@@ -38,7 +49,7 @@ func (f *Filters) Copy() *Filters {
 }
 
 func (f *Filters) ValidateArgs() error {
-	if f.MinFileSize < 0 || f.MaxFileSize < 0 {
+	if f.MinFileSize < 0 || (f.MaxFileSize != NO_MAX_FILESIZE && f.MaxFileSize < 0) {
 		return errors.New("min and max file size cannot be negative")
 	}
 
@@ -71,7 +82,7 @@ func (f *Filters) ValidateArgs() error {
 
 // Note: In bytes
 func (f *Filters) IsFileSizeInRange(fileSize int64) bool {
-	if f.MinFileSize == 0 && f.MaxFileSize == 0 {
+	if f.MinFileSize == 0 && f.MaxFileSize == NO_MAX_FILESIZE {
 		return true
 	}
 	return fileSize >= f.MinFileSize && fileSize <= f.MaxFileSize
