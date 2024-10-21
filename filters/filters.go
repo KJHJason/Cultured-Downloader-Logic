@@ -24,6 +24,19 @@ type Filters struct {
 	FileNameFilter *regexp.Regexp
 }
 
+func (f *Filters) RemoveDuplicateFileExt() {
+	extMap := make(map[string]struct{})
+
+	var uniqueExt []string
+	for _, ext := range f.FileExt {
+		if _, exists := extMap[ext]; !exists {
+			extMap[ext] = struct{}{}
+			uniqueExt = append(uniqueExt, ext)
+		}
+	}
+	f.FileExt = uniqueExt
+}
+
 func (f *Filters) ConvertFileSizeFromMB() {
 	if f.MinFileSize == 0 {
 		return
