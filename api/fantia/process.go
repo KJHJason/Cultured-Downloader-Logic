@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
@@ -367,8 +366,15 @@ func getProductPaidContent(productId string, doc *goquery.Document, dlOptions *F
 	return getAndProcessProductPaidContent(purchaseRelativeUrl, productId, dlOptions)
 }
 
-//lint:ignore SA4009 This function is meant to modify the productInfo pointer
-func getProductDetails(productId string, doc *goquery.Document, productInfo *ProductInfo) (productName string, thumbnailUrl string, previewContents []string) {
+type productDetails struct {
+	productInfo        ProductInfo
+	productName        string
+	thumbnailUrl       string
+	previewContentUrls []string
+}
+
+func getProductDetails(productId string, doc *goquery.Document) productDetails {
+	var pd productDetails
 	jsonContent := doc.Find("head script[type='application/ld+json']").Text()
 	if jsonContent == "" {
 		logger.LogError(
@@ -379,7 +385,7 @@ func getProductDetails(productId string, doc *goquery.Document, productInfo *Pro
 			),
 			logger.ERROR,
 		)
-		return
+		return pd
 	}
 
 	// get the product details from the JSON content
@@ -396,7 +402,7 @@ func getProductDetails(productId string, doc *goquery.Document, productInfo *Pro
 			),
 			logger.ERROR,
 		)
-		return
+		return pd
 	}
 
 	if len(productInfoSlice) == 0 {
@@ -408,30 +414,31 @@ func getProductDetails(productId string, doc *goquery.Document, productInfo *Pro
 			),
 			logger.ERROR,
 		)
-		return
+		return productDetails{}
 	}
 
 	product := productInfoSlice[0]
-	productInfo = &product
-	productName = product.Name
+	pd.productInfo = product
+	pd.productName = product.Name
 
 	// alternatively, we can use
 	// doc.Find(".product-gallery img").Each(func(i int, s *goquery.Selection) { ... }) if this no longer works
 	images := product.Image
 	if len(images) == 0 {
-		return productName, "", nil
+		return pd
 	}
 
-	thumbnailUrl = images[0] // thumbnail doesn't have the prefix and defaults to the main image
+	pd.thumbnailUrl = images[0] // thumbnail doesn't have the prefix and defaults to the main image
 	if len(images) > 1 {
 		// images here are micro images, hence we need to replace the
 		// micro_ filename prefix with the main_ prefix to get the full image
-		previewContents = images[1:]
-		for i, img := range previewContents {
-			previewContents[i] = strings.Replace(img, "micro_", "main_", 1)
+		previewContentUrls := images[1:]
+		for i, img := range previewContentUrls {
+			previewContentUrls[i] = strings.Replace(img, "micro_", "main_", 1)
 		}
+		pd.previewContentUrls = previewContentUrls
 	}
-	return productName, thumbnailUrl, previewContents
+	return pd
 }
 
 // Note: response body is closed in this function
@@ -452,27 +459,11 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 		)
 	}
 
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-
-	var fanclubName string
-	var productInfo ProductInfo
-	var previewContentUrls []string
-	var thumbnailUrl, productName string
-	go func() {
-		defer wg.Done()
-		fanclubName = getFanclubNameFromProductPage(productId, doc)
-		productName, thumbnailUrl, previewContentUrls = getProductDetails(productId, doc, &productInfo)
-	}()
+	pd := getProductDetails(productId, doc)
+	fanclubName := getFanclubNameFromProductPage(productId, doc)
 
 	// Check if the user has purchased the product so that we can get and download the paid content as well.
-	var paidContentErr error
-	var paidContent []string
-	go func() {
-		defer wg.Done()
-		paidContent, paidContentErr = getProductPaidContent(productId, doc, dlOptions)
-	}()
-	wg.Wait()
+	paidContent, paidContentErr := getProductPaidContent(productId, doc, dlOptions)
 
 	if paidContentErr != nil {
 		if errors.Is(paidContentErr, context.Canceled) {
@@ -481,13 +472,13 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 		logger.LogError(paidContentErr, logger.ERROR)
 	}
 
-	numOfEl := len(previewContentUrls) + len(paidContent)
-	if thumbnailUrl != "" {
+	numOfEl := len(pd.previewContentUrls) + len(paidContent)
+	if pd.thumbnailUrl != "" {
 		numOfEl++
 	}
 
 	toDownload := make([]*httpfuncs.ToDownload, 0, numOfEl)
-	dirPath := iofuncs.GetPostFolder(dlOptions.Base.DownloadDirPath, fanclubName, productId, productName)
+	dirPath := iofuncs.GetPostFolder(dlOptions.Base.DownloadDirPath, fanclubName, productId, pd.productName)
 	dirPath = filepath.Join(
 		filepath.Dir(dirPath), // go up one directory
 		constants.FANTIA_PRODUCT_DIR_NAME,
@@ -497,12 +488,12 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 	if dlOptions.Base.SetMetadata {
 		productMetadata := metadata.FantiaProduct{
 			Url:         constants.FANTIA_PRODUCT_URL + productId,
-			Name:        productName,
-			Description: productInfo.Description,
-			Images:      productInfo.Image,
+			Name:        pd.productName,
+			Description: pd.productInfo.Description,
+			Images:      pd.productInfo.Image,
 			Pricing: metadata.FantiaProductPricing{
-				Price:    productInfo.Offers.Price,
-				Currency: productInfo.Offers.PriceCurrency,
+				Price:    pd.productInfo.Offers.Price,
+				Currency: pd.productInfo.Offers.PriceCurrency,
 			},
 		}
 		if err := metadata.WriteMetadata(productMetadata, dirPath); err != nil {
@@ -510,15 +501,15 @@ func processProductPage(cacheKey, productId string, dlOptions *FantiaDlOptions, 
 		}
 	}
 
-	if thumbnailUrl != "" {
+	if pd.thumbnailUrl != "" {
 		toDownload = append(toDownload, &httpfuncs.ToDownload{
-			Url:      thumbnailUrl,
+			Url:      pd.thumbnailUrl,
 			FilePath: dirPath,
 			CacheKey: cacheKey,
 			CacheFn:  database.CachePost,
 		})
 	}
-	for i, url := range previewContentUrls {
+	for i, url := range pd.previewContentUrls {
 		dlFilePath := filepath.Join(dirPath, constants.FANTIA_PRODUCT_PREVIEW_DIR_NAME)
 		if dlOptions.Base.OrganiseImages {
 			fileExt := filepath.Ext(url)
