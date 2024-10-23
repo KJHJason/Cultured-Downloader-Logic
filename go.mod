@@ -14,7 +14,7 @@ require (
 	github.com/quic-go/quic-go v0.48.1
 	go.etcd.io/bbolt v1.3.11
 	golang.org/x/oauth2 v0.23.0
-	google.golang.org/api v0.201.0
+	google.golang.org/api v0.202.0
 )
 
 require (
