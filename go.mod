@@ -14,11 +14,11 @@ require (
 	github.com/quic-go/quic-go v0.48.1
 	go.etcd.io/bbolt v1.3.11
 	golang.org/x/oauth2 v0.23.0
-	google.golang.org/api v0.201.0
+	google.golang.org/api v0.203.0
 )
 
 require (
-	cloud.google.com/go/auth v0.9.8 // indirect
+	cloud.google.com/go/auth v0.9.9 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
