@@ -133,7 +133,7 @@ const (
 var (
 	// General
 	GITHUB_VER_REGEX = regexp.MustCompile(`\d+\.\d+\.\d+`)
-	URL_REGEX = regexp.MustCompile(`(https?://[^\s]+)`)
+	URL_REGEX        = regexp.MustCompile(`(https?://[^\s]+)`)
 
 	PAGE_NUM_REGEX = regexp.MustCompile(
 		fmt.Sprintf(`^%s$`, PAGE_NUM_REGEX_STR),

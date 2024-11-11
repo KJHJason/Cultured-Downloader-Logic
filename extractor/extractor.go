@@ -23,7 +23,8 @@ type archiveExtractor struct {
 }
 
 func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveExtractor) error {
-	handler := func(ctx context.Context, file archiver.File) error {
+	var handler archiver.FileHandler
+	handler = func(ctx context.Context, file archiver.FileInfo) error {
 		extractedFilePath := filepath.Join(dest, file.NameInArchive)
 		os.MkdirAll(filepath.Dir(extractedFilePath), constants.DEFAULT_PERMS)
 
@@ -57,7 +58,7 @@ func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveE
 		input = extractor.reader
 	}
 
-	err := extractor.ex.Extract(ctx, input, nil, handler)
+	err := extractor.ex.Extract(ctx, input, handler)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			// delete all the files that were extracted
@@ -76,10 +77,10 @@ func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveE
 	return nil
 }
 
-func getExtractor(f *os.File, src string) (*archiveExtractor, error) {
+func getExtractor(ctx context.Context, f *os.File, src string) (*archiveExtractor, error) {
 	filename := filepath.Base(src)
-	format, archiveReader, err := archiver.Identify(filename, f)
-	if errors.Is(err, archiver.ErrNoMatch) {
+	format, archiveReader, err := archiver.Identify(ctx, filename, f)
+	if errors.Is(err, archiver.NoMatch) {
 		return nil, fmt.Errorf(
 			"error %d: %s is not a valid zip file",
 			cdlerrors.OS_ERROR,
@@ -142,7 +143,7 @@ func ExtractFiles(ctx context.Context, src, dest string, ignoreIfMissing bool) e
 	}
 	defer f.Close()
 
-	extractor, err := getExtractor(f, src)
+	extractor, err := getExtractor(ctx, f, src)
 	if err != nil {
 		return err
 	}
