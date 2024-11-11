@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/KJHJason/Cultured-Downloader-Logic/cdlerrors"
 	"github.com/KJHJason/Cultured-Downloader-Logic/constants"
@@ -23,22 +24,37 @@ import (
 var pixivFanboxAllowedImageExt = []string{"jpg", "jpeg", "png", "gif"}
 
 func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath string, dlOptions *PixivFanboxDlOptions) []*httpfuncs.ToDownload {
-	var combinedText string
+	var combinedTextB strings.Builder
 	var gdriveLinks []*httpfuncs.ToDownload
 	for _, block := range blocks {
 		if block.Type == "image" { // image already processed in ImageMap
 			continue
 		}
 
-		// note: usually block.Type should be "p"
-		combinedText += block.Text + "\n"
+		// note: usually block.Type should be "p" and could contain URL(s)
+		blockText := block.Text
+		combinedTextB.WriteString(blockText)
+		combinedTextB.WriteString("\n")
 
-		linkUrlSlice := block.Links
-		if len(block.Links) == 0 {
-			continue
+		// note: alrd contains valid URL(s)
+		blockLinks := block.Links
+		blockLinksLen := len(blockLinks)
+		blockHasNoLinks := blockLinksLen == 0
+		if blockHasNoLinks && len(blockText) == 0 {
+			continue // nothing to process
 		}
-		for _, linkUrlEl := range linkUrlSlice {
-			linkUrl := linkUrlEl.Url
+
+		var linkUrlSlice []string
+		if !blockHasNoLinks {
+			linkUrlSlice = constants.URL_REGEX.FindAllString(blockText, -1)
+		} else {
+			linkUrlSlice = make([]string, 0, blockLinksLen)
+			for _, blockLink := range blockLinks {
+				linkUrlSlice = append(linkUrlSlice, blockLink.Url)
+			}
+		}
+
+		for _, linkUrl := range linkUrlSlice {
 			utils.DetectOtherExtDLLink(linkUrl, postFolderPath)
 			if utils.DetectGDriveLinks(linkUrl, postFolderPath, true, dlOptions.Base.Configs.LogUrls) && dlOptions.Base.DlGdrive {
 				gdriveLinks = append(gdriveLinks, &httpfuncs.ToDownload{
@@ -50,6 +66,7 @@ func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath 
 		}
 	}
 
+	combinedText := combinedTextB.String()
 	if utils.DetectPasswordInText(combinedText) {
 		// Log the entire post text if it contains a password
 		filePath := filepath.Join(postFolderPath, constants.PASSWORD_FILENAME)

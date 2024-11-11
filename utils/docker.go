@@ -209,10 +209,10 @@ func WaitForContainer(ctx context.Context, cli *client.Client, containerId strin
 			containerId,
 			waitRes.StatusCode,
 		)
-		if dockerErrDetails := waitRes.Error.Message; dockerErrDetails != "" {
+		if dockerErrDetails := waitRes.Error; dockerErrDetails != nil && dockerErrDetails.Message != "" {
 			errMsg += fmt.Sprintf(
 				" with the following error details below...\n%s\n",
-				dockerErrDetails,
+				dockerErrDetails.Message,
 			)
 		}
 		logger.MainLogger.Error(errMsg)

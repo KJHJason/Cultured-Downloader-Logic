@@ -18,12 +18,8 @@ func ProcessPostText(postBodyStr, postFolderPath string, downloadGdrive bool, lo
 	}
 
 	// split the text by newlines
-	postBodySlice := strings.FieldsFunc(
-		postBodyStr,
-		func(c rune) bool {
-			return c == '\n'
-		},
-	)
+	postBodySlice := strings.Split(postBodyStr, "\n")
+
 	loggedPassword := false
 	var detectedGdriveLinks []*httpfuncs.ToDownload
 	for _, text := range postBodySlice {
