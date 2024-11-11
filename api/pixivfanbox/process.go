@@ -75,7 +75,7 @@ func detectUrlsAndLogPasswordsInPost(blocks FanboxArticleBlocks, postFolderPath 
 
 	// Get any remaining GDrive and other links found in the text content of the post
 	detectedGdriveLinksInText := constants.URL_REGEX.FindAllString(combinedText, -1)
-	if len(gdriveLinks) > 0 {
+	if len(detectedGdriveLinksInText) > 0 {
 		gdriveLinksInText := getGDriveUrlsAndLogOtherUrls(
 			detectedGdriveLinksInText,
 			postFolderPath,
@@ -118,8 +118,7 @@ func processFanboxArticlePost(resUrl string, postBody json.RawMessage, postFolde
 		return nil, nil, err
 	}
 
-	var urlsSlice []*httpfuncs.ToDownload
-	var gdriveLinks []*httpfuncs.ToDownload
+	var urlsSlice, gdriveLinks []*httpfuncs.ToDownload
 	// retrieve images and attachments url(s)
 	imageMap := articleJson.ImageMap
 	if imageMap != nil && dlOptions.Base.DlImages {
@@ -148,12 +147,11 @@ func processFanboxArticlePost(resUrl string, postBody json.RawMessage, postFolde
 		return urlsSlice, gdriveLinks, nil
 	}
 
-	detectedGdriveUrls := detectUrlsAndLogPasswordsInPost(
+	gdriveLinks = detectUrlsAndLogPasswordsInPost(
 		articleBlocks,
 		postFolderPath,
 		dlOptions,
 	)
-	gdriveLinks = append(gdriveLinks, detectedGdriveUrls...)
 	return urlsSlice, gdriveLinks, nil
 }
 
