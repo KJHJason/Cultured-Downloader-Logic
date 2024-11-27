@@ -11,7 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/mholt/archiver/v4 v4.0.0-alpha.9
 	github.com/opencontainers/image-spec v1.1.0
-	github.com/quic-go/quic-go v0.48.1
+	github.com/quic-go/quic-go v0.48.2
 	go.etcd.io/bbolt v1.3.11
 	golang.org/x/oauth2 v0.24.0
 	google.golang.org/api v0.209.0
