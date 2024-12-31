@@ -144,7 +144,7 @@ var (
 		regexp.MustCompile(`ダウンロード(?:<\/span>)?<\/a><\/p><p>[\w-]+<\/p>`),
 		regexp.MustCompile(`ダウンロード\n([\w-]+)\n`),
 	}
-	EXTERNAL_DOWNLOAD_PLATFORMS = [...]string{"mega", "gigafile", "dropbox", "mediafire"}
+	EXTERNAL_DOWNLOAD_PLATFORMS = [...]string{"mega", "gigafile", "dropbox", "mediafire", "1drv.ms"}
 
 	// For GDrive
 	GDRIVE_URL_REGEX = regexp.MustCompile(
