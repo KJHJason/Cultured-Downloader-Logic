@@ -13,7 +13,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/quic-go/quic-go v0.48.2
 	go.etcd.io/bbolt v1.3.11
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.25.0
 	google.golang.org/api v0.214.0
 )
 
