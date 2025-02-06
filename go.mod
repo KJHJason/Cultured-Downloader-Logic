@@ -12,7 +12,7 @@ require (
 	github.com/mholt/archiver/v4 v4.0.0-alpha.9
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/quic-go/quic-go v0.48.2
-	go.etcd.io/bbolt v1.3.11
+	go.etcd.io/bbolt v1.4.0
 	golang.org/x/oauth2 v0.25.0
 	google.golang.org/api v0.216.0
 )
@@ -73,7 +73,7 @@ require (
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.27.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576 // indirect
