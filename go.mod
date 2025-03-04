@@ -10,7 +10,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/joho/godotenv v1.5.1
 	github.com/mholt/archiver/v4 v4.0.0-alpha.9
-	github.com/opencontainers/image-spec v1.1.0
+	github.com/opencontainers/image-spec v1.1.1
 	github.com/quic-go/quic-go v0.49.0
 	go.etcd.io/bbolt v1.4.0
 	golang.org/x/oauth2 v0.26.0
