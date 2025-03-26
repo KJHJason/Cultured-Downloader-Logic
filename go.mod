@@ -6,7 +6,7 @@ retract v1.0.2 // old unstable ver
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.2
-	github.com/docker/docker v27.5.1+incompatible
+	github.com/docker/docker v28.0.4+incompatible
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/joho/godotenv v1.5.1
 	github.com/mholt/archiver/v4 v4.0.0-alpha.9
