@@ -1,6 +1,7 @@
 module github.com/KJHJason/Cultured-Downloader-Logic
 
 go 1.23
+toolchain go1.24.1
 
 retract v1.0.2 // old unstable ver
 
@@ -13,7 +14,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/quic-go/quic-go v0.49.0
 	go.etcd.io/bbolt v1.4.0
-	golang.org/x/oauth2 v0.26.0
+	golang.org/x/oauth2 v0.29.0
 	google.golang.org/api v0.221.0
 )
 
