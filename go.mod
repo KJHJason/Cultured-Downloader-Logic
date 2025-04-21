@@ -11,7 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/mholt/archiver/v4 v4.0.0-alpha.9
 	github.com/opencontainers/image-spec v1.1.0
-	github.com/quic-go/quic-go v0.49.0
+	github.com/quic-go/quic-go v0.51.0
 	go.etcd.io/bbolt v1.4.0
 	golang.org/x/oauth2 v0.26.0
 	google.golang.org/api v0.221.0
@@ -70,7 +70,6 @@ require (
 	go.uber.org/mock v0.5.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
