@@ -13,18 +13,17 @@ import (
 	"github.com/KJHJason/Cultured-Downloader-Logic/iofuncs"
 	"github.com/KJHJason/Cultured-Downloader-Logic/logger"
 	ctxio "github.com/jbenet/go-context/io"
-	"github.com/mholt/archiver/v4"
+	"github.com/mholt/archives"
 )
 
 type archiveExtractor struct {
 	reader     io.Reader
 	readCloser io.ReadCloser
-	ex         archiver.Extractor
+	ex         archives.Extractor
 }
 
 func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveExtractor) error {
-	var handler archiver.FileHandler
-	handler = func(ctx context.Context, file archiver.FileInfo) error {
+	var handler archives.FileHandler = func(ctx context.Context, file archives.FileInfo) error {
 		extractedFilePath := filepath.Join(dest, file.NameInArchive)
 		os.MkdirAll(filepath.Dir(extractedFilePath), constants.DEFAULT_PERMS)
 
@@ -79,8 +78,8 @@ func extractFileLogic(ctx context.Context, src, dest string, extractor *archiveE
 
 func getExtractor(ctx context.Context, f *os.File, src string) (*archiveExtractor, error) {
 	filename := filepath.Base(src)
-	format, archiveReader, err := archiver.Identify(ctx, filename, f)
-	if errors.Is(err, archiver.NoMatch) {
+	format, archiveReader, err := archives.Identify(ctx, filename, f)
+	if errors.Is(err, archives.NoMatch) {
 		return nil, fmt.Errorf(
 			"error %d: %s is not a valid zip file",
 			cdlerrors.OS_ERROR,
@@ -91,14 +90,14 @@ func getExtractor(ctx context.Context, f *os.File, src string) (*archiveExtracto
 	}
 
 	var rc io.ReadCloser
-	if decom, ok := format.(archiver.Decompressor); ok {
+	if decom, ok := format.(archives.Decompressor); ok {
 		rc, err = decom.OpenReader(archiveReader)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	ex, ok := format.(archiver.Extractor)
+	ex, ok := format.(archives.Extractor)
 	if !ok {
 		return nil, fmt.Errorf(
 			"error %d: unable to extract zip file %s, more info => %w",
