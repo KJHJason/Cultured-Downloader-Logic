@@ -24,7 +24,7 @@ func GetHttp2Client(reqArgs *RequestArgs) *http.Client {
 
 func GetHttp3Client(reqArgs *RequestArgs) *http.Client {
 	return &http.Client{
-		Transport: &http3.RoundTripper{},
+		Transport: &http3.Transport{},
 		Timeout:   time.Duration(reqArgs.Timeout) * time.Second,
 	}
 }
